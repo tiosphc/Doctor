@@ -8,7 +8,15 @@ type RequestOptions = Omit<RequestInit, "body"> & {
     query?: Record<string, string | number | boolean | null | undefined>;
 };
 
-type ErrorPayload = { message?: string; errors?: ValidationErrors };
+type ErrorPayload = {
+    message?: string;
+    errors?: ValidationErrors;
+    code?: string;
+    sku?: string;
+    requested?: string;
+    available?: string;
+    warehouse_id?: number;
+};
 
 export class ApiError extends Error {
     constructor(
@@ -16,6 +24,13 @@ export class ApiError extends Error {
         message: string,
         public readonly errors: ValidationErrors = {},
         public readonly retryAfter: number | null = null,
+        public readonly code: string | null = null,
+        public readonly details: {
+            sku?: string | undefined;
+            requested?: string | undefined;
+            available?: string | undefined;
+            warehouse_id?: number | undefined;
+        } = {},
     ) {
         super(message);
         this.name = "ApiError";
@@ -83,6 +98,13 @@ async function parseError(response: Response): Promise<ApiError> {
             : payload.message || defaults[response.status] || "Không thể kết nối máy chủ.",
         payload.errors ?? {},
         retryHeader ? Number(retryHeader) : null,
+        payload.code ?? null,
+        {
+            sku: payload.sku,
+            requested: payload.requested,
+            available: payload.available,
+            warehouse_id: payload.warehouse_id,
+        },
     );
 }
 

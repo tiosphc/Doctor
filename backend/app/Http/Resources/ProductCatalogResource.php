@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Http\Resources;
+
+use App\Services\RetailPricingService;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
+
+class ProductCatalogResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        $pricing = app(RetailPricingService::class);
+        $variants = $this->variants->map(fn ($variant): array => [
+            'id' => $variant->id,
+            'sku' => $variant->sku,
+            'variant_name' => $variant->variant_name,
+            'unit' => $variant->unit?->name,
+            'unit_symbol' => $variant->unit?->symbol,
+            'specifications' => collect($variant->specifications ?? [])
+                ->filter(fn (mixed $value, int|string $key): bool => is_string($key)
+                    && is_string($value)
+                    && ! preg_match('/cost|price|dealer|tier|stock|inventory|margin|warehouse/i', $key))
+                ->all(),
+            'retail_price' => array_intersect_key($pricing->resolve($variant), array_flip(['unit_price', 'currency', 'pricing_context'])),
+        ]);
+
+        return [
+            'id' => $this->id,
+            'product_code' => $this->product_code,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'description' => $this->description,
+            'youtube_videos' => $this->youtube_videos ?? [],
+            'usage_instructions' => $this->usage_instructions,
+            'category' => $this->category?->only(['id', 'code', 'name']),
+            'brand' => $this->brand?->only(['id', 'code', 'name']),
+            'images' => $this->images->map(fn ($image): array => [
+                'id' => $image->id,
+                'url' => url(Storage::disk('public')->url($image->path)),
+                'alt_text' => $image->alt_text,
+                'product_variant_id' => $image->product_variant_id,
+                'is_primary' => $image->is_primary,
+            ]),
+            'variants' => $variants,
+            'retail_price' => $variants->first()['retail_price'],
+        ];
+    }
+}

@@ -36,6 +36,26 @@ class AuditLogger
 
     public const ACTION_RESCHEDULE = 'RESCHEDULE';
 
+    public const ACTION_OPENING_STOCK = 'OPENING_BALANCE';
+
+    public const ACTION_GOODS_RECEIPT = 'GOODS_RECEIPT';
+
+    public const ACTION_ADJUSTMENT_IN = 'ADJUSTMENT_IN';
+
+    public const ACTION_ADJUSTMENT_OUT = 'ADJUSTMENT_OUT';
+
+    public const ACTION_REPRICE = 'REPRICE';
+
+    public const ACTION_RESERVE = 'RESERVE';
+
+    public const ACTION_RELEASE = 'RELEASE';
+
+    public const ACTION_CONSUME = 'CONSUME';
+
+    public const ACTION_FULFILL = 'FULFILL';
+
+    public const ACTION_SALES_ORDER_SHIPMENT = 'SALES_ORDER_SHIPMENT';
+
     public const ACTIONS = [
         self::ACTION_CREATE,
         self::ACTION_UPDATE,
@@ -50,6 +70,16 @@ class AuditLogger
         self::ACTION_CANCEL,
         self::ACTION_NO_SHOW,
         self::ACTION_RESCHEDULE,
+        self::ACTION_OPENING_STOCK,
+        self::ACTION_GOODS_RECEIPT,
+        self::ACTION_ADJUSTMENT_IN,
+        self::ACTION_ADJUSTMENT_OUT,
+        self::ACTION_REPRICE,
+        self::ACTION_RESERVE,
+        self::ACTION_RELEASE,
+        self::ACTION_CONSUME,
+        self::ACTION_FULFILL,
+        self::ACTION_SALES_ORDER_SHIPMENT,
     ];
 
     public const MODULE_STAFF = 'STAFF';
@@ -66,6 +96,14 @@ class AuditLogger
 
     public const MODULE_BLOG = 'BLOG';
 
+    public const MODULE_WAREHOUSE = 'WAREHOUSE';
+
+    public const MODULE_INVENTORY = 'INVENTORY';
+
+    public const MODULE_PRODUCT = 'PRODUCT';
+
+    public const MODULE_SALES_ORDER = 'SALES_ORDER';
+
     public const MODULES = [
         self::MODULE_STAFF,
         self::MODULE_DOCTOR,
@@ -74,6 +112,10 @@ class AuditLogger
         self::MODULE_VOUCHER,
         self::MODULE_REVIEW,
         self::MODULE_BLOG,
+        self::MODULE_WAREHOUSE,
+        self::MODULE_INVENTORY,
+        self::MODULE_PRODUCT,
+        self::MODULE_SALES_ORDER,
     ];
 
     /** @var list<string> */

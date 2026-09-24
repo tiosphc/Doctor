@@ -30,6 +30,7 @@ import { StaffShell } from "@/components/layout/StaffLayout";
 const nav = [
     ["Trang chủ", "/"],
     ["Dịch vụ", "/services"],
+    ["Sản phẩm", "/products"],
     ["Bác sĩ", "/doctors"],
     ["Kiến thức", "/blogs"],
 ] as const;
@@ -488,6 +489,12 @@ type AdminRoute =
     | "/admin/doctors"
     | "/admin/staff"
     | "/admin/services"
+    | "/admin/products"
+    | "/admin/product-master"
+    | "/admin/retail-pricing"
+    | "/admin/warehouses"
+    | "/admin/inventory"
+    | "/admin/sales-orders"
     | "/admin/service-categories"
     | "/admin/reviews"
     | "/admin/vouchers"
@@ -502,12 +509,20 @@ function AdminShell({ children, onLogout }: { children: React.ReactNode; onLogou
     const isPersonnelRoute = path.startsWith("/admin/doctors") || path.startsWith("/admin/staff");
     const isServiceRoute =
         path.startsWith("/admin/services") || path.startsWith("/admin/service-categories");
+    const isProductRoute =
+        path.startsWith("/admin/products") ||
+        path.startsWith("/admin/product-master") ||
+        path.startsWith("/admin/retail-pricing");
+    const isInventoryRoute =
+        path.startsWith("/admin/warehouses") || path.startsWith("/admin/inventory");
     const isVoucherRoute =
         path.startsWith("/admin/vouchers") || path === "/admin/voucher-management";
     const isBlogRoute =
         path.startsWith("/admin/blogs") || path.startsWith("/admin/blog-categories");
     const [personnelExpanded, setPersonnelExpanded] = useState(isPersonnelRoute);
     const [servicesExpanded, setServicesExpanded] = useState(isServiceRoute);
+    const [productsExpanded, setProductsExpanded] = useState(isProductRoute);
+    const [inventoryExpanded, setInventoryExpanded] = useState(isInventoryRoute);
     const [vouchersExpanded, setVouchersExpanded] = useState(isVoucherRoute);
     const [blogsExpanded, setBlogsExpanded] = useState(isBlogRoute);
 
@@ -517,6 +532,12 @@ function AdminShell({ children, onLogout }: { children: React.ReactNode; onLogou
     useEffect(() => {
         if (isServiceRoute) setServicesExpanded(true);
     }, [isServiceRoute]);
+    useEffect(() => {
+        if (isProductRoute) setProductsExpanded(true);
+    }, [isProductRoute]);
+    useEffect(() => {
+        if (isInventoryRoute) setInventoryExpanded(true);
+    }, [isInventoryRoute]);
     useEffect(() => {
         if (isVoucherRoute) setVouchersExpanded(true);
     }, [isVoucherRoute]);
@@ -560,6 +581,30 @@ function AdminShell({ children, onLogout }: { children: React.ReactNode; onLogou
                             ["Danh mục dịch vụ", "/admin/service-categories"],
                         ]}
                     />
+                    <AdminNavGroup
+                        id="admin-product-links"
+                        label="Sản phẩm & giá Retail"
+                        expanded={productsExpanded}
+                        active={isProductRoute}
+                        onToggle={() => setProductsExpanded((expanded) => !expanded)}
+                        links={[
+                            ["Danh sách sản phẩm", "/admin/products"],
+                            ["Danh mục, thương hiệu, đơn vị", "/admin/product-master"],
+                            ["Bảng giá Retail", "/admin/retail-pricing"],
+                        ]}
+                    />
+                    <AdminNavGroup
+                        id="admin-inventory-links"
+                        label="Kho & tồn kho"
+                        expanded={inventoryExpanded}
+                        active={isInventoryRoute}
+                        onToggle={() => setInventoryExpanded((expanded) => !expanded)}
+                        links={[
+                            ["Kho hàng", "/admin/warehouses"],
+                            ["Tồn kho & movement", "/admin/inventory"],
+                        ]}
+                    />
+                    <AdminNavLink label="Đơn bán hàng" to="/admin/sales-orders" />
                     <AdminNavLink label="Đánh giá" to="/admin/reviews" />
                     <AdminNavGroup
                         id="admin-voucher-links"

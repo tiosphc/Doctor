@@ -237,7 +237,7 @@ class RegisteredCustomerBackfillCommandTest extends TestCase
 
     public function test_reconciliation_reports_clean_expected_actual_and_difference_after_backfill(): void
     {
-        $user = User::factory()->customer()->create();
+        $user = User::factory()->customer()->create(['phone' => null]);
         Appointment::factory()->for($user)->create();
 
         $this->artisan('customers:backfill-registered')->assertSuccessful();
