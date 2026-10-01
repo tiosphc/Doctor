@@ -2,5 +2,5 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SalesOrderListPage } from "@/pages/admin/SalesOrderPages";
 
 export const Route = createFileRoute("/admin/sales-orders/")({
-    component: SalesOrderListPage,
+    component: () => <SalesOrderListPage channel="all" />,
 });

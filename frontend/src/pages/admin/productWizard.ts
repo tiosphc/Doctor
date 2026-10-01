@@ -7,7 +7,12 @@ export type WizardVariant = {
     initial_stock: string;
 };
 export type PriceBreak = { min_quantity: string; unit_price: string };
-export type DealerRule = { tier_id: number | null; min_quantity: string; unit_price: string };
+export type DealerRule = {
+    tier_id: number | null;
+    sku: string;
+    min_quantity: string;
+    unit_price: string;
+};
 export type WizardData = {
     name: string;
     sku: string;
@@ -16,6 +21,8 @@ export type WizardData = {
     unit_id: number | null;
     sellable_retail: boolean;
     sellable_dealer: boolean;
+    can_be_gift: boolean;
+    gift_only: boolean;
     description: string;
     youtube_videos: string[];
     has_variants: boolean;
@@ -43,6 +50,8 @@ export const emptyWizard: WizardData = {
     unit_id: null,
     sellable_retail: true,
     sellable_dealer: false,
+    can_be_gift: false,
+    gift_only: false,
     description: "",
     youtube_videos: [],
     has_variants: false,
@@ -66,19 +75,63 @@ export const steps = [
     "Thông tin cơ bản",
     "Hình ảnh",
     "Biến thể",
-    "Giá & MOQ",
+    "Giá",
     "Kho & vận chuyển",
     "Hướng dẫn sử dụng",
 ] as const;
 export type WizardErrors = Record<string, string>;
 
 const skuPattern = /^[A-Z0-9][A-Z0-9._-]*$/;
-const quantityPattern = /^(?:0|[1-9]\d*)(?:\.\d{1,3})?$/;
+const quantityPattern = /^(?:0|[1-9]\d*)$/;
+const measurementPattern = /^(?:0|[1-9]\d*)(?:\.\d{1,3})?$/;
 const pricePattern = /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
 export const normalizeSku = (value: string) => value.trim().toUpperCase();
-export const validMoney = (value: string) => pricePattern.test(value) && Number(value) > 0;
+export const validMoney = (value: string) => pricePattern.test(value);
+export const validPositiveMoney = (value: string) => validMoney(value) && Number(value) > 0;
 const validQuantity = (value: string) => quantityPattern.test(value);
 const validInteger = (value: string) => /^[1-9]\d*$/.test(value);
+
+export function parseDealerCsv(
+    content: string,
+): Array<{ tier: string; sku: string; moq: string; price: string }> {
+    const records: string[][] = [];
+    let row: string[] = [];
+    let cell = "";
+    let quoted = false;
+    const source = content.replace(/^\uFEFF/, "");
+    for (let index = 0; index < source.length; index++) {
+        const char = source[index];
+        if (char === '"') {
+            if (quoted && source[index + 1] === '"') {
+                cell += '"';
+                index++;
+            } else {
+                quoted = !quoted;
+            }
+        } else if (char === "," && !quoted) {
+            row.push(cell.trim());
+            cell = "";
+        } else if ((char === "\n" || char === "\r") && !quoted) {
+            row.push(cell.trim());
+            if (row.some(Boolean)) records.push(row);
+            row = [];
+            cell = "";
+            if (char === "\r" && source[index + 1] === "\n") index++;
+        } else {
+            cell += char;
+        }
+    }
+    if (quoted) throw new Error("Dấu nháy CSV chưa được đóng.");
+    row.push(cell.trim());
+    if (row.some(Boolean)) records.push(row);
+    const header = records.shift()?.map((value) => value.toLowerCase());
+    if (header?.join(",") !== "tier,sku,moq,price")
+        throw new Error("CSV cần đúng bốn cột: Tier, SKU, MOQ, Price.");
+    return records.map((record, index) => {
+        if (record.length !== 4) throw new Error("Dòng " + (index + 2) + " phải có bốn cột.");
+        return { tier: record[0]!, sku: record[1]!, moq: record[2]!, price: record[3]! };
+    });
+}
 
 export function validYouTube(value: string): boolean {
     try {
@@ -145,7 +198,7 @@ export function validateStep(
     step: number,
     data: WizardData,
     imageCount: number,
-    unitPrecision = 3,
+    _unitPrecision = 3,
 ): WizardErrors {
     const errors: WizardErrors = {};
     if (step === 0) {
@@ -156,7 +209,7 @@ export function validateStep(
             errors["sku"] = "SKU chỉ gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.";
         if (!data.product_category_id) errors["product_category_id"] = "Vui lòng chọn danh mục.";
         if (!data.unit_id) errors["unit_id"] = "Vui lòng chọn đơn vị.";
-        if (!data.sellable_retail && !data.sellable_dealer)
+        if (!data.sellable_retail && !data.sellable_dealer && !data.gift_only)
             errors["channels"] = "Vui lòng chọn ít nhất một kênh bán.";
     }
     if (step === 1) {
@@ -209,40 +262,40 @@ export function validateStep(
         });
     }
     if (step === 3) {
-        if (data.sellable_retail && !validMoney(data.retail_price))
-            errors["retail_price"] = "Giá bán lẻ phải lớn hơn 0.";
-        let last = 1;
-        data.retail_breaks.forEach((row, index) => {
-            const minimum = Number(row.min_quantity);
-            if (!validInteger(row.min_quantity) || minimum <= last)
-                errors[`retail_breaks.${index}.min_quantity`] =
-                    "Mức số lượng phải tăng dần, không trùng hoặc chồng lấn.";
-            if (!validMoney(row.unit_price))
-                errors[`retail_breaks.${index}.unit_price`] = "Giá phải lớn hơn 0.";
-            last = minimum;
-        });
-        if (data.sellable_dealer && !data.dealer_rules.length)
+        if (data.sellable_retail && !data.gift_only && !validMoney(data.retail_price))
+            errors["retail_price"] = "Giá bán lẻ phải từ 0 trở lên.";
+        if (data.sellable_dealer && !data.gift_only && !data.dealer_rules.length)
             errors["dealer_rules"] = "Thêm ít nhất một mức giá đại lý.";
-        const minimums = new Map<number, number>();
-        data.dealer_rules.forEach((row, index) => {
-            if (!row.tier_id) errors[`dealer_rules.${index}.tier_id`] = "Chọn hạng đại lý.";
-            const minimum = Number(row.min_quantity);
-            if (
-                !validInteger(row.min_quantity) ||
-                (row.tier_id && minimum <= (minimums.get(row.tier_id) ?? 0))
-            )
-                errors[`dealer_rules.${index}.min_quantity`] =
-                    "MOQ phải là số nguyên dương và tăng dần theo từng hạng.";
-            if (!validMoney(row.unit_price))
-                errors[`dealer_rules.${index}.unit_price`] = "Giá đại lý phải lớn hơn 0.";
-            if (row.tier_id) minimums.set(row.tier_id, minimum);
-        });
-        data.variants.forEach((variant, index) => {
-            if (variant.retail_price_override && !validMoney(variant.retail_price_override))
-                errors[`variants.${index}.retail_price_override`] = "Giá biến thể phải lớn hơn 0.";
-        });
+        const seen = new Set<string>();
+        const skus = data.has_variants
+            ? data.variants.map((variant) => normalizeSku(variant.sku))
+            : [normalizeSku(data.sku)];
+        if (data.sellable_dealer && !data.gift_only)
+            data.dealer_rules.forEach((row, index) => {
+                if (!row.tier_id) errors[`dealer_rules.${index}.tier_id`] = "Chọn hạng đại lý.";
+                const sku = normalizeSku(row.sku);
+                if (!skus.includes(sku))
+                    errors[`dealer_rules.${index}.sku`] = "Chọn biến thể hợp lệ.";
+                const key = `${row.tier_id}:${sku}`;
+                if (row.tier_id && sku && seen.has(key))
+                    errors[`dealer_rules.${index}.sku`] =
+                        "Giá của Tier và biến thể này đã tồn tại.";
+                seen.add(key);
+                if (!validInteger(row.min_quantity))
+                    errors[`dealer_rules.${index}.min_quantity`] = "MOQ phải là số nguyên dương.";
+                if (!validPositiveMoney(row.unit_price))
+                    errors[`dealer_rules.${index}.unit_price`] = "Giá đại lý phải lớn hơn 0.";
+            });
+        if (data.sellable_retail && !data.gift_only)
+            data.variants.forEach((variant, index) => {
+                if (variant.retail_price_override && !validMoney(variant.retail_price_override))
+                    errors[`variants.${index}.retail_price_override`] =
+                        "Giá biến thể phải từ 0 trở lên.";
+            });
     }
     if (step === 4) {
+        if (data.gift_only && !data.track_inventory)
+            errors["track_inventory"] = "Sản phẩm chỉ tặng cần theo dõi tồn kho.";
         const stockRows = data.has_variants
             ? data.variants.map((variant) => variant.initial_stock)
             : [data.initial_stock];
@@ -252,10 +305,7 @@ export function validateStep(
         if (positiveStock && !data.warehouse_id)
             errors["warehouse_id"] = "Vui lòng chọn kho cho tồn đầu kỳ.";
         stockRows.forEach((value, index) => {
-            if (
-                value &&
-                (!validQuantity(value) || (value.split(".")[1]?.length ?? 0) > unitPrecision)
-            )
+            if (value && !validQuantity(value))
                 errors[data.has_variants ? `variants.${index}.initial_stock` : "initial_stock"] =
                     "Tồn đầu kỳ không hợp lệ với độ chính xác của đơn vị.";
         });
@@ -268,7 +318,12 @@ export function validateStep(
             "width",
             "height",
         ] as const) {
-            if (data[field] && !validQuantity(data[field]))
+            if (
+                data[field] &&
+                !(field === "low_stock_threshold"
+                    ? validQuantity(data[field])
+                    : measurementPattern.test(data[field]))
+            )
                 errors[field] = "Nhập số không âm, tối đa 3 chữ số thập phân.";
         }
     }
@@ -278,11 +333,12 @@ export function validateStep(
 export function payload(data: WizardData): Record<string, unknown> {
     return {
         ...data,
+        retail_breaks: [],
         name: data.name.trim(),
         sku: normalizeSku(data.sku),
         description: data.description || null,
         usage_instructions: data.usage_instructions || null,
-        retail_price: data.retail_price || null,
+        retail_price: data.gift_only ? null : data.retail_price || null,
         initial_stock: data.initial_stock || null,
         low_stock_threshold: data.low_stock_threshold || null,
         weight: data.weight || null,

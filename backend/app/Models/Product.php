@@ -13,7 +13,7 @@ class Product extends Model
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
 
-    protected $fillable = ['product_code', 'name', 'slug', 'description', 'product_category_id', 'brand_id', 'status', 'track_inventory', 'track_batch', 'track_expiry', 'default_low_stock_threshold', 'base_sku', 'wizard_key', 'wizard_owner_user_id', 'wizard_data', 'youtube_videos', 'usage_instructions'];
+    protected $fillable = ['product_code', 'name', 'slug', 'description', 'product_category_id', 'brand_id', 'status', 'track_inventory', 'track_batch', 'track_expiry', 'default_low_stock_threshold', 'base_sku', 'wizard_key', 'wizard_owner_user_id', 'wizard_data', 'youtube_videos', 'usage_instructions', 'can_be_gift', 'gift_only'];
 
     public function category(): BelongsTo
     {
@@ -37,6 +37,6 @@ class Product extends Model
 
     protected function casts(): array
     {
-        return ['track_inventory' => 'boolean', 'track_batch' => 'boolean', 'track_expiry' => 'boolean', 'default_low_stock_threshold' => 'decimal:3', 'wizard_data' => 'array', 'youtube_videos' => 'array'];
+        return ['track_inventory' => 'boolean', 'track_batch' => 'boolean', 'track_expiry' => 'boolean', 'can_be_gift' => 'boolean', 'gift_only' => 'boolean', 'default_low_stock_threshold' => 'decimal:3', 'wizard_data' => 'array', 'youtube_videos' => 'array'];
     }
 }

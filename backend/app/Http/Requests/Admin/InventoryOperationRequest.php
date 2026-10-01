@@ -29,9 +29,7 @@ class InventoryOperationRequest extends FormRequest
         return [
             'warehouse_id' => ['required', 'integer', Rule::exists('warehouses', 'id')],
             'product_variant_id' => ['required', 'integer', Rule::exists('product_variants', 'id')],
-            'quantity' => ['required', 'string', $adjustment
-                ? 'regex:/^-?(?:0|[1-9][0-9]{0,14})(?:\.[0-9]{1,3})?$/'
-                : 'regex:/^(?:0|[1-9][0-9]{0,14})(?:\.[0-9]{1,3})?$/'],
+            'quantity' => ['required', 'integer', ...($opening ? ['min:0'] : ['not_in:0', $adjustment ? 'regex:/^-?[1-9][0-9]{0,14}$/' : 'min:1'])],
             'operation_key' => ['required', 'uuid'],
             'reason_code' => [$adjustment ? 'required' : 'nullable', 'string', 'max:80', 'regex:/^[A-Za-z0-9_-]+$/'],
             'reason_detail' => [$adjustment || $opening ? 'required' : 'nullable', 'string', 'max:2000'],

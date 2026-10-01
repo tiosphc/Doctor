@@ -62,6 +62,16 @@ class User extends Authenticatable
         return $this->hasOne(Customer::class);
     }
 
+    public function dealerApplications(): HasMany
+    {
+        return $this->hasMany(DealerApplication::class);
+    }
+
+    public function dealerMemberships(): HasMany
+    {
+        return $this->hasMany(DealerAccountUser::class);
+    }
+
     public function blogs(): HasMany
     {
         return $this->hasMany(Blog::class, 'author_id');

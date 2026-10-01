@@ -2,13 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class SalesOrderItem extends Model
 {
-    protected $fillable = ['product_variant_id', 'product_code_snapshot', 'product_name_snapshot', 'sku_snapshot', 'variant_name_snapshot', 'unit_code_snapshot', 'unit_name_snapshot', 'quantity', 'pricing_context_snapshot', 'price_list_id', 'price_list_item_id', 'price_resolution_fingerprint', 'unit_price_snapshot', 'base_amount', 'discount_amount', 'tax_amount', 'line_total'];
+    protected $fillable = ['product_id', 'product_variant_id', 'product_code_snapshot', 'product_name_snapshot', 'image_path_snapshot', 'sku_snapshot', 'variant_name_snapshot', 'unit_code_snapshot', 'unit_name_snapshot', 'quantity', 'pricing_context_snapshot', 'price_list_id', 'price_list_item_id', 'price_resolution_fingerprint', 'minimum_quantity_snapshot', 'unit_price_snapshot', 'base_amount', 'discount_amount', 'tax_amount', 'line_total', 'is_gift', 'source_promotion_id'];
+
+    protected $hidden = ['image_path_snapshot'];
+
+    protected $appends = ['image_url'];
+
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->image_path_snapshot === null
+            ? null : url(Storage::disk('public')->url($this->image_path_snapshot)));
+    }
 
     public function order(): BelongsTo
     {
@@ -20,8 +32,13 @@ class SalesOrderItem extends Model
         return $this->hasOne(InventoryReservation::class);
     }
 
+    public function productVariant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class);
+    }
+
     protected function casts(): array
     {
-        return ['quantity' => 'decimal:3', 'unit_price_snapshot' => 'decimal:2', 'base_amount' => 'decimal:2', 'discount_amount' => 'decimal:2', 'tax_amount' => 'decimal:2', 'line_total' => 'decimal:2'];
+        return ['quantity' => 'decimal:3', 'minimum_quantity_snapshot' => 'decimal:3', 'unit_price_snapshot' => 'decimal:2', 'base_amount' => 'decimal:2', 'discount_amount' => 'decimal:2', 'tax_amount' => 'decimal:2', 'line_total' => 'decimal:2', 'is_gift' => 'boolean'];
     }
 }

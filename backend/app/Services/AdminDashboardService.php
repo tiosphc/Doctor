@@ -41,7 +41,6 @@ class AdminDashboardService
             'recent_activities' => $this->recentActivities(),
             'doctor_today' => $this->doctorToday($now),
             'popular_services' => $this->popularServices($now),
-            'revenue' => null,
         ];
     }
 

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Gift, Plus, RefreshCw, Star, TicketCheck } from "lucide-react";
 import { Button, ButtonLink } from "@/components/common/Button";
 import { OperationNotice } from "@/components/common/Feedback";
@@ -172,7 +173,13 @@ export function AdminReviewsPage() {
     const moderate = useMutation({
         mutationFn: ({ id, next }: { id: number; next: "published" | "hidden" }) =>
             reviewApi.moderate(id, next),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-reviews"] }),
+        onSuccess: async (_response, variables) => {
+            toast.success(
+                variables.next === "hidden" ? "Đã ẩn đánh giá." : "Đã công khai đánh giá.",
+            );
+            await queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
+        },
+        onError: (reason) => toast.error(errorMessage(reason)),
     });
     return (
         <AdminGuard>
@@ -258,15 +265,19 @@ export function AdminReviewsPage() {
                                     <Button
                                         variant="outline"
                                         disabled={moderate.isPending}
-                                        onClick={() =>
+                                        onClick={() => {
+                                            const next =
+                                                review.status === "hidden" ? "published" : "hidden";
+                                            if (
+                                                next === "hidden" &&
+                                                !window.confirm("Ẩn đánh giá này?")
+                                            )
+                                                return;
                                             moderate.mutate({
                                                 id: review.id,
-                                                next:
-                                                    review.status === "hidden"
-                                                        ? "published"
-                                                        : "hidden",
-                                            })
-                                        }
+                                                next,
+                                            });
+                                        }}
                                     >
                                         {review.status === "hidden" ? "Công khai" : "Ẩn đánh giá"}
                                     </Button>
@@ -326,6 +337,7 @@ function AdminVoucherList({ mode }: { mode: "review" | "management" }) {
             setCode(response.code);
             setErrors((current) => ({ ...current, code: "" }));
             setFormNotice("");
+            toast.success("Đã tạo mã voucher.");
         },
         onError: (reason) => setFormNotice(errorMessage(reason)),
     });
@@ -351,9 +363,9 @@ function AdminVoucherList({ mode }: { mode: "review" | "management" }) {
             await queryClient.invalidateQueries({ queryKey: ["admin-vouchers"] });
         },
         onError: (reason) => {
-            setRevoking(null);
             setNotice(errorMessage(reason));
             setNoticeSuccess(false);
+            toast.error(errorMessage(reason));
         },
     });
     const remove = useMutation({
@@ -365,9 +377,9 @@ function AdminVoucherList({ mode }: { mode: "review" | "management" }) {
             await queryClient.invalidateQueries({ queryKey: ["admin-vouchers"] });
         },
         onError: (reason) => {
-            setDeleting(null);
             setNotice(errorMessage(reason));
             setNoticeSuccess(false);
+            toast.error(errorMessage(reason));
         },
     });
 
@@ -413,10 +425,10 @@ function AdminVoucherList({ mode }: { mode: "review" | "management" }) {
         <AdminGuard>
             <div>
                 <AdminTitle
-                    title={management ? "Quản lý voucher" : "Voucher đánh giá"}
+                    title={management ? "Voucher dịch vụ" : "Voucher đánh giá"}
                     description={
                         management
-                            ? "Theo dõi, phát hành và quản lý các voucher sử dụng trong hệ thống."
+                            ? "Theo dõi và phát hành voucher áp dụng khi đặt lịch dịch vụ."
                             : "Theo dõi các voucher được tự động phát hành sau khi khách hàng hoàn thành đánh giá."
                     }
                     action={
@@ -427,7 +439,7 @@ function AdminVoucherList({ mode }: { mode: "review" | "management" }) {
                                 className="w-full shrink-0 sm:w-auto"
                             >
                                 <Plus className="size-4" />
-                                Thêm voucher
+                                Thêm voucher dịch vụ
                             </Button>
                         ) : undefined
                     }
@@ -480,13 +492,15 @@ function AdminVoucherList({ mode }: { mode: "review" | "management" }) {
                 ) : vouchers.length === 0 ? (
                     management ? (
                         <div className="mt-6 rounded-xl border bg-card p-8 text-center shadow-sm">
-                            <p className="font-semibold text-primary">Chưa có voucher nào.</p>
+                            <p className="font-semibold text-primary">
+                                Chưa có voucher dịch vụ nào.
+                            </p>
                             <p className="mt-2 text-sm text-muted-foreground">
-                                Bạn có thể tạo voucher mới để sử dụng trong hệ thống.
+                                Bạn có thể tạo voucher mới để áp dụng khi đặt lịch dịch vụ.
                             </p>
                             <Button type="button" onClick={openCreateDialog} className="mt-5">
                                 <Plus className="size-4" />
-                                Thêm voucher
+                                Thêm voucher dịch vụ
                             </Button>
                         </div>
                     ) : (
@@ -707,10 +721,10 @@ function CreateAdminVoucherDialog({
                             <TicketCheck className="size-5" />
                         </div>
                         <DialogTitle className="font-serif text-2xl text-primary sm:text-3xl">
-                            Thêm voucher
+                            Thêm voucher dịch vụ
                         </DialogTitle>
                         <DialogDescription className="leading-6">
-                            Tạo voucher giảm giá dùng chung trong hệ thống.
+                            Tạo voucher giảm giá áp dụng khi đặt lịch dịch vụ.
                         </DialogDescription>
                     </DialogHeader>
                 </div>

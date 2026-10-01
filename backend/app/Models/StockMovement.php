@@ -27,7 +27,7 @@ class StockMovement extends Model
 
     protected function casts(): array
     {
-        return ['quantity' => 'decimal:3', 'before_on_hand_quantity' => 'decimal:3', 'after_on_hand_quantity' => 'decimal:3', 'occurred_at' => 'datetime'];
+        return ['quantity' => 'decimal:3', 'before_on_hand_quantity' => 'decimal:3', 'after_on_hand_quantity' => 'decimal:3', 'unit_cost' => 'decimal:6', 'cost_amount' => 'decimal:2', 'occurred_at' => 'datetime'];
     }
 
     public function save(array $options = []): bool

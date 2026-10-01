@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import type { DealerTier } from "@/features/dealers/types";
 import type { PaginatedResponse, ResourceResponse } from "@/types";
 import type {
     Master,
@@ -11,10 +12,45 @@ import type {
 } from "@/types/product";
 
 export type MasterKind = "categories" | "brands" | "units";
+export type ProductPricingData = {
+    sellable_retail: boolean;
+    sellable_dealer: boolean;
+    retail_price: string | null;
+    variant_retail_prices: Array<{ sku: string; unit_price: string | null }>;
+    dealer_rules: Array<{
+        tier_id: number | null;
+        sku: string;
+        min_quantity: string;
+        unit_price: string;
+    }>;
+};
+export type CatalogPriceRow = {
+    variant_id: number;
+    product_id: number;
+    product_code: string;
+    product_name: string;
+    product_image_url: string | null;
+    sku: string;
+    variant_name: string;
+    unit_symbol: string | null;
+    status: "active" | "inactive";
+    product_status: "draft" | "active" | "inactive";
+    sellable: boolean;
+    track_inventory?: boolean;
+    available_quantity?: string | null;
+    tier_id: number | null;
+    tier_name: string | null;
+    unit_price: string | null;
+    minimum_quantity: number | null;
+    retail_reference_price: string | null;
+};
 export type ProductFilters = {
+    promotions_only?: boolean;
+    gift_filter?: "all" | "gift_capable" | "gift_only" | "normal";
     search?: string | undefined;
     category?: number | undefined;
     brand?: number | undefined;
+    status?: string | undefined;
     page?: number | undefined;
     sort?: "newest" | "name" | undefined;
 };
@@ -26,6 +62,35 @@ export const productKeys = {
     prices: (page: number) => ["retail-price-lists", page] as const,
 };
 export const productApi = {
+    catalogPrices: (
+        context: "retail" | "dealer",
+        filters: {
+            search?: string | undefined;
+            status?: string | undefined;
+            tier_id?: number | undefined;
+            price_status?: "priced" | "unpriced" | undefined;
+            warehouse_id?: number | undefined;
+            per_page?: number | undefined;
+            page?: number | undefined;
+        },
+    ) => apiRequest<RawPage<CatalogPriceRow>>(`/api/admin/${context}-prices`, { query: filters }),
+    updateCatalogRetailPrice: (variantId: number, unitPrice: string) =>
+        apiRequest(`/api/admin/retail-prices/${variantId}`, {
+            method: "PATCH",
+            body: { unit_price: unitPrice },
+        }),
+    updateCatalogDealerPrice: (
+        variantId: number,
+        tierId: number,
+        unitPrice: string,
+        minimumQuantity: number,
+    ) =>
+        apiRequest(`/api/admin/dealer-prices/${variantId}/${tierId}`, {
+            method: "PUT",
+            body: { unit_price: unitPrice, minimum_quantity: minimumQuantity },
+        }),
+    deleteCatalogDealerPrice: (variantId: number, tierId: number) =>
+        apiRequest(`/api/admin/dealer-prices/${variantId}/${tierId}`, { method: "DELETE" }),
     filters: () => apiRequest<{ categories: Master[]; brands: Master[] }>("/api/product-filters"),
     catalog: (filters: ProductFilters) =>
         apiRequest<PaginatedResponse<Product>>("/api/products", { query: filters }),
@@ -34,6 +99,13 @@ export const productApi = {
         apiRequest<RawPage<Product>>("/api/admin/products", { query: filters }),
     adminProduct: (id: number) =>
         apiRequest<ResourceResponse<Product>>(`/api/admin/products/${id}`),
+    productPricing: (id: number) =>
+        apiRequest<ResourceResponse<ProductPricingData>>(`/api/admin/products/${id}/pricing`),
+    updateProductPricing: (id: number, body: ProductPricingData) =>
+        apiRequest<ResourceResponse<ProductPricingData>>(`/api/admin/products/${id}/pricing`, {
+            method: "PATCH",
+            body,
+        }),
     createProduct: (body: Record<string, unknown>) =>
         apiRequest<ResourceResponse<Product>>("/api/admin/products", { method: "POST", body }),
     wizardDrafts: () => apiRequest<RawPage<Product>>("/api/admin/product-wizard/drafts"),
@@ -60,13 +132,37 @@ export const productApi = {
         }),
     dealerTiers: () =>
         apiRequest<{
-            data: Array<{ id: number; code: string; name: string; status: "active" | "inactive" }>;
+            data: DealerTier[];
         }>("/api/admin/dealer-tiers"),
-    createDealerTier: (body: { code: string; name: string }) =>
-        apiRequest<ResourceResponse<{ id: number; code: string; name: string; status: string }>>(
-            "/api/admin/dealer-tiers",
-            { method: "POST", body },
-        ),
+    dealerAutoTierPolicy: () =>
+        apiRequest<
+            ResourceResponse<{
+                enabled: boolean;
+                version: number;
+                revenue_window_months: number;
+                next_evaluation_at: string;
+            }>
+        >("/api/admin/dealer-tiers/auto-policy"),
+    setDealerAutoTierPolicy: (enabled: boolean) =>
+        apiRequest<
+            ResourceResponse<{
+                enabled: boolean;
+                version: number;
+                revenue_window_months: number;
+                next_evaluation_at: string;
+            }>
+        >("/api/admin/dealer-tiers/auto-policy", {
+            method: "PUT",
+            body: { enabled },
+        }),
+    updateDealerTier: (
+        id: number,
+        body: Partial<Pick<DealerTier, "description" | "revenue_threshold">>,
+    ) =>
+        apiRequest<ResourceResponse<DealerTier>>(`/api/admin/dealer-tiers/${id}`, {
+            method: "PATCH",
+            body,
+        }),
     updateProduct: (id: number, body: Record<string, unknown>) =>
         apiRequest<ResourceResponse<Product>>(`/api/admin/products/${id}`, {
             method: "PATCH",

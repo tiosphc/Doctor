@@ -40,7 +40,12 @@ export type StockMovement = {
     id: number;
     warehouse_id: number;
     product_variant_id: number;
-    movement_type: "OPENING_BALANCE" | "GOODS_RECEIPT" | "ADJUSTMENT_IN" | "ADJUSTMENT_OUT";
+    movement_type:
+        | "OPENING_BALANCE"
+        | "GOODS_RECEIPT"
+        | "ADJUSTMENT_IN"
+        | "ADJUSTMENT_OUT"
+        | "PURCHASE_RETURN";
     quantity: string;
     before_on_hand_quantity: string;
     after_on_hand_quantity: string;

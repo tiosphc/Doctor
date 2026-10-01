@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
 import { AdminGuard, AdminTitle } from "@/pages/admin/AdminPages";
 import { Button } from "@/components/common/Button";
@@ -71,9 +72,9 @@ export function AdminStaffPage() {
             await client.invalidateQueries({ queryKey: ["admin-staff"] });
         },
         onError: (reason) => {
-            setDeleting(null);
             setNotice(errorMessage(reason));
             setNoticeSuccess(false);
+            toast.error(errorMessage(reason));
         },
     });
     async function submit(event: FormEvent<HTMLFormElement>) {

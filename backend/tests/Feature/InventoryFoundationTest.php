@@ -19,6 +19,21 @@ class InventoryFoundationTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    public function test_balance_search_matches_variant_name_and_product_code_with_warehouse_and_low_stock(): void
+    {
+        $this->admin();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->trackedVariant();
+        $variant->update(['variant_name' => 'Travel edition']);
+        $variant->product->update(['product_code' => 'TRAVEL-CODE', 'default_low_stock_threshold' => '3']);
+        $this->postJson('/api/admin/inventory/receipts', $this->operation($warehouse, $variant, '2'))->assertOk();
+
+        $this->getJson("/api/admin/inventory?warehouse_id={$warehouse->id}&low_stock=1&search=Travel%20edition")
+            ->assertOk()->assertJsonPath('total', 1);
+        $this->getJson('/api/admin/inventory?search=TRAVEL-CODE')
+            ->assertOk()->assertJsonPath('total', 1);
+    }
+
     private function admin(): User
     {
         $admin = User::factory()->admin()->create();
@@ -67,6 +82,19 @@ class InventoryFoundationTest extends TestCase
         $this->getJson('/api/admin/warehouses?search=MAIN&status=active')->assertOk()->assertJsonPath('total', 1);
     }
 
+    public function test_warehouse_dealer_adjustment_is_not_editable(): void
+    {
+        $this->admin();
+        $warehouse = $this->postJson('/api/admin/warehouses', [
+            'code' => 'WH-HANOI', 'name' => 'Kho Hà Nội',
+        ])->assertCreated()->assertJsonMissingPath('data.dealer_price_adjustment_percent')->json('data');
+        $this->patchJson("/api/admin/warehouses/{$warehouse['id']}", [
+            'dealer_price_adjustment_percent' => '5.00',
+        ])->assertUnprocessable()->assertJsonValidationErrors('dealer_price_adjustment_percent');
+        $this->assertDatabaseHas('warehouses', ['id' => $warehouse['id'],
+            'dealer_price_adjustment_percent' => '0.00']);
+    }
+
     public function test_opening_receipt_and_adjustments_create_signed_immutable_movements(): void
     {
         $this->admin();
@@ -107,6 +135,28 @@ class InventoryFoundationTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['module' => 'INVENTORY', 'action' => 'ADJUSTMENT_OUT']);
     }
 
+    public function test_zero_opening_records_history_and_locks_only_its_warehouse_and_sku(): void
+    {
+        $this->admin();
+        $firstWarehouse = Warehouse::factory()->create();
+        $secondWarehouse = Warehouse::factory()->create();
+        $variant = $this->trackedVariant();
+        $zeroOpening = $this->operation($firstWarehouse, $variant, '0');
+
+        $first = $this->postJson('/api/admin/inventory/opening-stock', $zeroOpening)->assertOk()
+            ->assertJsonPath('data.before_on_hand_quantity', '0.000')
+            ->assertJsonPath('data.after_on_hand_quantity', '0.000');
+        $this->postJson('/api/admin/inventory/opening-stock', $zeroOpening)->assertOk()
+            ->assertJsonPath('data.id', $first->json('data.id'));
+        $this->postJson('/api/admin/inventory/opening-stock', $this->operation($firstWarehouse, $variant, '5'))
+            ->assertConflict()->assertJsonPath('code', 'OPENING_STOCK_ALREADY_RECORDED');
+        $this->postJson('/api/admin/inventory/opening-stock', $this->operation($secondWarehouse, $variant, '5'))
+            ->assertOk()->assertJsonPath('data.after_on_hand_quantity', '5.000');
+        $this->getJson('/api/admin/stock-movements?warehouse_id='.$firstWarehouse->id.'&product_variant_id='.$variant->id)
+            ->assertOk()->assertJsonPath('total', 1);
+        $this->assertDatabaseCount('stock_movements', 2);
+    }
+
     public function test_idempotency_reuses_identical_receipt_and_rejects_changed_payload(): void
     {
         $this->admin();
@@ -121,6 +171,26 @@ class InventoryFoundationTest extends TestCase
             ->assertConflict()->assertJsonPath('code', 'OPERATION_KEY_CONFLICT');
         $this->assertDatabaseCount('stock_movements', 1);
         $this->assertDatabaseHas('inventory_balances', ['on_hand_quantity' => '2.000']);
+    }
+
+    public function test_stock_receipt_and_adjustment_reject_fractional_quantities(): void
+    {
+        $this->admin();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->trackedVariant();
+
+        $this->postJson('/api/admin/inventory/receipts', $this->operation($warehouse, $variant, '1.001'))
+            ->assertUnprocessable()->assertJsonValidationErrors('quantity')
+            ->assertJsonPath('errors.quantity.0', 'Số lượng phải là số nguyên.');
+        $this->postJson('/api/admin/inventory/adjustments', [
+            ...$this->operation($warehouse, $variant, '-0.5'), 'reason_code' => 'COUNT_CORRECTION',
+        ])->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->postJson('/api/admin/inventory/adjustments', [
+            ...$this->operation($warehouse, $variant, '0'), 'reason_code' => 'COUNT_CORRECTION',
+        ])->assertUnprocessable()->assertJsonPath('errors.quantity.0', 'Số lượng điều chỉnh phải khác 0. Vui lòng nhập lại.');
+
+        $this->assertDatabaseCount('stock_movements', 0);
+        $this->assertDatabaseCount('inventory_balances', 0);
     }
 
     public function test_adjustment_out_cannot_make_on_hand_negative_or_below_reserved(): void
@@ -261,14 +331,14 @@ class InventoryFoundationTest extends TestCase
     {
         $this->admin();
         $warehouse = Warehouse::factory()->create();
-        $unit = Unit::factory()->create(['decimal_precision' => 3]);
+        $unit = Unit::factory()->create(['decimal_precision' => 0]);
         $variant = $this->trackedVariant($unit);
-        $variant->product->update(['default_low_stock_threshold' => '2.500']);
+        $variant->product->update(['default_low_stock_threshold' => '3']);
         $this->postJson('/api/admin/inventory/receipts', [
-            ...$this->operation($warehouse, $variant, '2.125'),
+            ...$this->operation($warehouse, $variant, '2'),
             'reference_type' => 'MANUAL', 'reference_id' => 'COUNT-2026',
         ])
-            ->assertOk()->assertJsonPath('data.after_on_hand_quantity', '2.125');
+            ->assertOk()->assertJsonPath('data.after_on_hand_quantity', '2.000');
 
         $this->getJson("/api/admin/inventory?warehouse_id={$warehouse->id}&low_stock=1")
             ->assertOk()->assertJsonPath('total', 1)->assertJsonPath('data.0.low_stock', true);

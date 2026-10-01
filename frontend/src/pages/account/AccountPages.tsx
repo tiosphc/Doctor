@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Navigate, useNavigate } from "@tanstack/react-router";
 import {
     ArrowDown,
@@ -69,19 +70,14 @@ export function DashboardPage() {
         <CustomerGuard>
             <div className="grid gap-9">
                 <section className="border-b border-border pb-6">
-                    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-                        <div>
-                            <p className="label-luxury">Tổng quan</p>
-                            <h1 className="mt-2 text-3xl font-semibold text-primary md:text-[2.4rem]">
-                                Xin chào, {user?.name}
-                            </h1>
-                            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                                Theo dõi lịch hẹn và thông tin chăm sóc của bạn tại Junie.
-                            </p>
-                        </div>
-                        <ButtonLink to="/booking" className="shrink-0 self-start sm:self-end">
-                            Đặt lịch mới
-                        </ButtonLink>
+                    <div>
+                        <p className="label-luxury">Tổng quan</p>
+                        <h1 className="mt-2 text-3xl font-semibold text-primary md:text-[2.4rem]">
+                            Xin chào, {user?.name}
+                        </h1>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                            Theo dõi lịch hẹn và thông tin chăm sóc của bạn tại Junie.
+                        </p>
                     </div>
                 </section>
                 {loyalty.isPending ? (
@@ -125,7 +121,7 @@ export function DashboardPage() {
                                     Bạn chưa có lịch hẹn sắp tới.
                                 </p>
                                 <ButtonLink to="/booking" variant="outline" className="mt-5">
-                                    Đặt lịch đầu tiên
+                                    Đặt lịch mới
                                 </ButtonLink>
                             </div>
                         )}
@@ -469,9 +465,11 @@ export function NotificationsPage() {
         appointmentId: number | null,
         actionUrl: string | null,
     ) {
+        if (markRead.isPending) return;
         setActionError(null);
         try {
             await markRead.mutateAsync(id);
+            if (user?.role === "admin") toast.success("Đã đánh dấu thông báo đã đọc.");
         } catch (error) {
             setActionError(notificationActionErrorMessage(error));
             return;
@@ -510,9 +508,11 @@ export function NotificationsPage() {
     }
 
     async function markAll() {
+        if (markAllRead.isPending) return;
         setActionError(null);
         try {
             await markAllRead.mutateAsync();
+            if (user?.role === "admin") toast.success("Đã đánh dấu tất cả thông báo đã đọc.");
         } catch (error) {
             setActionError(notificationActionErrorMessage(error));
         }

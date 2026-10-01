@@ -26,7 +26,7 @@ class FulfillSalesOrderRequest extends FormRequest
             'operation_key' => ['required', 'uuid'],
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.item_id' => ['required', 'integer', 'distinct'],
-            'items.*.quantity' => ['required', 'string', 'regex:/^[1-9][0-9]{0,14}(?:\.[0-9]{1,3})?$/'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
             'order_status' => ['prohibited'],
             'payment_status' => ['prohibited'],
             'fulfillment_status' => ['prohibited'],

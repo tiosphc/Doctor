@@ -154,6 +154,15 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     return (await response.json()) as T;
 }
 
+export async function apiDownload(path: string): Promise<Blob> {
+    const response = await fetch(buildUrl(path), {
+        credentials: "include",
+        headers: { Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+    });
+    if (!response.ok) throw await parseError(response);
+    return response.blob();
+}
+
 export async function csrfCookie(): Promise<void> {
     await apiRequest<void>("/sanctum/csrf-cookie");
 }

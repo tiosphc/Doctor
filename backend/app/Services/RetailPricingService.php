@@ -26,10 +26,12 @@ class RetailPricingService
     /** @return array{unit_price: string, currency: string, pricing_context: string, price_list_id: int, price_list_item_id: int} */
     public function resolve(ProductVariant $variant, string $currency = 'VND', ?CarbonInterface $at = null, string $quantity = '1'): array
     {
-        if (preg_match('/^(?:[1-9][0-9]{0,14})(?:\.[0-9]{1,3})?$/', $quantity) !== 1) {
-            throw ValidationException::withMessages(['quantity' => 'Quantity must be positive.']);
+        $wholeQuantity = preg_replace('/\.0{1,3}$/', '', $quantity);
+        if (preg_match('/^[1-9][0-9]{0,14}$/', $wholeQuantity) !== 1) {
+            throw ValidationException::withMessages(['quantity' => 'Quantity must be a positive whole number.']);
         }
-        if ($variant->status !== 'active' || $variant->product->status !== 'active' || ! $variant->sellable_retail) {
+        if ($variant->status !== 'active' || $variant->product->status !== 'active'
+            || $variant->product->gift_only || ! $variant->sellable_retail) {
             $this->fail('PRICE_NOT_FOUND');
         }
         $date = ($at ?? now())->toDateTimeString();
@@ -37,7 +39,7 @@ class RetailPricingService
             ->with('priceList')
             ->where('product_variant_id', $variant->id)
             ->where('status', 'active')
-            ->where('minimum_quantity', '<=', $quantity)
+            ->where('minimum_quantity', 1)
             ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', $date))
             ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', $date))
             ->whereHas('priceList', fn ($query) => $query
@@ -53,7 +55,7 @@ class RetailPricingService
                 && $item->priceList->scope_type === 'all'
                 && $item->priceList->currency === $currency
                 && $item->priceList->status === 'active'
-                && bccomp($item->minimum_quantity, $quantity, 3) <= 0
+                && bccomp($item->minimum_quantity, '1', 3) === 0
                 && ($item->effective_from === null || $item->effective_from->lte($date))
                 && ($item->effective_to === null || $item->effective_to->gte($date))
                 && ($item->priceList->effective_from === null || $item->priceList->effective_from->lte($date))

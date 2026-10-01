@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Doctor;
+use App\Services\PayOsClient;
+use App\Services\WalletTopUpGateway;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(WalletTopUpGateway::class, PayOsClient::class);
     }
 
     /**

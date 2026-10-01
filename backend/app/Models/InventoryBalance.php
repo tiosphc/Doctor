@@ -30,7 +30,7 @@ class InventoryBalance extends Model
 
     protected function casts(): array
     {
-        return ['on_hand_quantity' => 'decimal:3', 'reserved_quantity' => 'decimal:3'];
+        return ['on_hand_quantity' => 'decimal:3', 'reserved_quantity' => 'decimal:3', 'average_unit_cost' => 'decimal:6'];
     }
 
     public function save(array $options = []): bool

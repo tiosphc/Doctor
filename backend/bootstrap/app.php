@@ -5,10 +5,13 @@ use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsCustomer;
 use App\Http\Middleware\EnsureUserIsDoctor;
 use App\Http\Middleware\EnsureUserIsReceptionist;
+use App\Http\Middleware\LocalizeCommerceErrors;
+use App\Support\CommerceErrorResponder;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->append(LocalizeCommerceErrors::class);
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
@@ -31,5 +35,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+        );
+        $exceptions->respond(
+            fn (Response $response, Throwable $exception, Request $request): Response => app(CommerceErrorResponder::class)
+                ->respond($response, $exception, $request),
         );
     })->create();

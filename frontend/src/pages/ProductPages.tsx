@@ -1,11 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Gift, Package } from "lucide-react";
 import { Container } from "@/components/common/Container";
+import { Button, ButtonLink } from "@/components/common/Button";
+import { SuccessDialog } from "@/components/common/Feedback";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatProductQuantity, isPositiveProductQuantity } from "@/lib/productQuantity";
+import { primaryRetailPromotion } from "@/lib/retailPromotion";
 import { errorMessage } from "@/services/api";
 import { productApi, productKeys } from "@/services/productApi";
-import type { Product } from "@/types/product";
+import { retailCommerceApi, retailErrorMessage, retailKeys } from "@/services/retailCommerceApi";
+import { RetailProductCard } from "@/components/retail/RetailProductCard";
 
 const money = (value: string) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value));
@@ -105,7 +112,7 @@ export function ProductsPage() {
                 <>
                     <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         {query.data.data.map((product) => (
-                            <ProductCard key={product.id} product={product} />
+                            <RetailProductCard key={product.id} product={product} />
                         ))}
                     </div>
                     <Pagination
@@ -119,45 +126,25 @@ export function ProductsPage() {
     );
 }
 
-function ProductCard({ product }: { product: Product }) {
-    const image =
-        product.images.find((item) => item.product_variant_id === null) || product.images[0];
-    return (
-        <Link
-            to="/products/$slug"
-            params={{ slug: product.slug }}
-            className="group overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-lg"
-        >
-            <div className="aspect-square bg-muted">
-                {image?.url && (
-                    <img
-                        src={image.url}
-                        alt={image.alt_text || product.name}
-                        className="size-full object-cover transition-transform group-hover:scale-105"
-                    />
-                )}
-            </div>
-            <div className="p-5">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                    {product.brand?.name || product.category?.name}
-                </p>
-                <h2 className="mt-2 text-xl text-primary">{product.name}</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                    {product.variants.length} lựa chọn · {product.variants[0]?.variant_name}
-                </p>
-                <p className="mt-4 font-semibold text-primary">
-                    Giá Retail {money(product.retail_price?.unit_price || "0")}
-                </p>
-                <span className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-4">
-                    Xem chi tiết
-                </span>
-            </div>
-        </Link>
-    );
-}
-
 export function ProductDetailPage({ slug }: { slug: string }) {
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [quantity, setQuantity] = useState("1");
+    const [added, setAdded] = useState(false);
+    const [cartError, setCartError] = useState("");
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const addToCart = useMutation({
+        mutationFn: ({ variantId, amount }: { variantId: number; amount: string }) =>
+            retailCommerceApi.add(variantId, amount),
+        onSuccess: (result) => {
+            queryClient.setQueryData(retailKeys.cart(user?.id), result);
+            queryClient.invalidateQueries({ queryKey: retailKeys.review(user?.id) });
+            setCartError("");
+            setAdded(true);
+        },
+        onError: (reason) => setCartError(retailErrorMessage(reason)),
+    });
     const query = useQuery({
         queryKey: productKeys.detail(slug),
         queryFn: () => productApi.detail(slug),
@@ -176,6 +163,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
             </Container>
         );
     const product = query.data.data;
+    const primaryPromotion = primaryRetailPromotion(product);
     const selected =
         product.variants.find((variant) => variant.id === selectedId) || product.variants[0];
     const image =
@@ -214,6 +202,81 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                 <div>
                     <p className="label-luxury">{product.brand?.name || product.category?.name}</p>
                     <h1 className="mt-3 text-4xl text-primary">{product.name}</h1>
+                    {primaryPromotion?.kind === "discount" && (
+                        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-primary">
+                            <strong>Ưu đãi {primaryPromotion.badge}</strong>
+                            <p className="mt-1">
+                                {primaryPromotion.direct
+                                    ? "Ưu đãi được kiểm tra lại trong giỏ hàng."
+                                    : primaryPromotion.condition}
+                            </p>
+                        </div>
+                    )}
+                    {!!product.gift_promotions?.length && (
+                        <div className="mt-5 space-y-3">
+                            {product.gift_promotions.map((promotion) => (
+                                <div
+                                    key={promotion.code}
+                                    className="overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-b from-amber-50/80 to-white shadow-sm"
+                                >
+                                    <div className="flex items-center gap-2 bg-[#1b3a5c] px-4 py-2.5">
+                                        <Gift aria-hidden="true" className="size-4 text-white" />
+                                        <span className="text-sm font-bold tracking-wide text-white">
+                                            Mua {product.name}, tặng {promotion.gift_product_name}
+                                        </span>
+                                    </div>
+                                    <div className="p-4">
+                                        <p className="text-sm text-muted-foreground">
+                                            Mua{" "}
+                                            {formatProductQuantity(promotion.minimum_buy_quantity)}{" "}
+                                            × {product.name}
+                                            {promotion.buy_variant_name
+                                                ? ` / ${promotion.buy_variant_name}`
+                                                : ""}
+                                        </p>
+                                        <div className="mt-3 flex items-center gap-4">
+                                            {promotion.gift_image_url ? (
+                                                <img
+                                                    src={promotion.gift_image_url}
+                                                    alt={promotion.gift_product_name}
+                                                    className="size-14 shrink-0 rounded-xl object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-500">
+                                                    <Package
+                                                        aria-hidden="true"
+                                                        className="size-6"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold uppercase tracking-wide text-amber-600">
+                                                    Tặng kèm
+                                                </p>
+                                                <p className="mt-0.5 font-medium text-primary">
+                                                    {promotion.gift_product_name}
+                                                </p>
+                                                <p className="mt-0.5 text-sm text-muted-foreground">
+                                                    Gift ×
+                                                    {formatProductQuantity(promotion.gift_quantity)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {promotion.repeat_per_multiple && (
+                                            <p className="mt-3 text-xs text-muted-foreground">
+                                                Tặng theo mỗi bội số mua đủ.
+                                            </p>
+                                        )}
+                                        {!promotion.gift_available && (
+                                            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
+                                                Quà tặng tạm hết.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <p className="mt-3 text-sm text-muted-foreground">
                         Mã sản phẩm: {product.product_code}
                     </p>
@@ -250,7 +313,11 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                     <select
                         id="product-variant"
                         value={selected?.id}
-                        onChange={(event) => setSelectedId(Number(event.target.value))}
+                        onChange={(event) => {
+                            setSelectedId(Number(event.target.value));
+                            setQuantity("1");
+                            setCartError("");
+                        }}
                         className="mt-2 w-full rounded-md border bg-background px-3 py-3"
                     >
                         {product.variants.map((variant) => (
@@ -261,10 +328,13 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                     </select>
                     <p className="mt-6 text-3xl font-semibold text-primary">
                         {selected?.retail_price && money(selected.retail_price.unit_price)}
+                        {selected?.unit_symbol && (
+                            <span className="ml-1 text-lg font-medium">
+                                / {selected.unit_symbol}
+                            </span>
+                        )}
                     </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Giá bán lẻ hiện hành · {selected?.unit_symbol || selected?.unit?.symbol}
-                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">Giá bán lẻ hiện hành</p>
                     {selected?.specifications &&
                         Object.keys(selected.specifications).length > 0 && (
                             <dl className="mt-6 divide-y rounded-lg border px-4">
@@ -279,12 +349,80 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                                 ))}
                             </dl>
                         )}
-                    <p className="mt-8 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-                        Đặt hàng trực tuyến sẽ được mở trong giai đoạn tiếp theo. Vui lòng liên hệ
-                        Junie để được tư vấn.
-                    </p>
+                    <div className="mt-8 grid gap-3 rounded-xl border bg-card p-4 sm:p-5">
+                        <label htmlFor="retail-quantity" className="text-sm font-medium">
+                            Số lượng
+                        </label>
+                        <input
+                            id="retail-quantity"
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={quantity}
+                            onChange={(event) => setQuantity(event.target.value)}
+                            className="w-32 rounded-md border bg-background px-3 py-2"
+                        />
+                        {selected?.track_inventory === false && (
+                            <p className="text-sm text-amber-800">
+                                Quy cách này chưa hỗ trợ đặt hàng trực tuyến.
+                            </p>
+                        )}
+                        <div className="flex flex-wrap gap-3">
+                            <Button
+                                disabled={
+                                    addToCart.isPending ||
+                                    selected?.track_inventory === false ||
+                                    !isPositiveProductQuantity(quantity)
+                                }
+                                onClick={() => {
+                                    if (!user) {
+                                        navigate({
+                                            to: "/login",
+                                            search: { returnTo: `/products/${slug}` },
+                                        });
+                                        return;
+                                    }
+                                    if (selected)
+                                        addToCart.mutate({
+                                            variantId: selected.id,
+                                            amount: quantity,
+                                        });
+                                }}
+                            >
+                                {addToCart.isPending ? "Đang thêm..." : "Thêm vào giỏ hàng"}
+                            </Button>
+                            <ButtonLink to="/cart" variant="outline">
+                                Xem giỏ hàng
+                            </ButtonLink>
+                        </div>
+                        {!isPositiveProductQuantity(quantity) && (
+                            <p role="alert" className="text-sm text-red-700">
+                                Số lượng phải là số nguyên dương.
+                            </p>
+                        )}
+                        {cartError && (
+                            <p role="alert" className="text-sm text-red-700">
+                                {cartError}
+                            </p>
+                        )}
+                        {added && (
+                            <p role="status" className="text-sm text-emerald-700">
+                                Đã thêm sản phẩm vào giỏ hàng. Bạn có thể tiếp tục mua sắm hoặc xem
+                                giỏ hàng.
+                            </p>
+                        )}
+                    </div>
                 </div>
             </div>
+            <SuccessDialog
+                message={
+                    added
+                        ? "Đã thêm sản phẩm vào giỏ hàng. Bạn có thể xem giỏ hàng hoặc tiếp tục mua sắm."
+                        : ""
+                }
+                title="Thêm vào giỏ hàng thành công"
+                onClose={() => setAdded(false)}
+            />
         </Container>
     );
 }

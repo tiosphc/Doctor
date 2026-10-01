@@ -14,6 +14,7 @@ class RetailPriceItemController extends Controller
 {
     public function store(SaveRetailPriceItemRequest $request, PriceList $priceList, RetailPricingService $pricing): JsonResponse
     {
+        abort_unless($priceList->pricing_context === 'retail', 404);
         $item = DB::transaction(function () use ($request, $priceList, $pricing): PriceListItem {
             PriceList::query()->orderBy('id')->lockForUpdate()->get();
             $item = $priceList->items()->create($request->validated());
@@ -27,6 +28,7 @@ class RetailPriceItemController extends Controller
 
     public function update(SaveRetailPriceItemRequest $request, PriceList $priceList, PriceListItem $item, RetailPricingService $pricing): JsonResponse
     {
+        abort_unless($priceList->pricing_context === 'retail', 404);
         abort_unless($item->price_list_id === $priceList->id, 404);
         DB::transaction(function () use ($request, $item, $pricing): void {
             PriceList::query()->orderBy('id')->lockForUpdate()->get();

@@ -32,7 +32,12 @@ export function LoginPage() {
                       : user.role === "doctor"
                         ? "/doctor"
                         : "/account";
-            await navigate({ to: destination });
+            const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+            const safeReturn =
+                returnTo && /^\/(cart|checkout|my-orders|products)(\/|$)/.test(returnTo)
+                    ? returnTo
+                    : destination;
+            await navigate({ to: safeReturn });
         } catch (reason) {
             setError(errorMessage(reason));
             setErrors(firstFieldErrors(reason));

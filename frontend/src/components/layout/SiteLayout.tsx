@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
     Menu,
@@ -13,24 +14,61 @@ import {
     ChevronDown,
     CalendarDays,
     Grid2X2,
-    CreditCard,
     CircleUserRound,
     Bell,
     Gift,
     CalendarSearch,
+    ShoppingCart,
+    Package,
+    LayoutDashboard,
+    ChartNoAxesCombined,
+    Users,
+    Warehouse,
+    ShoppingBag,
+    List,
+    Store,
+    Megaphone,
+    UserCog,
+    History,
+    ClipboardList,
+    Stethoscope,
+    Star,
+    UserRound,
+    Building2,
+    WalletCards,
+    FileClock,
+    Tags,
+    Layers3,
+    BadgePercent,
+    Newspaper,
+    FolderTree,
+    Boxes,
+    ExternalLink,
+    PanelLeft,
+    type LucideIcon,
 } from "lucide-react";
 import { ButtonLink } from "@/components/common/Button";
 import { Container } from "@/components/common/Container";
 import { useAuth } from "@/contexts/AuthContext";
 import { MobileServiceMenu, ServiceMegaMenu } from "@/components/services/ServiceNavigation";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { useNotificationUnreadCount } from "@/hooks/useNotifications";
 import { StaffShell } from "@/components/layout/StaffLayout";
+import { DealerLayout } from "@/components/layout/DealerLayout";
+import { retailCommerceApi, retailKeys } from "@/services/retailCommerceApi";
+import { DealerNavLink } from "@/features/dealers/DealerNavLink";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 const nav = [
     ["Trang chủ", "/"],
     ["Dịch vụ", "/services"],
     ["Sản phẩm", "/products"],
+    ["Ưu đãi", "/promotions"],
     ["Bác sĩ", "/doctors"],
     ["Kiến thức", "/blogs"],
 ] as const;
@@ -53,7 +91,8 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
     const { user, isLoading, logout } = useAuth();
     const navigate = useNavigate();
     const account = path.startsWith("/account");
-    const admin = path.startsWith("/admin");
+    const admin = path === "/admin" || path.startsWith("/admin/");
+    const dealer = path === "/dealer" || path.startsWith("/dealer/");
     const staff =
         path === "/receptionist" ||
         path.startsWith("/receptionist/") ||
@@ -62,7 +101,14 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
     const isServiceDetail = /^\/services\/[^/]+\/[^/]+\/?$/.test(path);
     const hasHeroHeader = path === "/" || (path.startsWith("/services") && !isServiceDetail);
     const transparentHeader = hasHeroHeader && !isScrolled;
-    const canLookupAppointments = !isLoading && (!user || user.role === "customer");
+    const canLookupAppointments = !isLoading && !user;
+    const cartQuery = useQuery({
+        queryKey: retailKeys.cart(user?.id),
+        queryFn: retailCommerceApi.cart,
+        enabled: Boolean(user) && !isLoading && !admin && !dealer,
+        staleTime: 30_000,
+    });
+    const cartCount = cartQuery.data?.data.item_count ?? 0;
 
     useEffect(() => {
         let previousScrollY = window.scrollY;
@@ -98,12 +144,19 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
         await navigate({ to: "/" });
     }
 
+    if (admin) {
+        return <AdminShell onLogout={signOut}>{children}</AdminShell>;
+    }
+    if (dealer && path !== "/dealer/apply") {
+        return <DealerLayout onLogout={signOut}>{children}</DealerLayout>;
+    }
+
     return (
         <div className="min-h-screen">
             <header
                 className={`fixed inset-x-0 top-0 z-50 transition-[transform,background-color,box-shadow] duration-300 motion-reduce:transition-none ${headerVisible ? "translate-y-0" : "-translate-y-full"} ${transparentHeader ? "bg-transparent text-white" : "bg-background/90 text-foreground shadow-sm backdrop-blur-xl"}`}
             >
-                <Container className="flex h-16 items-center justify-between gap-5 md:h-20">
+                <Container className="flex h-16 items-center justify-between gap-3 md:h-20 md:gap-4">
                     <Link
                         to="/"
                         className={`shrink-0 transition-colors ${transparentHeader ? "text-white" : "text-primary"}`}
@@ -119,7 +172,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                         </span>
                     </Link>
                     <nav
-                        className="hidden items-center justify-center gap-8 lg:flex"
+                        className="hidden items-center justify-center gap-5 lg:flex xl:gap-6"
                         aria-label="Điều hướng chính"
                     >
                         {nav.map(([name, to]) =>
@@ -148,7 +201,21 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                             Về chúng tôi
                         </a>
                     </nav>
-                    <div className="flex items-center justify-end gap-2 md:gap-4">
+                    <div className="flex items-center justify-end gap-1.5 md:gap-2.5">
+                        {!isLoading && user && (
+                            <Link
+                                to="/cart"
+                                aria-label={`Giỏ hàng, ${cartCount} dòng sản phẩm`}
+                                className={`focus-premium relative grid size-10 place-items-center rounded-full ${transparentHeader ? "text-white" : "text-primary"}`}
+                            >
+                                <ShoppingCart size={21} />
+                                {cartCount > 0 && (
+                                    <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-secondary px-1 text-[10px] font-bold text-secondary-foreground">
+                                        {cartCount > 99 ? "99+" : cartCount}
+                                    </span>
+                                )}
+                            </Link>
+                        )}
                         {!isLoading &&
                             (user ? (
                                 <Link
@@ -161,14 +228,14 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                                                 ? "/doctor"
                                                 : "/account"
                                     }
-                                    className={`focus-premium hidden items-center gap-3 border-l pl-5 md:flex ${transparentHeader ? "border-white/25 text-white" : "border-border text-primary"}`}
+                                    className={`focus-premium hidden min-w-0 items-center gap-2.5 border-l pl-3 md:flex lg:pl-4 ${transparentHeader ? "border-white/25 text-white" : "border-border text-primary"}`}
                                     aria-label={`Mở ${user.role === "admin" ? "khu vực quản trị" : "tài khoản"}`}
                                 >
                                     <span className="grid size-9 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                                         {initials(user.name)}
                                     </span>
                                     <span className="grid gap-0.5 text-left">
-                                        <span className="max-w-28 truncate text-xs font-semibold">
+                                        <span className="max-w-36 truncate text-xs font-semibold lg:max-w-44">
                                             {user.name}
                                         </span>
                                         <span
@@ -286,6 +353,27 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                                     Tra cứu lịch hẹn
                                 </Link>
                             )}
+                            {user && (
+                                <>
+                                    <Link
+                                        to="/cart"
+                                        onClick={() => setOpen(false)}
+                                        className="focus-premium flex items-center gap-2 border-b py-4 font-medium text-primary"
+                                    >
+                                        <ShoppingCart size={18} /> Giỏ hàng ({cartCount})
+                                    </Link>
+                                    <Link
+                                        to="/my-orders"
+                                        onClick={() => setOpen(false)}
+                                        className="focus-premium flex items-center gap-2 border-b py-4 font-medium text-primary"
+                                    >
+                                        <Package size={18} /> Đơn hàng của tôi
+                                    </Link>
+                                    {user.role === "customer" && (
+                                        <DealerNavLink onNavigate={() => setOpen(false)} />
+                                    )}
+                                </>
+                            )}
                             {user ? (
                                 <>
                                     <Link
@@ -329,9 +417,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                 </div>
             )}
             <main className={hasHeroHeader ? "" : "pt-16 md:pt-20"}>
-                {admin ? (
-                    <AdminShell onLogout={signOut}>{children}</AdminShell>
-                ) : staff ? (
+                {staff ? (
                     <StaffShell onLogout={signOut}>{children}</StaffShell>
                 ) : account ? (
                     <AccountShell onLogout={signOut}>{children}</AccountShell>
@@ -339,11 +425,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                     children
                 )}
             </main>
-            {account ? (
-                <AccountFooter />
-            ) : (
-                !admin && <Footer showAppointmentLookup={canLookupAppointments} />
-            )}
+            {account ? <AccountFooter /> : <Footer showAppointmentLookup={canLookupAppointments} />}
         </div>
     );
 }
@@ -373,16 +455,11 @@ function AccountFooter() {
 function AccountShell({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
     const [open, setOpen] = useState(false);
     const { user } = useAuth();
-    const notificationUnread = useNotificationUnreadCount(
-        user?.role === "customer" ? user.id : null,
-    );
-    const unreadCount = notificationUnread.data ?? 0;
     const links = [
         ["Tổng quan", "/account", Grid2X2],
-        ["Lịch hẹn của tôi", "/account/appointments", CalendarDays],
-        ["Thông báo", "/account/notifications", Bell],
-        ["Ưu đãi của tôi", "/account/vouchers", Gift],
-        ["Quyền lợi thành viên", "/account/loyalty", CreditCard],
+        ["Lịch hẹn", "/account/appointments", CalendarDays],
+        ["Đơn hàng", "/my-orders", Package],
+        ["Ưu đãi & thành viên", "/account/vouchers", Gift],
         ["Thông tin cá nhân", "/account/profile", CircleUserRound],
     ] as const;
     return (
@@ -417,13 +494,11 @@ function AccountShell({ children, onLogout }: { children: React.ReactNode; onLog
                             >
                                 <Icon size={17} />
                                 <span className="min-w-0 flex-1">{name}</span>
-                                {to === "/account/notifications" && unreadCount > 0 && (
-                                    <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-secondary-foreground">
-                                        {unreadCount > 99 ? "99+" : unreadCount}
-                                    </span>
-                                )}
                             </Link>
                         ))}
+                        <div className="mt-1 border-t pt-1">
+                            <DealerNavLink onNavigate={() => setOpen(false)} />
+                        </div>
                         <button
                             onClick={onLogout}
                             className="focus-premium mt-1 flex items-center gap-3 border-t px-3 py-4 text-left text-sm text-muted-foreground"
@@ -449,13 +524,11 @@ function AccountShell({ children, onLogout }: { children: React.ReactNode; onLog
                         >
                             <Icon size={17} />
                             <span className="min-w-0 flex-1">{name}</span>
-                            {to === "/account/notifications" && unreadCount > 0 && (
-                                <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-secondary-foreground">
-                                    {unreadCount > 99 ? "99+" : unreadCount}
-                                </span>
-                            )}
                         </Link>
                     ))}
+                    <div className="mt-3 border-t pt-3">
+                        <DealerNavLink />
+                    </div>
                     <button
                         onClick={onLogout}
                         className="focus-premium mt-5 flex items-center gap-2 border-t px-3 py-5 text-left text-sm text-muted-foreground transition-colors hover:text-primary"
@@ -484,6 +557,7 @@ function AccountShell({ children, onLogout }: { children: React.ReactNode; onLog
 
 type AdminRoute =
     | "/admin"
+    | "/admin/reports"
     | "/admin/appointments"
     | "/admin/customers"
     | "/admin/doctors"
@@ -492,230 +566,503 @@ type AdminRoute =
     | "/admin/products"
     | "/admin/product-master"
     | "/admin/retail-pricing"
+    | "/admin/dealer-pricing"
+    | "/admin/dealer-tiers"
+    | "/admin/dealer-applications"
+    | "/admin/dealers"
+    | "/admin/dealer-wallet-top-ups"
     | "/admin/warehouses"
     | "/admin/inventory"
+    | "/admin/suppliers"
+    | "/admin/purchase-orders"
     | "/admin/sales-orders"
+    | "/admin/sales-orders/dealer"
+    | "/admin/sales-orders/retail"
     | "/admin/service-categories"
     | "/admin/reviews"
     | "/admin/vouchers"
     | "/admin/voucher-management"
+    | "/admin/sales-promotions"
+    | "/admin/sales-vouchers"
     | "/admin/notifications"
     | "/admin/blogs"
     | "/admin/blog-categories"
     | "/admin/audit-logs";
 
+type AdminLink = { label: string; to: AdminRoute; icon: LucideIcon };
+type AdminNavEntry =
+    | ({ kind: "link" } & AdminLink)
+    | { kind: "group"; id: string; label: string; icon: LucideIcon; links: AdminLink[] };
+type AdminNavSection = { label: string; entries: AdminNavEntry[] };
+
+const adminSections: AdminNavSection[] = [
+    {
+        label: "QUẢN TRỊ",
+        entries: [
+            { kind: "link", label: "Tổng quan", to: "/admin", icon: LayoutDashboard },
+            { kind: "link", label: "Báo cáo ERP", to: "/admin/reports", icon: ChartNoAxesCombined },
+        ],
+    },
+    {
+        label: "KHÁCH HÀNG",
+        entries: [
+            {
+                kind: "group",
+                id: "customers",
+                label: "Khách hàng & đại lý",
+                icon: Users,
+                links: [
+                    { label: "Khách hàng", to: "/admin/customers", icon: UserRound },
+                    { label: "Đại lý", to: "/admin/dealers", icon: Building2 },
+                    {
+                        label: "Ví đại lý",
+                        to: "/admin/dealer-wallet-top-ups",
+                        icon: WalletCards,
+                    },
+                    {
+                        label: "Đơn đăng ký đại lý",
+                        to: "/admin/dealer-applications",
+                        icon: FileClock,
+                    },
+                    { label: "Tier đại lý", to: "/admin/dealer-tiers", icon: BadgePercent },
+                ],
+            },
+        ],
+    },
+    {
+        label: "BÁN HÀNG",
+        entries: [
+            {
+                kind: "group",
+                id: "products",
+                label: "Quản lý sản phẩm",
+                icon: Package,
+                links: [
+                    { label: "Danh sách sản phẩm", to: "/admin/products", icon: Package },
+                    { label: "Danh mục & đơn vị", to: "/admin/product-master", icon: Layers3 },
+                    { label: "Bảng giá Retail", to: "/admin/retail-pricing", icon: Tags },
+                    { label: "Bảng giá Đại lý", to: "/admin/dealer-pricing", icon: BadgePercent },
+                ],
+            },
+            {
+                kind: "group",
+                id: "sales-orders",
+                label: "Quản lý đơn hàng",
+                icon: ShoppingBag,
+                links: [
+                    { label: "Tất cả đơn", to: "/admin/sales-orders", icon: List },
+                    { label: "Đơn bán lẻ", to: "/admin/sales-orders/retail", icon: Store },
+                    { label: "Đơn đại lý", to: "/admin/sales-orders/dealer", icon: Building2 },
+                ],
+            },
+        ],
+    },
+    {
+        label: "KHO & MUA HÀNG",
+        entries: [
+            {
+                kind: "group",
+                id: "warehouse",
+                label: "Kho",
+                icon: Warehouse,
+                links: [
+                    { label: "Kho hàng", to: "/admin/warehouses", icon: Warehouse },
+                    { label: "Tồn kho", to: "/admin/inventory", icon: Boxes },
+                ],
+            },
+            {
+                kind: "group",
+                id: "procurement",
+                label: "Mua hàng",
+                icon: ClipboardList,
+                links: [
+                    { label: "Nhà cung cấp", to: "/admin/suppliers", icon: Building2 },
+                    {
+                        label: "Đơn mua / Nhận hàng",
+                        to: "/admin/purchase-orders",
+                        icon: ClipboardList,
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        label: "MARKETING",
+        entries: [
+            {
+                kind: "group",
+                id: "promotions",
+                label: "Khuyến mãi",
+                icon: Megaphone,
+                links: [
+                    { label: "Ưu đãi bán hàng", to: "/admin/sales-promotions", icon: BadgePercent },
+                ],
+            },
+            {
+                kind: "group",
+                id: "vouchers",
+                label: "Voucher",
+                icon: Gift,
+                links: [
+                    { label: "Voucher dịch vụ", to: "/admin/voucher-management", icon: Gift },
+                    { label: "Voucher đơn hàng", to: "/admin/sales-vouchers", icon: ShoppingBag },
+                    { label: "Voucher đánh giá", to: "/admin/vouchers", icon: BadgePercent },
+                ],
+            },
+            { kind: "link", label: "Thông báo", to: "/admin/notifications", icon: Bell },
+            {
+                kind: "group",
+                id: "content",
+                label: "Nội dung",
+                icon: Newspaper,
+                links: [
+                    { label: "Bài viết", to: "/admin/blogs", icon: Newspaper },
+                    { label: "Danh mục bài viết", to: "/admin/blog-categories", icon: FolderTree },
+                ],
+            },
+        ],
+    },
+    {
+        label: "VẬN HÀNH",
+        entries: [
+            {
+                kind: "group",
+                id: "operations",
+                label: "Lịch hẹn & dịch vụ",
+                icon: CalendarDays,
+                links: [
+                    { label: "Lịch hẹn", to: "/admin/appointments", icon: ClipboardList },
+                    { label: "Dịch vụ", to: "/admin/services", icon: Stethoscope },
+                    { label: "Danh mục dịch vụ", to: "/admin/service-categories", icon: Layers3 },
+                    { label: "Đánh giá", to: "/admin/reviews", icon: Star },
+                ],
+            },
+        ],
+    },
+    {
+        label: "HỆ THỐNG",
+        entries: [
+            {
+                kind: "group",
+                id: "personnel",
+                label: "Nhân sự",
+                icon: UserCog,
+                links: [
+                    { label: "Bác sĩ", to: "/admin/doctors", icon: Stethoscope },
+                    { label: "Nhân viên", to: "/admin/staff", icon: Users },
+                ],
+            },
+            { kind: "link", label: "Nhật ký hoạt động", to: "/admin/audit-logs", icon: History },
+        ],
+    },
+];
+
+function adminRouteMatches(path: string, route: AdminRoute): boolean {
+    if (route === "/admin/sales-orders") {
+        return path === route || path === route + "/" || /^\/admin\/sales-orders\/\d+$/.test(path);
+    }
+    if (route === "/admin/sales-orders/retail" && path === "/admin/sales-orders/new") {
+        return true;
+    }
+    return path === route || (route !== "/admin" && path.startsWith(route + "/"));
+}
+
+function activeAdminGroup(path: string): string | null {
+    for (const section of adminSections) {
+        for (const entry of section.entries) {
+            if (
+                entry.kind === "group" &&
+                entry.links.some((link) => adminRouteMatches(path, link.to))
+            ) {
+                return entry.id;
+            }
+        }
+    }
+    return null;
+}
+
+function adminPageTitle(path: string): string {
+    if (path === "/admin") return "Tổng quan hệ thống";
+    if (path === "/admin/products/new") return "Thêm sản phẩm";
+    if (path === "/admin/sales-orders/new") return "Tạo đơn bán lẻ";
+    if (/^\/admin\/sales-orders\/\d+$/.test(path)) return "Chi tiết đơn hàng";
+    for (const section of adminSections) {
+        for (const entry of section.entries) {
+            if (entry.kind === "link" && adminRouteMatches(path, entry.to)) return entry.label;
+            if (entry.kind === "group") {
+                const active = entry.links.find((link) => adminRouteMatches(path, link.to));
+                if (active) return active.label;
+            }
+        }
+    }
+    return "Quản trị";
+}
+
 function AdminShell({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
+    const { user, isLoading } = useAuth();
     const path = useRouterState({ select: (state) => state.location.pathname });
-    const isPersonnelRoute = path.startsWith("/admin/doctors") || path.startsWith("/admin/staff");
-    const isServiceRoute =
-        path.startsWith("/admin/services") || path.startsWith("/admin/service-categories");
-    const isProductRoute =
-        path.startsWith("/admin/products") ||
-        path.startsWith("/admin/product-master") ||
-        path.startsWith("/admin/retail-pricing");
-    const isInventoryRoute =
-        path.startsWith("/admin/warehouses") || path.startsWith("/admin/inventory");
-    const isVoucherRoute =
-        path.startsWith("/admin/vouchers") || path === "/admin/voucher-management";
-    const isBlogRoute =
-        path.startsWith("/admin/blogs") || path.startsWith("/admin/blog-categories");
-    const [personnelExpanded, setPersonnelExpanded] = useState(isPersonnelRoute);
-    const [servicesExpanded, setServicesExpanded] = useState(isServiceRoute);
-    const [productsExpanded, setProductsExpanded] = useState(isProductRoute);
-    const [inventoryExpanded, setInventoryExpanded] = useState(isInventoryRoute);
-    const [vouchersExpanded, setVouchersExpanded] = useState(isVoucherRoute);
-    const [blogsExpanded, setBlogsExpanded] = useState(isBlogRoute);
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const currentGroup = activeAdminGroup(path);
+    const [expandedGroup, setExpandedGroup] = useState<string | null>(currentGroup);
 
     useEffect(() => {
-        if (isPersonnelRoute) setPersonnelExpanded(true);
-    }, [isPersonnelRoute]);
-    useEffect(() => {
-        if (isServiceRoute) setServicesExpanded(true);
-    }, [isServiceRoute]);
-    useEffect(() => {
-        if (isProductRoute) setProductsExpanded(true);
-    }, [isProductRoute]);
-    useEffect(() => {
-        if (isInventoryRoute) setInventoryExpanded(true);
-    }, [isInventoryRoute]);
-    useEffect(() => {
-        if (isVoucherRoute) setVouchersExpanded(true);
-    }, [isVoucherRoute]);
-    useEffect(() => {
-        if (isBlogRoute) setBlogsExpanded(true);
-    }, [isBlogRoute]);
+        setExpandedGroup(currentGroup);
+        setDrawerOpen(false);
+    }, [path, currentGroup]);
 
-    const primaryLinks: ReadonlyArray<readonly [string, AdminRoute]> = [
-        ["Tổng quan", "/admin"],
-        ["Lịch hẹn", "/admin/appointments"],
-        ["Khách hàng", "/admin/customers"],
-    ];
+    if (isLoading || user?.role !== "admin") {
+        return <div className="min-h-screen bg-background px-5 py-20">{children}</div>;
+    }
+
+    const sidebar = (placement: "desktop" | "mobile") => (
+        <div className="flex h-full min-h-0 flex-col">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/70 px-5">
+                <div className="min-w-0">
+                    <p className="font-display text-lg font-semibold tracking-[.12em] text-primary">
+                        JUNIE
+                    </p>
+                    <p className="text-[10px] font-semibold tracking-[.2em] text-secondary">
+                        ADMIN
+                    </p>
+                </div>
+            </div>
+            <nav
+                aria-label="Điều hướng quản trị"
+                className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-5"
+            >
+                {adminSections.map((section) => (
+                    <div key={section.label} className="mb-5">
+                        <p className="px-3 pb-2 text-[10px] font-semibold tracking-[.14em] text-muted-foreground">
+                            {section.label}
+                        </p>
+                        <div className="grid gap-0.5">
+                            {section.entries.map((entry) =>
+                                entry.kind === "link" ? (
+                                    <AdminNavLink
+                                        key={entry.to}
+                                        item={entry}
+                                        path={path}
+                                        onNavigate={() => setDrawerOpen(false)}
+                                    />
+                                ) : (
+                                    <AdminNavGroup
+                                        key={entry.id}
+                                        group={entry}
+                                        path={path}
+                                        expanded={expandedGroup === entry.id}
+                                        onToggle={() =>
+                                            setExpandedGroup((current) =>
+                                                current === entry.id ? null : entry.id,
+                                            )
+                                        }
+                                        onNavigate={() => setDrawerOpen(false)}
+                                        panelId={placement + "-" + entry.id}
+                                    />
+                                ),
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </nav>
+            <div className="shrink-0 border-t border-border/70 p-3">
+                <button
+                    type="button"
+                    onClick={onLogout}
+                    className="focus-premium flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                    <LogOut size={17} />
+                    Đăng xuất
+                </button>
+            </div>
+        </div>
+    );
 
     return (
-        <Container className="py-8 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
-            <aside className="mb-6 rounded-md bg-navy-deep p-4 text-primary-foreground lg:mb-0">
-                <p className="label-luxury px-3 py-2">Quản trị</p>
-                <nav className="mt-2 grid gap-1" aria-label="Điều hướng quản trị">
-                    {primaryLinks.map(([label, to]) => (
-                        <AdminNavLink key={label} label={label} to={to} exact={to === "/admin"} />
-                    ))}
-                    <AdminNavGroup
-                        id="admin-personnel-links"
-                        label="Nhân sự"
-                        expanded={personnelExpanded}
-                        active={isPersonnelRoute}
-                        onToggle={() => setPersonnelExpanded((expanded) => !expanded)}
-                        links={[
-                            ["Bác sĩ", "/admin/doctors"],
-                            ["Nhân viên", "/admin/staff"],
-                        ]}
-                    />
-                    <AdminNavGroup
-                        id="admin-service-links"
-                        label="Dịch vụ"
-                        expanded={servicesExpanded}
-                        active={isServiceRoute}
-                        onToggle={() => setServicesExpanded((expanded) => !expanded)}
-                        links={[
-                            ["Danh sách dịch vụ", "/admin/services"],
-                            ["Danh mục dịch vụ", "/admin/service-categories"],
-                        ]}
-                    />
-                    <AdminNavGroup
-                        id="admin-product-links"
-                        label="Sản phẩm & giá Retail"
-                        expanded={productsExpanded}
-                        active={isProductRoute}
-                        onToggle={() => setProductsExpanded((expanded) => !expanded)}
-                        links={[
-                            ["Danh sách sản phẩm", "/admin/products"],
-                            ["Danh mục, thương hiệu, đơn vị", "/admin/product-master"],
-                            ["Bảng giá Retail", "/admin/retail-pricing"],
-                        ]}
-                    />
-                    <AdminNavGroup
-                        id="admin-inventory-links"
-                        label="Kho & tồn kho"
-                        expanded={inventoryExpanded}
-                        active={isInventoryRoute}
-                        onToggle={() => setInventoryExpanded((expanded) => !expanded)}
-                        links={[
-                            ["Kho hàng", "/admin/warehouses"],
-                            ["Tồn kho & movement", "/admin/inventory"],
-                        ]}
-                    />
-                    <AdminNavLink label="Đơn bán hàng" to="/admin/sales-orders" />
-                    <AdminNavLink label="Đánh giá" to="/admin/reviews" />
-                    <AdminNavGroup
-                        id="admin-voucher-links"
-                        label="Voucher"
-                        expanded={vouchersExpanded}
-                        active={isVoucherRoute}
-                        onToggle={() => setVouchersExpanded((expanded) => !expanded)}
-                        links={[
-                            ["Voucher đánh giá", "/admin/vouchers"],
-                            ["Quản lý voucher", "/admin/voucher-management"],
-                        ]}
-                    />
-                    <AdminNavLink label="Thông báo" to="/admin/notifications" />
-                    <AdminNavGroup
-                        id="admin-blog-links"
-                        label="Blogs"
-                        expanded={blogsExpanded}
-                        active={isBlogRoute}
-                        onToggle={() => setBlogsExpanded((expanded) => !expanded)}
-                        links={[
-                            ["Danh sách bài viết", "/admin/blogs"],
-                            ["Danh mục / Chủ đề", "/admin/blog-categories"],
-                        ]}
-                    />
-                    <p className="label-luxury mt-3 border-t border-primary-foreground/20 px-3 pt-5 pb-2">
-                        Hệ thống
-                    </p>
-                    <AdminNavLink label="Nhật ký hoạt động" to="/admin/audit-logs" />
-                    <button
-                        onClick={onLogout}
-                        className="flex items-center gap-2 rounded-md px-3 py-3 text-left text-sm opacity-75 transition-colors hover:bg-primary-foreground/10 hover:opacity-100 sm:hidden lg:flex"
-                    >
-                        <LogOut size={16} />
-                        Đăng xuất
-                    </button>
-                </nav>
+        <div className="min-h-screen bg-[#faf9f6] text-foreground">
+            <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-border/70 bg-white shadow-sm lg:flex">
+                {sidebar("desktop")}
             </aside>
-            <div className="min-w-0">{children}</div>
-        </Container>
+            <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+                <SheetContent
+                    id="admin-mobile-navigation"
+                    side="left"
+                    className="w-[min(18rem,85vw)] bg-white p-0 lg:hidden"
+                >
+                    <SheetTitle className="sr-only">Menu quản trị</SheetTitle>
+                    {sidebar("mobile")}
+                </SheetContent>
+            </Sheet>
+            <div className="min-w-0 lg:pl-72">
+                <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-border/70 bg-white px-4 shadow-sm sm:px-6 lg:px-8">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <button
+                            type="button"
+                            aria-label="Mở menu quản trị"
+                            aria-expanded={drawerOpen}
+                            aria-controls="admin-mobile-navigation"
+                            onClick={() => setDrawerOpen(true)}
+                            className="focus-premium grid size-9 shrink-0 place-items-center rounded-lg text-primary hover:bg-muted lg:hidden"
+                        >
+                            <Menu size={20} />
+                        </button>
+                        <PanelLeft
+                            size={17}
+                            className="hidden text-muted-foreground lg:block"
+                            aria-hidden="true"
+                        />
+                        <span className="truncate text-sm font-semibold text-primary sm:text-base">
+                            {adminPageTitle(path)}
+                        </span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+                        <Link
+                            to="/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="focus-premium hidden items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-primary transition-colors hover:bg-muted sm:inline-flex"
+                        >
+                            Xem website <ExternalLink size={14} />
+                        </Link>
+                        <NotificationBell />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    type="button"
+                                    aria-label="Menu tài khoản quản trị"
+                                    className="focus-premium flex items-center gap-2 rounded-lg px-1.5 py-1 text-primary hover:bg-muted"
+                                >
+                                    <span className="grid size-8 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                                        {initials(user.name)}
+                                    </span>
+                                    <span className="hidden max-w-32 truncate text-sm font-medium md:block">
+                                        {user.name}
+                                    </span>
+                                    <ChevronDown
+                                        size={14}
+                                        className="hidden text-muted-foreground sm:block"
+                                    />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem asChild>
+                                    <Link to="/" target="_blank" rel="noopener noreferrer">
+                                        Xem website
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={onLogout} className="text-red-700">
+                                    <LogOut size={15} /> Đăng xuất
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </header>
+                <main className="mx-auto w-full max-w-[1600px] min-w-0 px-4 py-7 sm:px-6 lg:px-8">
+                    {children}
+                </main>
+            </div>
+        </div>
     );
 }
 
 function AdminNavLink({
-    label,
-    to,
-    exact = false,
+    item,
+    path,
+    onNavigate,
+    nested = false,
+    tree = false,
 }: {
-    label: string;
-    to: AdminRoute;
-    exact?: boolean;
+    item: AdminLink;
+    path: string;
+    onNavigate: () => void;
+    nested?: boolean;
+    tree?: boolean;
 }) {
+    const Icon = item.icon;
+    const active = adminRouteMatches(path, item.to);
     return (
         <Link
-            to={to}
-            activeOptions={{ exact }}
-            activeProps={{ className: "bg-card text-primary" }}
-            className="rounded-md px-3 py-3 text-sm font-medium transition-colors hover:bg-primary-foreground/10"
+            to={item.to}
+            onClick={onNavigate}
+            aria-current={active ? "page" : undefined}
+            className={[
+                "focus-premium flex min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                tree
+                    ? "relative py-1.5 pl-4 text-[13px] before:absolute before:left-0 before:top-1/2 before:w-3 before:border-t before:border-border/70"
+                    : nested
+                      ? "ml-3 py-2 text-[13px]"
+                      : "font-medium",
+                active
+                    ? "bg-[#eef2fb] font-semibold text-primary"
+                    : "text-foreground/75 hover:bg-muted hover:text-primary",
+            ].join(" ")}
         >
-            {label}
+            <Icon size={nested ? 15 : 17} className="shrink-0" aria-hidden="true" />
+            <span className="min-w-0 break-words">{item.label}</span>
         </Link>
     );
 }
 
 function AdminNavGroup({
-    id,
-    label,
+    group,
+    path,
     expanded,
-    active,
     onToggle,
-    links,
+    onNavigate,
+    panelId,
 }: {
-    id: string;
-    label: string;
+    group: Extract<AdminNavEntry, { kind: "group" }>;
+    path: string;
     expanded: boolean;
-    active: boolean;
     onToggle: () => void;
-    links: ReadonlyArray<readonly [string, AdminRoute, boolean?]>;
+    onNavigate: () => void;
+    panelId: string;
 }) {
+    const Icon = group.icon;
+    const active = group.links.some((link) => adminRouteMatches(path, link.to));
     return (
         <div>
             <button
                 type="button"
                 aria-expanded={expanded}
-                aria-controls={id}
+                aria-controls={panelId}
                 onClick={onToggle}
-                className={`flex w-full items-center justify-between rounded-md px-3 py-3 text-left text-sm font-medium transition-colors hover:bg-primary-foreground/10 ${active ? "bg-primary-foreground/10" : ""}`}
+                className={[
+                    "focus-premium flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",
+                    active
+                        ? "bg-[#f5f2e9] text-primary"
+                        : "text-foreground/85 hover:bg-muted hover:text-primary",
+                ].join(" ")}
             >
-                {label}
+                <Icon size={17} className="shrink-0" aria-hidden="true" />
+                <span className="min-w-0 flex-1 break-words">{group.label}</span>
                 <ChevronDown
-                    size={16}
+                    size={15}
+                    className={
+                        expanded
+                            ? "shrink-0 rotate-180 transition-transform"
+                            : "shrink-0 transition-transform"
+                    }
                     aria-hidden="true"
-                    className={`transition-transform ${expanded ? "rotate-180" : ""}`}
                 />
             </button>
             {expanded && (
-                <div id={id} className="mt-1 grid gap-1 border-l border-primary-foreground/20 pl-3">
-                    {links.map(([name, to, showActiveState = true]) => (
-                        <Link
-                            key={name}
-                            to={to}
-                            activeOptions={{ exact: false }}
-                            activeProps={{
-                                className: showActiveState
-                                    ? "bg-card text-primary"
-                                    : "text-primary-foreground/85",
-                            }}
-                            inactiveProps={{ className: "text-primary-foreground/85" }}
-                            className="rounded-md px-3 py-2.5 text-sm transition-colors hover:bg-primary-foreground/10"
-                        >
-                            {name}
-                        </Link>
+                <div
+                    id={panelId}
+                    className={
+                        group.id === "marketing"
+                            ? "ml-5 mt-0.5 grid gap-0.5 border-l border-border/70"
+                            : "mt-0.5 grid gap-0.5 border-l border-border/70 pl-1"
+                    }
+                >
+                    {group.links.map((link) => (
+                        <AdminNavLink
+                            key={link.to}
+                            item={link}
+                            path={path}
+                            nested
+                            tree={group.id === "marketing"}
+                            onNavigate={onNavigate}
+                        />
                     ))}
                 </div>
             )}

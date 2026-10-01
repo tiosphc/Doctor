@@ -118,6 +118,11 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
     };
     const serverErrors = (reason: unknown) => {
         setNotice(errorMessage(reason));
+        toast.error(
+            Object.keys(firstFieldErrors(reason)).length
+                ? "Có dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại."
+                : errorMessage(reason),
+        );
         const mapped = Object.fromEntries(
             Object.entries(firstFieldErrors(reason)).map(([key, value]) => [
                 key.replace(/^data\./, ""),
@@ -180,6 +185,7 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
                     file.size > 5 * 1024 * 1024
                 ) {
                     setFieldErrors({ images: "Chỉ nhận JPG, PNG hoặc WebP tối đa 5 MB." }, 1);
+                    toast.error("Chỉ nhận JPG, PNG hoặc WebP tối đa 5 MB.");
                     return;
                 }
             }
@@ -194,14 +200,17 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
             }
             setErrors({});
             setDirty(true);
+            toast.success(`Đã tải ${selected.length} ảnh sản phẩm.`);
         });
     };
     const removeImage: StepProps["removeImage"] = async (imageId) => {
+        if (!window.confirm("Gỡ ảnh sản phẩm này?")) return;
         await run("Đang xóa ảnh...", async () => {
             if (!draftIdRef.current) return;
             await productApi.deleteImage(draftIdRef.current, imageId);
             setImages((current) => current.filter((image) => image.id !== imageId));
             setDirty(true);
+            toast.success("Đã gỡ ảnh sản phẩm.");
         });
     };
     const updateImage: StepProps["updateImage"] = async (imageId, patch) => {
@@ -218,22 +227,9 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
                 ),
             );
             setDirty(true);
+            toast.success("Cập nhật ảnh sản phẩm thành công.");
         } catch (reason) {
             serverErrors(reason);
-        }
-    };
-    const createTier: StepProps["createTier"] = async (code, name) => {
-        try {
-            await productApi.createDealerTier({
-                code: code.trim().toUpperCase(),
-                name: name.trim(),
-            });
-            await tiers.refetch();
-            toast.success("Đã tạo hạng đại lý.");
-            return true;
-        } catch (reason) {
-            setNotice(errorMessage(reason));
-            return false;
         }
     };
     const checkSku = async (): Promise<boolean> => {
@@ -303,7 +299,6 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
         uploadImages,
         removeImage,
         updateImage,
-        createTier,
     };
     return (
         <ProductAdminGuard>

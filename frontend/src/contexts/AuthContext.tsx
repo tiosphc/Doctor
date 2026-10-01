@@ -61,6 +61,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 queryClient.setQueryData(["auth-user"], null);
                 queryClient.removeQueries({ queryKey: ["my-appointments"] });
                 queryClient.removeQueries({ queryKey: ["notifications"] });
+                queryClient.removeQueries({ queryKey: ["retail-cart"] });
+                queryClient.removeQueries({ queryKey: ["retail-checkout-review"] });
+                queryClient.removeQueries({ queryKey: ["retail-orders"] });
+                queryClient.removeQueries({ queryKey: ["retail-order"] });
+                queryClient.removeQueries({ queryKey: ["dealer-application-mine"] });
+                queryClient.removeQueries({ queryKey: ["dealer-accounts-mine"] });
+                queryClient.removeQueries({ queryKey: ["dealer-account"] });
+                queryClient.removeQueries({ queryKey: ["dealer-tier"] });
+                queryClient.removeQueries({ queryKey: ["dealer-wallet"] });
+                queryClient.removeQueries({ queryKey: ["admin-dealer-tier"] });
+                queryClient.removeQueries({ queryKey: ["admin-dealer-tier-history"] });
+                queryClient.removeQueries({ queryKey: ["admin-dealer-tier-overrides"] });
             } finally {
                 setIsMutating(false);
             }

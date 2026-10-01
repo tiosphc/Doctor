@@ -2,6 +2,7 @@ import { Bell, CheckCheck, LoaderCircle } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { toast } from "sonner";
 import { notificationActionErrorMessage } from "@/services/notificationApi";
 import {
     useMarkAllNotificationsRead,
@@ -37,9 +38,11 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
         appointmentId: number | null,
         actionUrl: string | null,
     ) {
+        if (markRead.isPending) return;
         setActionError(null);
         try {
             await markRead.mutateAsync(id);
+            if (user?.role === "admin") toast.success("Đã đánh dấu thông báo đã đọc.");
         } catch (error) {
             setActionError(notificationActionErrorMessage(error));
             return;
@@ -79,9 +82,11 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
     }
 
     async function markAll() {
+        if (markAllRead.isPending) return;
         setActionError(null);
         try {
             await markAllRead.mutateAsync();
+            if (user?.role === "admin") toast.success("Đã đánh dấu tất cả thông báo đã đọc.");
         } catch (error) {
             setActionError(notificationActionErrorMessage(error));
         }

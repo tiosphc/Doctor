@@ -298,6 +298,7 @@ export type AdminCustomerSummary = CanonicalCustomer & {
 };
 
 export type AdminCustomerDetail = CanonicalCustomer & {
+    created_at: string | null;
     loyalty: LoyaltySummary;
     statistics: {
         total_appointments: number;
@@ -308,6 +309,50 @@ export type AdminCustomerDetail = CanonicalCustomer & {
         available_vouchers: number;
     };
     loyalty_vouchers: Voucher[];
+    available_vouchers: Voucher[];
+    recent_appointments: {
+        id: number;
+        booking_code: string;
+        service_name: string | null;
+        doctor_name: string | null;
+        appointment_date: string;
+        start_time: string;
+        status: AppointmentStatus;
+    }[];
+};
+
+export type AdminCustomerPurchasedProduct = {
+    product_id: number | null;
+    product_variant_id: number;
+    sku: string;
+    product_name: string;
+    variant_name: string;
+    total_quantity: string;
+    last_purchased_at: string;
+};
+
+export type AdminCustomerPurchaseSummary = {
+    statistics: {
+        total_orders: number;
+        completed_orders: number;
+        processing_orders: number;
+        cancelled_orders: number;
+        total_spent: string;
+        average_order_value: string;
+    };
+    last_order_at: string | null;
+    recent_orders: {
+        id: number;
+        order_code: string;
+        created_at: string;
+        item_quantity: string;
+        grand_total: string;
+        order_status: string;
+        payment_status: string;
+        refund_status: string;
+    }[];
+    purchased_products: AdminCustomerPurchasedProduct[];
+    purchased_products_total: number;
 };
 
 export type BookingPricing = {

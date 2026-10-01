@@ -28,8 +28,8 @@ class CompleteProductWizardRequest extends FormRequest
     public function rules(): array
     {
         $data = $this->input('data', []);
-        $retail = is_array($data) && ($data['sellable_retail'] ?? false) === true;
-        $dealer = is_array($data) && ($data['sellable_dealer'] ?? false) === true;
+        $retail = is_array($data) && ($data['sellable_retail'] ?? false) === true && ! ($data['gift_only'] ?? false);
+        $dealer = is_array($data) && ($data['sellable_dealer'] ?? false) === true && ! ($data['gift_only'] ?? false);
         $variants = is_array($data) && ($data['has_variants'] ?? false) === true;
 
         return [
@@ -41,6 +41,8 @@ class CompleteProductWizardRequest extends FormRequest
             'data.unit_id' => ['required', 'integer', Rule::exists('units', 'id')->where('status', 'active')],
             'data.sellable_retail' => ['required', 'boolean'],
             'data.sellable_dealer' => ['required', 'boolean'],
+            'data.can_be_gift' => ['sometimes', 'boolean'],
+            'data.gift_only' => ['sometimes', 'boolean'],
             'data.description' => ['nullable', 'string', 'max:20000'],
             'data.youtube_videos' => ['sometimes', 'array', 'max:10'],
             'data.youtube_videos.*' => ['required', 'url', 'max:500'],
@@ -53,20 +55,19 @@ class CompleteProductWizardRequest extends FormRequest
             'data.variants.*.sku' => [$variants ? 'required' : 'nullable', 'string', 'max:100', 'regex:/^[A-Z0-9][A-Z0-9._-]*$/'],
             'data.variants.*.specifications' => [$variants ? 'required' : 'sometimes', 'array'],
             'data.variants.*.image_id' => ['nullable', 'integer'],
-            'data.variants.*.retail_price_override' => ['nullable', 'numeric', 'gt:0', 'decimal:0,2'],
-            'data.variants.*.initial_stock' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
-            'data.retail_price' => [$retail ? 'required' : 'nullable', 'numeric', 'gt:0', 'decimal:0,2'],
-            'data.retail_breaks' => ['sometimes', 'array', 'max:20'],
-            'data.retail_breaks.*.min_quantity' => ['required', 'integer', 'min:2'],
-            'data.retail_breaks.*.unit_price' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
+            'data.variants.*.retail_price_override' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
+            'data.variants.*.initial_stock' => ['nullable', 'integer', 'min:0'],
+            'data.retail_price' => [$retail ? 'required' : 'nullable', 'numeric', 'min:0', 'decimal:0,2'],
+            'data.retail_breaks' => ['sometimes', 'array', 'size:0'],
             'data.dealer_rules' => [$dealer ? 'required' : 'sometimes', 'array', 'max:60'],
             'data.dealer_rules.*.tier_id' => ['required', 'integer', Rule::exists('dealer_tiers', 'id')->where('status', 'active')],
+            'data.dealer_rules.*.sku' => ['required', 'string', 'max:100'],
             'data.dealer_rules.*.min_quantity' => ['required', 'integer', 'min:1'],
             'data.dealer_rules.*.unit_price' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
             'data.track_inventory' => ['required', 'boolean'],
             'data.warehouse_id' => ['nullable', 'integer', Rule::exists('warehouses', 'id')->where('status', 'active')],
-            'data.initial_stock' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
-            'data.low_stock_threshold' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
+            'data.initial_stock' => ['nullable', 'integer', 'min:0'],
+            'data.low_stock_threshold' => ['nullable', 'integer', 'min:0'],
             'data.weight' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
             'data.length' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
             'data.width' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
@@ -113,7 +114,13 @@ class CompleteProductWizardRequest extends FormRequest
                     || DB::table('product_variants')->where('sku', $sku)->exists())) {
                 $validator->errors()->add('data.sku', 'SKU này đã tồn tại.');
             }
-            if (! ($data['sellable_retail'] ?? false) && ! ($data['sellable_dealer'] ?? false)) {
+            if (($data['gift_only'] ?? false) && ! ($data['can_be_gift'] ?? false)) {
+                $validator->errors()->add('data.can_be_gift', 'Gift-only Product must be enabled for gifts.');
+            }
+            if (($data['gift_only'] ?? false) && ! ($data['track_inventory'] ?? false)) {
+                $validator->errors()->add('data.track_inventory', 'Gift-only Product must track inventory.');
+            }
+            if (! ($data['sellable_retail'] ?? false) && ! ($data['sellable_dealer'] ?? false) && ! ($data['gift_only'] ?? false)) {
                 $validator->errors()->add('data.channels', 'Vui lòng chọn ít nhất một kênh bán.');
             }
             foreach (is_array($data['youtube_videos'] ?? null) ? $data['youtube_videos'] : [] as $index => $url) {
@@ -224,28 +231,24 @@ class CompleteProductWizardRequest extends FormRequest
     /** @param array<string, mixed> $data */
     private function validatePriceThresholds(Validator $validator, array $data): void
     {
-        $previous = 1;
-        foreach (is_array($data['retail_breaks'] ?? null) ? $data['retail_breaks'] : [] as $index => $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-            $minimum = (int) ($row['min_quantity'] ?? 0);
-            if ($minimum <= $previous) {
-                $validator->errors()->add("data.retail_breaks.$index.min_quantity", 'Mức số lượng phải tăng dần và không được trùng.');
-            }
-            $previous = $minimum;
-        }
-        $byTier = [];
+        $skus = ($data['has_variants'] ?? false)
+            ? array_column(is_array($data['variants'] ?? null) ? $data['variants'] : [], 'sku')
+            : [$data['sku'] ?? null];
+        $seen = [];
         foreach (is_array($data['dealer_rules'] ?? null) ? $data['dealer_rules'] : [] as $index => $row) {
             if (! is_array($row)) {
                 continue;
             }
             $tier = is_scalar($row['tier_id'] ?? null) ? (string) $row['tier_id'] : '';
-            $minimum = (int) ($row['min_quantity'] ?? 0);
-            if (isset($byTier[$tier]) && $minimum <= $byTier[$tier]) {
-                $validator->errors()->add("data.dealer_rules.$index.min_quantity", 'Mức số lượng của hạng đại lý phải tăng dần và không được trùng.');
+            $sku = is_string($row['sku'] ?? null) ? Sku::normalize($row['sku']) : '';
+            if (! in_array($sku, $skus, true)) {
+                $validator->errors()->add("data.dealer_rules.$index.sku", 'Chọn biến thể hợp lệ của sản phẩm.');
             }
-            $byTier[$tier] = $minimum;
+            $key = $tier.':'.$sku;
+            if ($tier !== '' && $sku !== '' && isset($seen[$key])) {
+                $validator->errors()->add("data.dealer_rules.$index.sku", 'Giá của Tier '.$tier.' cho biến thể '.$sku.' đã tồn tại.');
+            }
+            $seen[$key] = true;
         }
         if (($data['sellable_dealer'] ?? false) && empty($data['dealer_rules'])) {
             $validator->errors()->add('data.dealer_rules', 'Thêm ít nhất một mức giá đại lý.');

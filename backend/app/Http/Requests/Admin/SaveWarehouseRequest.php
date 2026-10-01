@@ -39,6 +39,7 @@ class SaveWarehouseRequest extends FormRequest
             'status' => ['sometimes', Rule::in(['active', 'inactive'])],
             'is_default_sales' => ['sometimes', 'boolean'],
             'is_default_clinic' => ['sometimes', 'boolean'],
+            'dealer_price_adjustment_percent' => ['prohibited'],
         ];
     }
 

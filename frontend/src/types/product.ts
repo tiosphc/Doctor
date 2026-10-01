@@ -18,6 +18,30 @@ export type RetailPrice = {
     price_list_id?: number;
     price_list_item_id?: number;
 };
+export type GiftPromotionSummary = {
+    code: string;
+    name: string;
+    buy_variant_id: number | null;
+    buy_variant_name?: string | null;
+    minimum_buy_quantity: string;
+    minimum_order_amount?: string;
+    gift_product_name: string;
+    gift_image_url?: string | null;
+    gift_variant_name: string;
+    gift_sku: string;
+    gift_quantity: string;
+    repeat_per_multiple: boolean;
+    gift_available: boolean;
+};
+export type RetailPromotionSummary = {
+    code: string;
+    discount_type: "percentage" | "fixed_amount";
+    discount_value: string;
+    max_discount_amount: string | null;
+    minimum_order_amount: string;
+    total_usage_limit: number | null;
+    per_buyer_usage_limit: number | null;
+};
 export type ProductVariant = {
     id: number;
     product_id: number;
@@ -26,6 +50,7 @@ export type ProductVariant = {
     unit_id: number;
     unit?: Master;
     unit_symbol?: string;
+    unit_precision?: number;
     status: MasterStatus;
     sellable_retail: boolean;
     sellable_dealer: boolean;
@@ -48,6 +73,7 @@ export type ProductImage = {
 export type Product = {
     id: number;
     product_code: string;
+    base_sku?: string | null;
     name: string;
     slug: string;
     description: string | null;
@@ -57,6 +83,10 @@ export type Product = {
     brand: Master | null;
     status: ProductStatus;
     track_inventory?: boolean;
+    can_be_gift?: boolean;
+    gift_only?: boolean;
+    gift_promotions?: GiftPromotionSummary[];
+    retail_promotions?: RetailPromotionSummary[];
     track_batch?: boolean;
     track_expiry?: boolean;
     default_low_stock_threshold?: string | null;

@@ -1,7 +1,10 @@
 ﻿import { expect, test } from "bun:test";
+import { formatProductQuantity, isPositiveProductQuantity } from "./src/lib/productQuantity";
 import {
     emptyWizard,
     generateVariants,
+    parseDealerCsv,
+    payload,
     stepForField,
     validateStep,
     type WizardData,
@@ -71,47 +74,85 @@ test("variant attribute names and values must be unique and nonempty", () => {
     expect(errors["attributes.1.values"]).toBeDefined();
 });
 
-test("retail price and quantity breaks reject zero, negative and overlapping thresholds", () => {
-    const errors = validateStep(
-        3,
-        {
-            ...ready(),
-            retail_price: "0",
-            retail_breaks: [
-                { min_quantity: "10", unit_price: "100000" },
-                { min_quantity: "10", unit_price: "90000" },
-            ],
-        },
-        1,
-    );
-    expect(errors["retail_price"]).toBeDefined();
-    expect(errors["retail_breaks.1.min_quantity"]).toBeDefined();
+test("retail accepts zero and removes historical quantity breaks from a new submission", () => {
+    expect(validateStep(3, { ...ready(), retail_price: "0" }, 1)).toEqual({});
+    expect(
+        payload({ ...ready(), retail_breaks: [{ min_quantity: "10", unit_price: "90000" }] })[
+            "retail_breaks"
+        ],
+    ).toEqual([]);
     expect(validateStep(3, { ...ready(), retail_price: "-1" }, 1)["retail_price"]).toBeDefined();
 });
 
-test("dealer prices require a tier and positive increasing MOQ only when dealer channel is selected", () => {
+test("dealer prices require a Tier, SKU and positive MOQ with one row per pair", () => {
     expect(validateStep(3, ready(), 1)).toEqual({});
     const data: WizardData = {
         ...ready(),
         sellable_retail: false,
         sellable_dealer: true,
         retail_price: "",
-        dealer_rules: [{ tier_id: 1, min_quantity: "-1", unit_price: "90000" }],
+        dealer_rules: [{ tier_id: 1, sku: "SERUM-1", min_quantity: "-1", unit_price: "90000" }],
     };
     expect(validateStep(3, data, 1)["dealer_rules.0.min_quantity"]).toBeDefined();
     expect(validateStep(3, { ...data, dealer_rules: [] }, 1)["dealer_rules"]).toBeDefined();
     expect(
         validateStep(
             3,
-            { ...data, dealer_rules: [{ tier_id: 1, min_quantity: "10", unit_price: "90000" }] },
+            {
+                ...data,
+                dealer_rules: [{ tier_id: 1, sku: "SERUM-1", min_quantity: "10", unit_price: "0" }],
+            },
             1,
-        ),
-    ).toEqual({});
+        )["dealer_rules.0.unit_price"],
+    ).toBeDefined();
+    expect(
+        validateStep(
+            3,
+            {
+                ...data,
+                dealer_rules: [
+                    { tier_id: 1, sku: "SERUM-1", min_quantity: "10", unit_price: "90000" },
+                    { tier_id: 1, sku: "SERUM-1", min_quantity: "20", unit_price: "80000" },
+                ],
+            },
+            1,
+        )["dealer_rules.1.sku"],
+    ).toBeDefined();
 });
 
-test("stock precision and backend error field routing point to the correct step", () => {
-    const errors = validateStep(4, { ...ready(), initial_stock: "1.5" }, 1, 0);
+test("gift-only product can omit selling channels and prices but requires tracked stock", () => {
+    const gift = {
+        ...ready(),
+        can_be_gift: true,
+        gift_only: true,
+        sellable_retail: false,
+        sellable_dealer: false,
+        retail_price: "",
+        track_inventory: true,
+    };
+    expect(validateStep(0, gift, 0)).toEqual({});
+    expect(validateStep(3, gift, 1)).toEqual({});
+    expect(payload(gift)["retail_price"]).toBeNull();
+    expect(
+        validateStep(4, { ...gift, track_inventory: false }, 1)["track_inventory"],
+    ).toBeDefined();
+});
+
+test("dealer CSV import parses quoted values and rejects malformed headers", () => {
+    expect(parseDealerCsv('Tier,SKU,MOQ,Price\n"Gold",SERUM-1,10,980000')).toEqual([
+        { tier: "Gold", sku: "SERUM-1", moq: "10", price: "980000" },
+    ]);
+    expect(() => parseDealerCsv("Tier,Price\nGold,980000")).toThrow();
+});
+
+test("product quantities reject decimals while physical measurements retain precision", () => {
+    const errors = validateStep(4, { ...ready(), initial_stock: "1.5", weight: "0.125" }, 1, 3);
     expect(errors["initial_stock"]).toBeDefined();
+    expect(errors["weight"]).toBeUndefined();
+    expect(["1", "2", "50"].every(isPositiveProductQuantity)).toBe(true);
+    expect(["1.5", "1.001", "0", "-1", ""].some(isPositiveProductQuantity)).toBe(false);
+    expect(formatProductQuantity("71.000")).toBe("71");
+    expect(formatProductQuantity("1.250")).toBe("1.250");
     expect(errors["track_inventory"]).toBeDefined();
     expect(errors["warehouse_id"]).toBeDefined();
     expect(stepForField("sku")).toBe(0);

@@ -91,7 +91,11 @@ class ProductWizardTest extends TestCase
         $invalid['retail_price'] = '-1';
         $invalid['retail_breaks'] = [['min_quantity' => 10, 'unit_price' => 100000], ['min_quantity' => 5, 'unit_price' => 90000]];
         $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $invalid])
-            ->assertUnprocessable()->assertJsonValidationErrors(['data.retail_price', 'data.retail_breaks.1.min_quantity']);
+            ->assertUnprocessable()->assertJsonValidationErrors(['data.retail_price', 'data.retail_breaks']);
+        $invalid = $data;
+        $invalid['initial_stock'] = '1.001';
+        $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $invalid])
+            ->assertUnprocessable()->assertJsonValidationErrors('data.initial_stock');
     }
 
     public function test_simple_retail_product_completes_once_with_real_price(): void
@@ -110,6 +114,21 @@ class ProductWizardTest extends TestCase
         $this->getJson('/api/products')->assertOk()->assertJsonCount(1, 'data');
     }
 
+    public function test_zero_retail_price_is_accepted_when_explicitly_entered(): void
+    {
+        $this->admin();
+        $data = $this->data();
+        $data['sku'] = 'FREE-RETAIL';
+        $data['retail_price'] = '0';
+        $id = $this->draft($data);
+        $this->image($id);
+
+        $response = $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $data])
+            ->assertOk();
+
+        $this->assertSame('0.00', app(RetailPricingService::class)->resolve(ProductVariant::findOrFail($response->json('data.variants.0.id')))['unit_price']);
+    }
+
     public function test_variant_dealer_moq_and_opening_stock_use_existing_ledgers(): void
     {
         $this->admin();
@@ -123,11 +142,10 @@ class ProductWizardTest extends TestCase
             ['sku' => 'SERUM-S', 'specifications' => ['Size' => 'S'], 'initial_stock' => '2', 'retail_price_override' => '130000'],
             ['sku' => 'SERUM-M', 'specifications' => ['Size' => 'M'], 'initial_stock' => '3'],
         ];
-        $data['retail_breaks'] = [['min_quantity' => 10, 'unit_price' => '100000']];
         $data['sellable_dealer'] = true;
         $data['dealer_rules'] = [
-            ['tier_id' => $tier->id, 'min_quantity' => 10, 'unit_price' => '90000'],
-            ['tier_id' => $tier->id, 'min_quantity' => 20, 'unit_price' => '80000'],
+            ['tier_id' => $tier->id, 'sku' => 'SERUM-S', 'min_quantity' => 10, 'unit_price' => '90000'],
+            ['tier_id' => $tier->id, 'sku' => 'SERUM-M', 'min_quantity' => 20, 'unit_price' => '80000'],
         ];
         $data['track_inventory'] = true;
         $data['warehouse_id'] = $warehouse->id;
@@ -141,7 +159,8 @@ class ProductWizardTest extends TestCase
         $this->assertDatabaseHas('inventory_balances', ['warehouse_id' => $warehouse->id, 'on_hand_quantity' => '2.000']);
         $this->assertDatabaseHas('product_images', ['id' => $imageId, 'product_variant_id' => ProductVariant::where('sku', 'SERUM-S')->value('id')]);
         $this->assertDatabaseHas('price_lists', ['pricing_context' => 'dealer', 'scope_type' => 'tier', 'dealer_tier_id' => $tier->id]);
-        $this->assertSame('100000.00', app(RetailPricingService::class)->resolve(ProductVariant::where('sku', 'SERUM-M')->firstOrFail(), quantity: '10')['unit_price']);
+        $this->assertSame('120000.00', app(RetailPricingService::class)->resolve(ProductVariant::where('sku', 'SERUM-M')->firstOrFail(), quantity: '10')['unit_price']);
+        $this->assertDatabaseHas('price_list_items', ['product_variant_id' => ProductVariant::where('sku', 'SERUM-S')->value('id'), 'minimum_quantity' => '10.000', 'unit_price' => '90000.00']);
         $this->assertSame(0, DB::table('inventory_balances')->where('on_hand_quantity', '<', 0)->count());
     }
 
@@ -193,19 +212,19 @@ class ProductWizardTest extends TestCase
         $this->image($id);
         $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $data])
             ->assertUnprocessable()->assertJsonValidationErrors('data.dealer_rules');
-        $data['dealer_rules'] = [['tier_id' => 999999, 'min_quantity' => -1, 'unit_price' => 0]];
+        $data['dealer_rules'] = [['tier_id' => 999999, 'sku' => 'DEALER-ONLY', 'min_quantity' => -1, 'unit_price' => -1]];
         $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $data])
             ->assertUnprocessable()->assertJsonValidationErrors([
                 'data.dealer_rules.0.tier_id', 'data.dealer_rules.0.min_quantity', 'data.dealer_rules.0.unit_price',
             ]);
         $tier = DealerTier::factory()->create();
         $data['dealer_rules'] = [
-            ['tier_id' => $tier->id, 'min_quantity' => 10, 'unit_price' => 90000],
-            ['tier_id' => $tier->id, 'min_quantity' => 10, 'unit_price' => 80000],
+            ['tier_id' => $tier->id, 'sku' => 'DEALER-ONLY', 'min_quantity' => 10, 'unit_price' => 90000],
+            ['tier_id' => $tier->id, 'sku' => 'DEALER-ONLY', 'min_quantity' => 10, 'unit_price' => 80000],
         ];
         $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $data])
-            ->assertUnprocessable()->assertJsonValidationErrors('data.dealer_rules.1.min_quantity');
-        $data['dealer_rules'][1]['min_quantity'] = 20;
+            ->assertUnprocessable()->assertJsonValidationErrors('data.dealer_rules.1.sku');
+        array_pop($data['dealer_rules']);
         $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $data])->assertOk();
         $this->assertDatabaseHas('price_lists', ['pricing_context' => 'dealer', 'dealer_tier_id' => $tier->id]);
         $this->assertDatabaseMissing('price_lists', ['pricing_context' => 'retail']);

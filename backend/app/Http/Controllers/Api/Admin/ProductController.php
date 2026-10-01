@@ -8,6 +8,7 @@ use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
@@ -19,16 +20,32 @@ class ProductController extends Controller
             'status' => ['nullable', 'in:draft,active,inactive'],
             'category' => ['nullable', 'integer', 'exists:product_categories,id'],
             'brand' => ['nullable', 'integer', 'exists:brands,id'],
+            'gift_filter' => ['nullable', 'in:all,gift_capable,gift_only,normal'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
-        $query = Product::query()->with(['category:id,code,name', 'brand:id,code,name', 'variants:id,product_id,unit_id,sku,variant_name,status,sellable_retail,track_inventory', 'images:id,product_id,path,is_primary,sort_order']);
+        $query = Product::query()->with(['category:id,code,name', 'brand:id,code,name', 'variants:id,product_id,unit_id,sku,variant_name,status,sellable_retail,track_inventory', 'variants.unit:id,name,symbol', 'images:id,product_id,path,is_primary,sort_order']);
         if (isset($data['search'])) {
             $search = $data['search'];
-            $query->where(fn ($query) => $query->where('name', 'like', '%'.$search.'%')->orWhere('product_code', 'like', '%'.$search.'%')->orWhereHas('variants', fn ($query) => $query->where('sku', 'like', '%'.$search.'%')));
+            $query->where(fn ($query) => $query->where('name', 'like', '%'.$search.'%')
+                ->orWhere('product_code', 'like', '%'.$search.'%')
+                ->orWhereHas('variants', fn ($query) => $query->where('sku', 'like', '%'.$search.'%')
+                    ->orWhere('variant_name', 'like', '%'.$search.'%')));
         }
         foreach (['status' => 'status', 'category' => 'product_category_id', 'brand' => 'brand_id'] as $key => $column) {
             if (isset($data[$key])) {
                 $query->where($column, $data[$key]);
+            }
+        }
+        $giftFilter = $data['gift_filter'] ?? 'all';
+        if ($giftFilter !== 'all') {
+            if (! Schema::hasColumns('products', ['can_be_gift', 'gift_only'])) {
+                if ($giftFilter !== 'normal') {
+                    $query->whereKey(-1);
+                }
+            } elseif ($giftFilter === 'gift_capable') {
+                $query->where('can_be_gift', true);
+            } else {
+                $query->where('gift_only', $giftFilter === 'gift_only');
             }
         }
 

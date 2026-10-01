@@ -21,6 +21,7 @@ export type MovementFilters = {
     to?: string | undefined;
     reference?: string | undefined;
     page?: number | undefined;
+    per_page?: number | undefined;
 };
 export type InventoryOperation = {
     warehouse_id: number;

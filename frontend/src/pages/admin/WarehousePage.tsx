@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
 import {
     ProductAdminGuard,
@@ -81,13 +82,23 @@ export function WarehousePage() {
                 ? inventoryApi.updateWarehouse(selected.id, form)
                 : inventoryApi.createWarehouse(form),
         onSuccess: async () => {
-            setNotice("Đã lưu kho.");
+            toast.success(
+                selected?.status === "active" && form.status === "inactive"
+                    ? "Đã ngừng hoạt động kho hàng."
+                    : selected?.status === "inactive" && form.status === "active"
+                      ? "Đã kích hoạt kho hàng."
+                      : selected
+                        ? "Cập nhật kho hàng thành công."
+                        : "Thêm kho hàng thành công.",
+            );
+            setNotice("");
             setErrors({});
             setSelected(null);
             setForm(emptyForm);
             await client.invalidateQueries({ queryKey: ["warehouses"] });
             await client.invalidateQueries({ queryKey: ["inventory-balances"] });
         },
+        onError: (reason) => toast.error(errorMessage(reason)),
     });
     const update = <K extends keyof WarehouseForm>(key: K, value: WarehouseForm[K]) =>
         setForm((current) => ({ ...current, [key]: value }));
@@ -195,6 +206,13 @@ export function WarehousePage() {
                         className="h-fit space-y-4 rounded-xl border bg-card p-5"
                         onSubmit={async (event) => {
                             event.preventDefault();
+                            if (save.isPending) return;
+                            if (
+                                selected?.status === "active" &&
+                                form.status === "inactive" &&
+                                !window.confirm(`Ngừng hoạt động kho "${selected.name}"?`)
+                            )
+                                return;
                             setNotice("");
                             setErrors({});
                             try {

@@ -189,7 +189,7 @@ export function AdminServiceEditPage({ id }: { id: number }) {
     const update = useMutation({
         mutationFn: (payload: FormData) => adminApi.updateService(id, payload),
         onSuccess: async () => {
-            setNotice("Đã lưu thay đổi.");
+            setNotice("Cập nhật dịch vụ thành công.");
             setErrors({});
             await client.invalidateQueries({ queryKey: ["admin-service", id] });
             await client.invalidateQueries({ queryKey: ["admin-services"] });

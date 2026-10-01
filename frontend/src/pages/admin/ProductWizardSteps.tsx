@@ -1,12 +1,15 @@
 import * as React from "react";
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import type { Master, ProductImage } from "@/types/product";
 import type { Warehouse } from "@/types/inventory";
 import { buttonClass, fieldClass, secondaryButtonClass } from "./ProductAdminShared";
+import { DealerPriceImportDialog } from "./DealerPriceImportDialog";
 import {
     combinations,
     generateVariants,
     normalizeSku,
+    validPositiveMoney,
     type WizardData,
     type WizardErrors,
 } from "./productWizard";
@@ -26,7 +29,6 @@ export type StepProps = {
     uploadImages: (files: FileList | File[]) => Promise<void>;
     removeImage: (id: number) => Promise<void>;
     updateImage: (id: number, patch: Record<string, unknown>) => Promise<void>;
-    createTier: (code: string, name: string) => Promise<boolean>;
 };
 
 function Field({
@@ -75,43 +77,45 @@ export function BasicStep({ data, update, errors, categories, brands, units }: S
                 <h2 className="text-xl text-primary">Thông tin cơ bản</h2>
                 <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
             </div>
-            <Field name="name" label="Tên sản phẩm *" error={errors["name"]}>
-                <input
-                    id="name"
-                    value={data.name}
-                    maxLength={255}
-                    className={input(errors["name"])}
-                    onChange={(e) => update({ name: e.target.value })}
-                />
-            </Field>
-            <Field name="sku" label="SKU chính *" error={errors["sku"]}>
-                <div className="flex gap-2">
+            <div className="grid gap-x-5 sm:col-span-2 sm:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+                <Field name="sku" label="SKU chính *" error={errors["sku"]}>
+                    <div className="flex gap-2">
+                        <input
+                            id="sku"
+                            value={data.sku}
+                            maxLength={100}
+                            className={`${input(errors["sku"])} min-w-0`}
+                            onChange={(e) => update({ sku: e.target.value })}
+                        />
+                        <button
+                            type="button"
+                            className={secondaryButtonClass}
+                            onClick={() =>
+                                update({
+                                    sku: normalizeSku(
+                                        data.name
+                                            .normalize("NFKD")
+                                            .replace(/[\u0300-\u036f]/g, "")
+                                            .replace(/[^A-Za-z0-9]+/g, "-")
+                                            .replace(/^-|-$/g, ""),
+                                    ),
+                                })
+                            }
+                        >
+                            Tự tạo
+                        </button>
+                    </div>
+                </Field>
+                <Field name="name" label="Tên sản phẩm *" error={errors["name"]}>
                     <input
-                        id="sku"
-                        value={data.sku}
-                        maxLength={100}
-                        className={input(errors["sku"])}
-                        onChange={(e) => update({ sku: e.target.value })}
+                        id="name"
+                        value={data.name}
+                        maxLength={255}
+                        className={input(errors["name"])}
+                        onChange={(e) => update({ name: e.target.value })}
                     />
-                    <button
-                        type="button"
-                        className={secondaryButtonClass}
-                        onClick={() =>
-                            update({
-                                sku: normalizeSku(
-                                    data.name
-                                        .normalize("NFKD")
-                                        .replace(/[\u0300-\u036f]/g, "")
-                                        .replace(/[^A-Za-z0-9]+/g, "-")
-                                        .replace(/^-|-$/g, ""),
-                                ),
-                            })
-                        }
-                    >
-                        Tự tạo
-                    </button>
-                </div>
-            </Field>
+                </Field>
+            </div>
             <Field
                 name="product_category_id"
                 label="Danh mục *"
@@ -156,7 +160,7 @@ export function BasicStep({ data, update, errors, categories, brands, units }: S
                     ))}
                 </select>
             </Field>
-            <Field name="brand_id" label="Thương hiệu" error={errors["brand_id"]}>
+            <Field name="brand_id" label="Thương hiệu (không bắt buộc)" error={errors["brand_id"]}>
                 <select
                     id="brand_id"
                     value={data.brand_id ?? ""}
@@ -173,7 +177,7 @@ export function BasicStep({ data, update, errors, categories, brands, units }: S
                         ))}
                 </select>
             </Field>
-            <Field name="unit_id" label="Đơn vị mặc định *" error={errors["unit_id"]}>
+            <Field name="unit_id" label="Đơn vị bán *" error={errors["unit_id"]}>
                 <select
                     id="unit_id"
                     value={data.unit_id ?? ""}
@@ -196,6 +200,7 @@ export function BasicStep({ data, update, errors, categories, brands, units }: S
                         <input
                             type="checkbox"
                             checked={data.sellable_retail}
+                            disabled={data.gift_only}
                             onChange={(e) => update({ sellable_retail: e.target.checked })}
                         />
                         Retail
@@ -204,11 +209,52 @@ export function BasicStep({ data, update, errors, categories, brands, units }: S
                         <input
                             type="checkbox"
                             checked={data.sellable_dealer}
+                            disabled={data.gift_only}
                             onChange={(e) => update({ sellable_dealer: e.target.checked })}
                         />
                         Đại lý
                     </label>
                 </div>
+            </Field>
+            <Field name="can_be_gift" label="Quà tặng" error={errors["can_be_gift"]} full>
+                <div className="grid gap-3 rounded-md border p-3 text-sm sm:grid-cols-2">
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={data.can_be_gift}
+                            onChange={(e) =>
+                                update({
+                                    can_be_gift: e.target.checked,
+                                    gift_only: e.target.checked ? data.gift_only : false,
+                                })
+                            }
+                        />
+                        Có thể dùng làm quà tặng
+                    </label>
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={data.gift_only}
+                            onChange={(e) =>
+                                update({
+                                    gift_only: e.target.checked,
+                                    can_be_gift: e.target.checked ? true : data.can_be_gift,
+                                    sellable_retail: e.target.checked
+                                        ? false
+                                        : data.sellable_retail,
+                                    sellable_dealer: e.target.checked
+                                        ? false
+                                        : data.sellable_dealer,
+                                    track_inventory: e.target.checked ? true : data.track_inventory,
+                                })
+                            }
+                        />
+                        Chỉ dùng làm quà tặng
+                    </label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                    Sản phẩm chỉ tặng không xuất hiện trong catalog bán hàng bình thường.
+                </p>
             </Field>
             <Field name="description" label="Mô tả" error={errors["description"]} full>
                 <textarea
@@ -617,7 +663,7 @@ export function VariantsStep({ data, update, errors, images }: StepProps) {
                                                     aria-label={`Tồn đầu kỳ ${index + 1}`}
                                                     type="number"
                                                     min="0"
-                                                    step="0.001"
+                                                    step="1"
                                                     value={variant.initial_stock}
                                                     className={fieldClass}
                                                     onChange={(e) =>
@@ -662,351 +708,304 @@ export function VariantsStep({ data, update, errors, images }: StepProps) {
     );
 }
 
-export function PricesStep({ data, update, errors, tiers, busy, createTier }: StepProps) {
-    const [tierCode, setTierCode] = React.useState("");
-    const [tierName, setTierName] = React.useState("");
+export function PricesStep({
+    data,
+    update,
+    errors,
+    tiers,
+}: Pick<StepProps, "data" | "update" | "errors" | "tiers">) {
+    const [importOpen, setImportOpen] = React.useState(false);
+    const skuOptions = data.has_variants
+        ? data.variants.map((variant) => ({
+              sku: normalizeSku(variant.sku),
+              name: Object.values(variant.specifications).join(" / ") || variant.sku,
+          }))
+        : [{ sku: normalizeSku(data.sku), name: "Sản phẩm chính" }];
+    const formatPrice = (value: string) =>
+        value !== "" && !Number.isNaN(Number(value))
+            ? new Intl.NumberFormat("vi-VN").format(Number(value)) + " VND"
+            : "VND";
+    const changeRule = (index: number, patch: Partial<WizardData["dealer_rules"][number]>) =>
+        update({
+            dealer_rules: data.dealer_rules.map((rule, position) =>
+                position === index ? { ...rule, ...patch } : rule,
+            ),
+        });
     return (
         <div className="space-y-5">
+            {data.sellable_dealer && (
+                <DealerPriceImportDialog
+                    open={importOpen}
+                    onOpenChange={setImportOpen}
+                    tiers={tiers}
+                    productSkus={skuOptions.map((option) => option.sku)}
+                    currentRules={data.dealer_rules}
+                    onApply={(dealer_rules) => update({ dealer_rules })}
+                />
+            )}
             {data.sellable_retail && (
                 <section className="rounded-xl border bg-card p-5">
                     <h2 className="text-xl text-primary">Giá Retail</h2>
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Giá riêng theo biến thể được ưu tiên; để trống sẽ dùng giá bán lẻ mặc định.
+                    </p>
+                    <div className="mt-4 max-w-sm">
                         <Field
                             name="retail_price"
-                            label="Giá bán lẻ *"
+                            label="Giá bán lẻ mặc định *"
                             error={errors["retail_price"]}
                         >
                             <input
                                 id="retail_price"
                                 type="number"
-                                min="0.01"
+                                min="0"
                                 step="0.01"
                                 className={input(errors["retail_price"])}
                                 value={data.retail_price}
-                                onChange={(e) => update({ retail_price: e.target.value })}
-                                placeholder="120000"
+                                onChange={(event) => update({ retail_price: event.target.value })}
                             />
                             <span className="text-xs text-muted-foreground">
-                                {data.retail_price && !Number.isNaN(Number(data.retail_price))
-                                    ? `${new Intl.NumberFormat("vi-VN").format(Number(data.retail_price))} ₫`
-                                    : "VND"}
+                                {formatPrice(data.retail_price)}
                             </span>
                         </Field>
                     </div>
-                    <h3 className="mt-4 font-medium">Mức giá theo số lượng</h3>
-                    <p className="text-xs text-muted-foreground">
-                        Mỗi mức áp dụng từ số lượng nhập đến trước mức tiếp theo.
-                    </p>
-                    <div className="mt-3 space-y-3">
-                        {data.retail_breaks.map((row, index) => (
-                            <div
-                                key={index}
-                                className="grid gap-3 rounded-md border p-3 sm:grid-cols-[1fr_1fr_auto]"
-                            >
-                                <Field
-                                    name={`retail_breaks.${index}.min_quantity`}
-                                    label="Từ số lượng *"
-                                    error={errors[`retail_breaks.${index}.min_quantity`]}
-                                >
-                                    <input
-                                        id={`retail_breaks.${index}.min_quantity`}
-                                        type="number"
-                                        min="2"
-                                        step="1"
-                                        className={input(
-                                            errors[`retail_breaks.${index}.min_quantity`],
-                                        )}
-                                        value={row.min_quantity}
-                                        onChange={(e) =>
-                                            update({
-                                                retail_breaks: data.retail_breaks.map(
-                                                    (item, position) =>
+                    {data.has_variants && (
+                        <>
+                            <h3 className="mt-4 font-medium">Giá riêng theo biến thể</h3>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                {data.variants.map((variant, index) => (
+                                    <Field
+                                        key={variant.sku}
+                                        name={"variants." + index + ".retail_price_override"}
+                                        label={
+                                            Object.values(variant.specifications).join(" / ") ||
+                                            variant.sku
+                                        }
+                                        error={
+                                            errors["variants." + index + ".retail_price_override"]
+                                        }
+                                    >
+                                        <input
+                                            id={"variants." + index + ".retail_price_override"}
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            className={input(
+                                                errors[
+                                                    "variants." + index + ".retail_price_override"
+                                                ],
+                                            )}
+                                            value={variant.retail_price_override}
+                                            onChange={(event) =>
+                                                update({
+                                                    variants: data.variants.map((item, position) =>
                                                         position === index
                                                             ? {
                                                                   ...item,
-                                                                  min_quantity: e.target.value,
+                                                                  retail_price_override:
+                                                                      event.target.value,
                                                               }
                                                             : item,
-                                                ),
-                                            })
-                                        }
-                                    />
-                                </Field>
-                                <Field
-                                    name={`retail_breaks.${index}.unit_price`}
-                                    label="Giá *"
-                                    error={errors[`retail_breaks.${index}.unit_price`]}
-                                >
-                                    <input
-                                        id={`retail_breaks.${index}.unit_price`}
-                                        type="number"
-                                        min="0.01"
-                                        step="0.01"
-                                        className={input(
-                                            errors[`retail_breaks.${index}.unit_price`],
-                                        )}
-                                        value={row.unit_price}
-                                        onChange={(e) =>
-                                            update({
-                                                retail_breaks: data.retail_breaks.map(
-                                                    (item, position) =>
-                                                        position === index
-                                                            ? {
-                                                                  ...item,
-                                                                  unit_price: e.target.value,
-                                                              }
-                                                            : item,
-                                                ),
-                                            })
-                                        }
-                                    />
-                                </Field>
-                                <button
-                                    type="button"
-                                    className={`${secondaryButtonClass} self-center`}
-                                    onClick={() =>
-                                        update({
-                                            retail_breaks: data.retail_breaks.filter(
-                                                (_, position) => position !== index,
-                                            ),
-                                        })
-                                    }
-                                >
-                                    Xóa
-                                </button>
+                                                    ),
+                                                })
+                                            }
+                                        />
+                                        <span className="text-xs text-muted-foreground">
+                                            {variant.retail_price_override
+                                                ? formatPrice(variant.retail_price_override)
+                                                : "Dùng giá mặc định"}
+                                        </span>
+                                    </Field>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                    <button
-                        type="button"
-                        className={secondaryButtonClass}
-                        onClick={() =>
-                            update({
-                                retail_breaks: [
-                                    ...data.retail_breaks,
-                                    { min_quantity: "", unit_price: "" },
-                                ],
-                            })
-                        }
-                    >
-                        + Thêm mức giá
-                    </button>
-                </section>
-            )}
-            {data.has_variants && data.sellable_retail && (
-                <section className="rounded-xl border bg-card p-5">
-                    <h2 className="text-xl text-primary">Giá riêng theo biến thể</h2>
-                    <p className="text-sm text-muted-foreground">
-                        Để trống nếu dùng giá Retail mặc định.
-                    </p>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        {data.variants.map((variant, index) => (
-                            <Field
-                                key={index}
-                                name={`variants.${index}.retail_price_override`}
-                                label={Object.values(variant.specifications).join(" / ")}
-                                error={errors[`variants.${index}.retail_price_override`]}
-                            >
-                                <input
-                                    id={`variants.${index}.retail_price_override`}
-                                    type="number"
-                                    min="0.01"
-                                    step="0.01"
-                                    className={input(
-                                        errors[`variants.${index}.retail_price_override`],
-                                    )}
-                                    value={variant.retail_price_override}
-                                    onChange={(e) =>
-                                        update({
-                                            variants: data.variants.map((item, position) =>
-                                                position === index
-                                                    ? {
-                                                          ...item,
-                                                          retail_price_override: e.target.value,
-                                                      }
-                                                    : item,
-                                            ),
-                                        })
-                                    }
-                                />
-                            </Field>
-                        ))}
-                    </div>
+                        </>
+                    )}
                 </section>
             )}
             {data.sellable_dealer && (
                 <section className="rounded-xl border bg-card p-5">
-                    <h2 className="text-xl text-primary">Giá đại lý & MOQ</h2>
-                    <p className="text-sm text-muted-foreground">
-                        Giá theo hạng thực tế và ngưỡng số lượng. Chưa có kênh mua Dealer công khai.
-                    </p>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h2 className="text-xl text-primary">Giá Đại lý</h2>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Tier quyết định giá. MOQ chỉ là số lượng đặt tối thiểu; số lượng lớn
+                                hơn vẫn dùng cùng đơn giá.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                className={secondaryButtonClass}
+                                onClick={() => setImportOpen(true)}
+                            >
+                                Import hàng loạt
+                            </button>
+                            <button
+                                type="button"
+                                className={secondaryButtonClass}
+                                onClick={() =>
+                                    update({
+                                        dealer_rules: [
+                                            ...data.dealer_rules,
+                                            {
+                                                tier_id: null,
+                                                sku: skuOptions[0]?.sku ?? "",
+                                                min_quantity: "",
+                                                unit_price: "",
+                                            },
+                                        ],
+                                    })
+                                }
+                            >
+                                + Thêm mức giá
+                            </button>
+                            <button
+                                type="button"
+                                className={secondaryButtonClass}
+                                disabled={!data.dealer_rules.length}
+                                onClick={() => update({ dealer_rules: [] })}
+                            >
+                                Xóa tất cả
+                            </button>
+                        </div>
+                    </div>
                     {!tiers.some((tier) => tier.status === "active") && (
-                        <p className="mt-2 text-sm text-amber-700">
-                            Chưa có hạng đại lý. Tạo hạng bên dưới trước khi thêm giá.
+                        <p className="mt-3 text-sm text-amber-700">
+                            Chưa có Tier đang hoạt động.{" "}
+                            <Link to="/admin/dealer-tiers" className="underline">
+                                Cấu hình Tier đại lý
+                            </Link>{" "}
+                            trước khi thêm giá.
                         </p>
                     )}
-                    <div className="mt-3 space-y-3">
-                        {data.dealer_rules.map((row, index) => (
-                            <div
-                                key={index}
-                                className="grid gap-3 rounded-md border p-3 sm:grid-cols-[1fr_1fr_1fr_auto]"
-                            >
-                                <Field
-                                    name={`dealer_rules.${index}.tier_id`}
-                                    label="Hạng đại lý *"
-                                    error={errors[`dealer_rules.${index}.tier_id`]}
-                                >
-                                    <select
-                                        id={`dealer_rules.${index}.tier_id`}
-                                        className={input(errors[`dealer_rules.${index}.tier_id`])}
-                                        value={row.tier_id ?? ""}
-                                        onChange={(e) =>
-                                            update({
-                                                dealer_rules: data.dealer_rules.map(
-                                                    (item, position) =>
-                                                        position === index
-                                                            ? {
-                                                                  ...item,
-                                                                  tier_id:
-                                                                      Number(e.target.value) ||
-                                                                      null,
-                                                              }
-                                                            : item,
-                                                ),
-                                            })
-                                        }
-                                    >
-                                        <option value="">Chọn hạng</option>
-                                        {tiers
-                                            .filter((tier) => tier.status === "active")
-                                            .map((tier) => (
-                                                <option key={tier.id} value={tier.id}>
-                                                    {tier.name}
-                                                </option>
-                                            ))}
-                                    </select>
-                                </Field>
-                                <Field
-                                    name={`dealer_rules.${index}.min_quantity`}
-                                    label="MOQ *"
-                                    error={errors[`dealer_rules.${index}.min_quantity`]}
-                                >
-                                    <input
-                                        id={`dealer_rules.${index}.min_quantity`}
-                                        type="number"
-                                        min="1"
-                                        step="1"
-                                        className={input(
-                                            errors[`dealer_rules.${index}.min_quantity`],
-                                        )}
-                                        value={row.min_quantity}
-                                        onChange={(e) =>
-                                            update({
-                                                dealer_rules: data.dealer_rules.map(
-                                                    (item, position) =>
-                                                        position === index
-                                                            ? {
-                                                                  ...item,
-                                                                  min_quantity: e.target.value,
-                                                              }
-                                                            : item,
-                                                ),
-                                            })
-                                        }
-                                    />
-                                </Field>
-                                <Field
-                                    name={`dealer_rules.${index}.unit_price`}
-                                    label="Giá *"
-                                    error={errors[`dealer_rules.${index}.unit_price`]}
-                                >
-                                    <input
-                                        id={`dealer_rules.${index}.unit_price`}
-                                        type="number"
-                                        min="0.01"
-                                        step="0.01"
-                                        className={input(
-                                            errors[`dealer_rules.${index}.unit_price`],
-                                        )}
-                                        value={row.unit_price}
-                                        onChange={(e) =>
-                                            update({
-                                                dealer_rules: data.dealer_rules.map(
-                                                    (item, position) =>
-                                                        position === index
-                                                            ? {
-                                                                  ...item,
-                                                                  unit_price: e.target.value,
-                                                              }
-                                                            : item,
-                                                ),
-                                            })
-                                        }
-                                    />
-                                </Field>
-                                <button
-                                    type="button"
-                                    className={`${secondaryButtonClass} self-center`}
-                                    onClick={() =>
-                                        update({
-                                            dealer_rules: data.dealer_rules.filter(
-                                                (_, position) => position !== index,
-                                            ),
-                                        })
-                                    }
-                                >
-                                    Xóa
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                    <p data-field="dealer_rules" className="text-xs text-red-700">
+                    <p data-field="dealer_rules" className="mt-3 text-sm text-red-700">
                         {errors["dealer_rules"]}
                     </p>
-                    <button
-                        type="button"
-                        className={secondaryButtonClass}
-                        onClick={() =>
-                            update({
-                                dealer_rules: [
-                                    ...data.dealer_rules,
-                                    { tier_id: null, min_quantity: "", unit_price: "" },
-                                ],
-                            })
-                        }
-                    >
-                        + Thêm mức giá
-                    </button>
-                    <div className="mt-6 grid gap-3 border-t pt-4 sm:grid-cols-[1fr_1fr_auto]">
-                        <input
-                            aria-label="Mã hạng mới"
-                            className={fieldClass}
-                            placeholder="Mã hạng mới"
-                            value={tierCode}
-                            onChange={(e) => setTierCode(e.target.value)}
-                        />
-                        <input
-                            aria-label="Tên hạng mới"
-                            className={fieldClass}
-                            placeholder="Tên hạng mới"
-                            value={tierName}
-                            onChange={(e) => setTierName(e.target.value)}
-                        />
-                        <button
-                            type="button"
-                            disabled={busy || !tierCode.trim() || !tierName.trim()}
-                            className={secondaryButtonClass}
-                            onClick={() =>
-                                void createTier(tierCode, tierName).then((created) => {
-                                    if (created) {
-                                        setTierCode("");
-                                        setTierName("");
-                                    }
-                                })
-                            }
-                        >
-                            Tạo hạng
-                        </button>
+                    <div className="mt-4 overflow-x-auto">
+                        <table className="w-full min-w-[700px] text-left text-sm">
+                            <thead>
+                                <tr className="border-b">
+                                    <th className="p-2">Tier</th>
+                                    <th className="p-2">Biến thể</th>
+                                    <th className="p-2">MOQ</th>
+                                    <th className="p-2">Giá Đại lý (VND)</th>
+                                    <th className="p-2">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.dealer_rules.map((row, index) => (
+                                    <tr key={index} className="border-b align-top">
+                                        <td className="p-2">
+                                            <select
+                                                aria-label={"Tier dòng " + (index + 1)}
+                                                className={input(
+                                                    errors["dealer_rules." + index + ".tier_id"],
+                                                )}
+                                                value={row.tier_id ?? ""}
+                                                onChange={(event) =>
+                                                    changeRule(index, {
+                                                        tier_id: Number(event.target.value) || null,
+                                                    })
+                                                }
+                                            >
+                                                <option value="">Chọn Tier</option>
+                                                {tiers
+                                                    .filter((tier) => tier.status === "active")
+                                                    .map((tier) => (
+                                                        <option key={tier.id} value={tier.id}>
+                                                            {tier.name}
+                                                        </option>
+                                                    ))}
+                                            </select>
+                                            <p className="text-xs text-red-700">
+                                                {errors["dealer_rules." + index + ".tier_id"]}
+                                            </p>
+                                        </td>
+                                        <td className="p-2">
+                                            <select
+                                                aria-label={"Biến thể dòng " + (index + 1)}
+                                                className={input(
+                                                    errors["dealer_rules." + index + ".sku"],
+                                                )}
+                                                value={row.sku}
+                                                onChange={(event) =>
+                                                    changeRule(index, { sku: event.target.value })
+                                                }
+                                            >
+                                                {skuOptions.map((option) => (
+                                                    <option key={option.sku} value={option.sku}>
+                                                        {option.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <p className="text-xs text-red-700">
+                                                {errors["dealer_rules." + index + ".sku"]}
+                                            </p>
+                                        </td>
+                                        <td className="p-2">
+                                            <input
+                                                aria-label={"MOQ dòng " + (index + 1)}
+                                                type="number"
+                                                min="1"
+                                                step="1"
+                                                className={input(
+                                                    errors[
+                                                        "dealer_rules." + index + ".min_quantity"
+                                                    ],
+                                                )}
+                                                value={row.min_quantity}
+                                                onChange={(event) =>
+                                                    changeRule(index, {
+                                                        min_quantity: event.target.value,
+                                                    })
+                                                }
+                                            />
+                                            <p className="text-xs text-red-700">
+                                                {errors["dealer_rules." + index + ".min_quantity"]}
+                                            </p>
+                                        </td>
+                                        <td className="p-2">
+                                            <input
+                                                aria-label={"Giá đại lý dòng " + (index + 1)}
+                                                type="number"
+                                                min="0.01"
+                                                step="0.01"
+                                                className={input(
+                                                    errors["dealer_rules." + index + ".unit_price"],
+                                                )}
+                                                value={row.unit_price}
+                                                onChange={(event) =>
+                                                    changeRule(index, {
+                                                        unit_price: event.target.value,
+                                                    })
+                                                }
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                {formatPrice(row.unit_price)}
+                                            </p>
+                                            <p className="text-xs text-red-700">
+                                                {errors["dealer_rules." + index + ".unit_price"]}
+                                            </p>
+                                        </td>
+                                        <td className="p-2">
+                                            <button
+                                                type="button"
+                                                className={secondaryButtonClass}
+                                                onClick={() =>
+                                                    update({
+                                                        dealer_rules: data.dealer_rules.filter(
+                                                            (_, position) => position !== index,
+                                                        ),
+                                                    })
+                                                }
+                                            >
+                                                Xóa
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </section>
             )}
@@ -1014,7 +1013,7 @@ export function PricesStep({ data, update, errors, tiers, busy, createTier }: St
     );
 }
 
-export function StockStep({ data, update, errors, units, warehouses }: StepProps) {
+export function StockStep({ data, update, errors, warehouses }: StepProps) {
     return (
         <div className="space-y-5">
             <section className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
@@ -1069,7 +1068,7 @@ export function StockStep({ data, update, errors, units, warehouses }: StepProps
                             id="initial_stock"
                             type="number"
                             min="0"
-                            step="0.001"
+                            step="1"
                             className={input(errors["initial_stock"])}
                             value={data.initial_stock}
                             onChange={(e) => update({ initial_stock: e.target.value })}
@@ -1085,16 +1084,14 @@ export function StockStep({ data, update, errors, units, warehouses }: StepProps
                         id="low_stock_threshold"
                         type="number"
                         min="0"
-                        step="0.001"
+                        step="1"
                         className={input(errors["low_stock_threshold"])}
                         value={data.low_stock_threshold}
                         onChange={(e) => update({ low_stock_threshold: e.target.value })}
                     />
                 </Field>
                 <p className="sm:col-span-2 text-xs text-muted-foreground">
-                    Đơn vị đã chọn cho phép{" "}
-                    {units.find((unit) => unit.id === data.unit_id)?.decimal_precision ?? 0} chữ số
-                    thập phân.{" "}
+                    Số lượng tồn kho sử dụng số nguyên.{" "}
                     {data.has_variants && "Tồn kho ban đầu nhập theo từng biến thể ở bước trước."}
                 </p>
             </section>

@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(DealerTierPresetSeeder::class);
+        $this->call(ProductUnitSeeder::class);
         $this->call(AestheticClinicSeeder::class);
     }
 }

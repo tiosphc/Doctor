@@ -12,3 +12,9 @@ Schedule::command('appointments:send-reminders')
     ->everyFiveMinutes()
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('dealers:reconcile-auto-tiers --apply')
+    ->dailyAt('23:55')
+    ->timezone('Asia/Ho_Chi_Minh')
+    ->withoutOverlapping()
+    ->onOneServer();

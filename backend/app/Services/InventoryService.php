@@ -16,6 +16,8 @@ class InventoryService
 
     public const RECEIPT = 'GOODS_RECEIPT';
 
+    public const PURCHASE_RETURN = 'PURCHASE_RETURN';
+
     public const ADJUSTMENT_IN = 'ADJUSTMENT_IN';
 
     public const ADJUSTMENT_OUT = 'ADJUSTMENT_OUT';
@@ -32,6 +34,12 @@ class InventoryService
     public function receive(array $data, ?int $actorId): StockMovement
     {
         return $this->operate(self::RECEIPT, $data, $actorId);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function returnPurchase(array $data, ?int $actorId): StockMovement
+    {
+        return $this->operate(self::PURCHASE_RETURN, $data, $actorId);
     }
 
     /** @param array<string, mixed> $data */
@@ -53,11 +61,13 @@ class InventoryService
             throw ValidationException::withMessages(['reason_detail' => 'Opening stock requires a source note.']);
         }
         $quantity = (string) $data['quantity'];
-        if (preg_match('/^-?(?:0|[1-9][0-9]{0,14})(?:\.[0-9]{1,3})?$/', $quantity) !== 1
-            || bccomp($quantity, '0', 3) === 0
-            || ($type !== self::ADJUSTMENT_OUT && bccomp($quantity, '0', 3) < 0)
-            || ($type === self::ADJUSTMENT_OUT && bccomp($quantity, '0', 3) > 0)) {
-            throw ValidationException::withMessages(['quantity' => 'Quantity must be a non-zero signed decimal with at most three places.']);
+        if (preg_match($type === self::OPENING ? '/^(?:0|[1-9][0-9]{0,14})$/' : '/^-?[1-9][0-9]{0,14}$/', $quantity) !== 1
+            || ($type !== self::OPENING && bccomp($quantity, '0', 3) === 0)
+            || (! in_array($type, [self::ADJUSTMENT_OUT, self::PURCHASE_RETURN], true) && bccomp($quantity, '0', 3) < 0)
+            || (in_array($type, [self::ADJUSTMENT_OUT, self::PURCHASE_RETURN], true) && bccomp($quantity, '0', 3) > 0)) {
+            throw ValidationException::withMessages(['quantity' => $type === self::OPENING
+                ? 'Opening quantity must be a non-negative whole number.'
+                : 'Quantity must be a non-zero whole number.']);
         }
         $quantity = bcadd($quantity, '0', 3);
         $key = (string) $data['operation_key'];
@@ -112,6 +122,24 @@ class InventoryService
                     $this->conflict('INSUFFICIENT_AVAILABLE_STOCK');
                 }
 
+                $previousCost = $balance->average_unit_cost === null ? null : (string) $balance->average_unit_cost;
+                $receiptCost = $type === self::RECEIPT && ($data['reference_type'] ?? null) === 'GOODS_RECEIPT' && isset($data['unit_cost'])
+                    ? bcadd((string) $data['unit_cost'], '0', 6) : null;
+                $movementCost = bccomp($quantity, '0', 3) > 0 ? $receiptCost : $previousCost;
+                $absoluteCost = $movementCost === null ? null
+                    : bcadd(bcmul(ltrim($quantity, '-'), $movementCost, 9), '0.005', 2);
+                $costAmount = $absoluteCost === null ? null
+                    : (bccomp($quantity, '0', 3) < 0 ? bcsub('0', $absoluteCost, 2) : $absoluteCost);
+                $averageCost = $previousCost;
+                if (bccomp($after, '0', 3) === 0) {
+                    $averageCost = null;
+                } elseif (bccomp($quantity, '0', 3) > 0) {
+                    $averageCost = $receiptCost === null || (bccomp($before, '0', 3) > 0 && $previousCost === null)
+                        ? null
+                        : (bccomp($before, '0', 3) === 0 ? $receiptCost
+                            : bcdiv(bcadd(bcmul($before, $previousCost, 9), bcmul($quantity, $receiptCost, 9), 9), $after, 6));
+                }
+
                 $movementId = DB::table('stock_movements')->insertGetId([
                     'warehouse_id' => $warehouse->id,
                     'product_variant_id' => $variant->id,
@@ -119,6 +147,7 @@ class InventoryService
                     'quantity' => $quantity,
                     'before_on_hand_quantity' => $before,
                     'after_on_hand_quantity' => $after,
+                    'unit_cost' => $movementCost, 'cost_amount' => $costAmount,
                     'reference_type' => $data['reference_type'] ?? null,
                     'reference_id' => $data['reference_id'] ?? null,
                     'operation_key' => $key,
@@ -132,6 +161,7 @@ class InventoryService
                 ]);
                 DB::table('inventory_balances')->where('id', $balance->id)->update([
                     'on_hand_quantity' => $after,
+                    'average_unit_cost' => $averageCost,
                     'updated_at' => now(),
                 ]);
                 $movement = StockMovement::query()->findOrFail($movementId);

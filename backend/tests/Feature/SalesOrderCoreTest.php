@@ -118,7 +118,14 @@ class SalesOrderCoreTest extends TestCase
         ])->assertConflict()->assertJsonPath('code', 'ORDER_INVALID_STATE');
         $this->postJson("/api/admin/sales-orders/{$id}/fulfill", [
             'operation_key' => (string) Str::uuid(), 'items' => [['item_id' => $itemId, 'quantity' => '3']],
-        ])->assertOk()->assertJsonPath('data.order_status', 'completed');
+        ])->assertOk()->assertJsonPath('data.order_status', 'delivered')
+            ->assertJsonPath('data.fulfillment_status', 'fulfilled')
+            ->assertJsonPath('data.payment_status', 'unpaid');
+        $this->postJson("/api/admin/sales-orders/{$id}/payments", [
+            'operation_key' => (string) Str::uuid(), 'amount' => '480000', 'payment_method' => 'cash',
+        ])->assertCreated()->assertJsonPath('data.summary.payment_status', 'paid');
+        $this->getJson("/api/admin/sales-orders/{$id}")
+            ->assertOk()->assertJsonPath('data.order_status', 'completed');
         $this->assertDatabaseHas('inventory_balances', ['warehouse_id' => $warehouse->id,
             'product_variant_id' => $variant->id, 'on_hand_quantity' => '6.000', 'reserved_quantity' => '0.000']);
         $this->assertDatabaseHas('stock_movements', ['movement_type' => 'SALES_ORDER_SHIPMENT',
@@ -223,7 +230,7 @@ class SalesOrderCoreTest extends TestCase
         $this->postJson('/api/admin/sales-orders', $body)->assertConflict()->assertJsonPath('code', 'WAREHOUSE_INACTIVE');
         $warehouse->update(['status' => 'active']);
         $body['items'][0]['quantity'] = '1.5';
-        $this->postJson('/api/admin/sales-orders', $body)->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->postJson('/api/admin/sales-orders', $body)->assertUnprocessable()->assertJsonValidationErrors('items.0.quantity');
         $this->assertDatabaseCount('sales_orders', 0);
     }
 
@@ -275,5 +282,137 @@ class SalesOrderCoreTest extends TestCase
         $this->postJson('/api/admin/sales-orders', $this->body($warehouse, $variant))
             ->assertConflict()->assertJsonPath('code', 'PRICE_NOT_FOUND');
         $this->assertDatabaseCount('sales_orders', 0);
+    }
+
+    public function test_retail_preview_uses_current_price_and_selected_warehouse_stock(): void
+    {
+        $this->admin();
+        [$warehouse, $variant] = $this->catalog();
+        $otherWarehouse = Warehouse::factory()->create();
+        $this->stock($warehouse, $variant, '5');
+        $this->stock($otherWarehouse, $variant, '1');
+
+        $payload = ['warehouse_id' => $warehouse->id, 'items' => [
+            ['sku' => $variant->sku, 'quantity' => 2],
+        ]];
+        $this->getJson('/api/admin/retail-prices?status=active&warehouse_id='.$warehouse->id.'&search='.$variant->sku)
+            ->assertOk()->assertJsonPath('data.0.sku', $variant->sku)
+            ->assertJsonPath('data.0.available_quantity', '5.000')
+            ->assertJsonPath('data.0.unit_price', '120000.00');
+        $this->getJson('/api/admin/retail-prices?status=active&warehouse_id='.$warehouse->id.'&search='.urlencode($variant->product->name))
+            ->assertOk()->assertJsonPath('data.0.sku', $variant->sku);
+        $this->postJson('/api/admin/sales-orders/retail-preview', $payload)->assertOk()
+            ->assertJsonPath('data.items.0.unit_price', '120000.00')
+            ->assertJsonPath('data.items.0.available_quantity', '5.000')
+            ->assertJsonPath('data.items.0.insufficient_stock', false)
+            ->assertJsonPath('data.grand_total', '240000.00');
+        $this->postJson('/api/admin/sales-orders/retail-preview', [
+            ...$payload, 'warehouse_id' => $otherWarehouse->id,
+        ])->assertOk()->assertJsonPath('data.items.0.insufficient_stock', true);
+        $this->assertDatabaseCount('sales_orders', 0);
+    }
+
+    public function test_admin_can_create_confirmed_retail_order_atomically_without_marking_payment_paid(): void
+    {
+        $this->admin();
+        [$warehouse, $variant] = $this->catalog();
+        $this->stock($warehouse, $variant, '3');
+        $body = [...$this->body($warehouse, $variant),
+            'payment_method' => 'bank_transfer', 'shipping_district' => 'Ward 1',
+            'confirm' => true, 'confirm_operation_key' => (string) Str::uuid(),
+        ];
+
+        $created = $this->postJson('/api/admin/sales-orders', $body)->assertCreated()
+            ->assertJsonPath('data.order_status', 'confirmed')
+            ->assertJsonPath('data.fulfillment_status', 'reserved')
+            ->assertJsonPath('data.payment_status', 'unpaid')
+            ->assertJsonPath('data.payment_method', 'bank_transfer')
+            ->assertJsonPath('data.shipping_district', 'Ward 1');
+        $this->assertDatabaseCount('inventory_reservations', 1);
+        $this->postJson('/api/admin/sales-orders', $body)->assertCreated()
+            ->assertJsonPath('data.id', $created->json('data.id'));
+        $this->assertDatabaseCount('sales_orders', 1);
+        $this->assertDatabaseCount('inventory_reservations', 1);
+
+        $insufficient = [...$this->body($warehouse, $variant, '2'),
+            'payment_method' => 'cod', 'confirm' => true,
+            'confirm_operation_key' => (string) Str::uuid(),
+        ];
+        $this->postJson('/api/admin/sales-orders', $insufficient)->assertConflict()
+            ->assertJsonPath('code', 'INSUFFICIENT_STOCK');
+        $this->assertDatabaseCount('sales_orders', 1);
+        $this->assertDatabaseCount('inventory_reservations', 1);
+    }
+
+    public function test_admin_can_search_create_and_reuse_retail_customer_address(): void
+    {
+        $this->admin();
+        $this->postJson('/api/admin/sales-orders/buyers', [
+            'name' => 'Retail Buyer', 'email' => 'retail-buyer@example.com', 'phone' => '0901234567',
+        ])->assertCreated()->assertJsonPath('data.name', 'Retail Buyer');
+        $buyer = User::query()->where('email', 'retail-buyer@example.com')->firstOrFail();
+        $this->assertTrue($buyer->isCustomer());
+        $this->getJson('/api/admin/sales-orders/buyers?search=0901234567')->assertOk()
+            ->assertJsonPath('data.0.id', $buyer->id);
+        [$warehouse, $variant] = $this->catalog();
+        $body = [...$this->body($warehouse, $variant), 'buyer_user_id' => $buyer->id,
+            'shipping_address_line1' => '12 Nguyen Hue', 'shipping_district' => 'Ben Nghe',
+        ];
+        $this->postJson('/api/admin/sales-orders', $body)->assertCreated();
+        $this->getJson("/api/admin/sales-orders/buyers/{$buyer->id}")->assertOk()
+            ->assertJsonPath('data.last_shipping.shipping_address_line1', '12 Nguyen Hue')
+            ->assertJsonPath('data.last_shipping.shipping_district', 'Ben Nghe');
+        $this->postJson('/api/admin/sales-orders/buyers', [
+            'name' => 'Duplicate', 'email' => $buyer->email, 'phone' => '0909999999',
+        ])->assertUnprocessable()->assertJsonValidationErrors('email');
+    }
+
+    public function test_admin_can_edit_retail_draft_then_confirm_with_current_price_and_stock(): void
+    {
+        $this->admin();
+        [$warehouse, $variant, $price] = $this->catalog();
+        $this->stock($warehouse, $variant, '4');
+        $body = [...$this->body($warehouse, $variant, '1'), 'payment_method' => 'cod'];
+        $id = $this->postJson('/api/admin/sales-orders', $body)->assertCreated()->json('data.id');
+        $price->update(['unit_price' => '130000.00']);
+
+        $edit = [...$body, 'operation_key' => (string) Str::uuid(),
+            'recipient_name' => 'Updated Recipient',
+            'items' => [['sku' => $variant->sku, 'quantity' => '3']],
+        ];
+        $this->postJson("/api/admin/sales-orders/{$id}/draft", $edit)->assertOk()
+            ->assertJsonPath('data.order_status', 'draft')
+            ->assertJsonPath('data.recipient_name', 'Updated Recipient')
+            ->assertJsonPath('data.items.0.unit_price_snapshot', '130000.00')
+            ->assertJsonPath('data.grand_total', '390000.00');
+        $this->assertDatabaseCount('inventory_reservations', 0);
+        $this->postJson("/api/admin/sales-orders/{$id}/draft", $edit)->assertOk();
+        $this->assertDatabaseCount('sales_order_items', 1);
+
+        $tooMany = [...$edit, 'operation_key' => (string) Str::uuid(),
+            'confirm' => true, 'confirm_operation_key' => (string) Str::uuid(),
+            'items' => [['sku' => $variant->sku, 'quantity' => '5']],
+        ];
+        $this->postJson("/api/admin/sales-orders/{$id}/draft", $tooMany)->assertConflict()
+            ->assertJsonPath('code', 'INSUFFICIENT_STOCK');
+        $this->getJson("/api/admin/sales-orders/{$id}")->assertOk()
+            ->assertJsonPath('data.order_status', 'draft')
+            ->assertJsonPath('data.items.0.quantity', '3.000');
+        $this->assertDatabaseCount('inventory_reservations', 0);
+
+        $confirm = [...$edit, 'operation_key' => (string) Str::uuid(),
+            'confirm' => true, 'confirm_operation_key' => (string) Str::uuid(),
+        ];
+        $this->postJson("/api/admin/sales-orders/{$id}/draft", $confirm)->assertOk()
+            ->assertJsonPath('data.order_status', 'confirmed')
+            ->assertJsonPath('data.fulfillment_status', 'reserved')
+            ->assertJsonPath('data.payment_status', 'unpaid');
+        $this->assertDatabaseCount('inventory_reservations', 1);
+        $this->postJson("/api/admin/sales-orders/{$id}/draft", $confirm)->assertOk()
+            ->assertJsonPath('data.order_status', 'confirmed');
+        $this->assertDatabaseCount('inventory_reservations', 1);
+        $this->postJson("/api/admin/sales-orders/{$id}/draft", [
+            ...$edit, 'operation_key' => (string) Str::uuid(),
+        ])->assertConflict()->assertJsonPath('code', 'ORDER_INVALID_STATE');
     }
 }

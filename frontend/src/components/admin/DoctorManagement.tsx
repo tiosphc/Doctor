@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { Check, ChevronsUpDown, CircleAlert, Copy, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/common/Button";
@@ -184,8 +185,8 @@ export function DoctorManagement({ id }: { id: number }) {
             });
         },
         onError: (reason) => {
-            setConfirmAction(null);
             setDeleteError(errorMessage(reason));
+            toast.error(errorMessage(reason));
         },
     });
 

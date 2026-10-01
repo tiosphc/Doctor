@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Link, Navigate, useNavigate, useSearch } from "@tanstack/react-router";
 import { UserPlus } from "lucide-react";
 import { Button } from "@/components/common/Button";
@@ -8,7 +9,6 @@ import { Field, Input, Textarea } from "@/components/common/Fields";
 import { AppointmentProgress, Badge, StatusBadge } from "@/components/common/Status";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
 import { formatDate, money } from "@/components/cards/Cards";
-import { LoyaltyCard } from "@/components/loyalty/LoyaltyCard";
 import { useAuth } from "@/contexts/AuthContext";
 import {
     adminApi,
@@ -70,6 +70,7 @@ export function AdminDoctorsPage() {
     const create = useMutation({
         mutationFn: adminApi.createDoctor,
         onSuccess: async (response) => {
+            toast.success("Thêm bác sĩ thành công.");
             setCreateOpen(false);
             await queryClient.invalidateQueries({ queryKey: ["admin-doctors"] });
             await navigate({
@@ -897,9 +898,12 @@ function AppointmentMeta({
     );
 }
 
-export function AdminAppointmentsPage() {
+export function AdminAppointmentsPage({ customerUserId }: { customerUserId?: number } = {}) {
     const client = useQueryClient();
-    const [filters, setFilters] = useState<AdminAppointmentFilters>(defaultAppointmentFilters);
+    const [filters, setFilters] = useState<AdminAppointmentFilters>({
+        ...defaultAppointmentFilters,
+        customer_id: customerUserId ? String(customerUserId) : "",
+    });
     const [page, setPage] = useState(1);
     const [notice, setNotice] = useState("");
     const [successPopup, setSuccessPopup] = useState("");
@@ -1371,113 +1375,6 @@ export function AdminCustomersPage() {
     );
 }
 
-export function AdminCustomerDetailPage({ id }: { id: number }) {
-    const navigate = useNavigate();
-    const query = useQuery({
-        queryKey: ["admin-customer", id],
-        queryFn: () => adminApi.customer(id),
-        retry: false,
-    });
-
-    return (
-        <AdminGuard>
-            <button
-                type="button"
-                onClick={() => navigate({ to: "/admin/customers" })}
-                className="mb-5 text-sm font-semibold text-primary hover:text-secondary"
-            >
-                ← Quay lại danh sách khách hàng
-            </button>
-            <AdminTitle
-                title="Chi tiết khách hàng"
-                description="Tiến độ thành viên được tính tự động từ các lịch hẹn đã hoàn thành."
-            />
-            {query.isPending ? (
-                <LoadingState />
-            ) : query.isError ? (
-                <ErrorState message={errorMessage(query.error)} retry={() => query.refetch()} />
-            ) : (
-                <div className="mt-7 grid gap-6">
-                    <section className="card-surface grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                        <AppointmentMeta
-                            label="Khách hàng"
-                            value={query.data.data.name}
-                            emphasize
-                        />
-                        <AppointmentMeta label="Email" value={query.data.data.email || "—"} />
-                        <AppointmentMeta
-                            label="Số điện thoại"
-                            value={query.data.data.phone || "—"}
-                        />
-                    </section>
-
-                    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                        {[
-                            ["Tổng lịch hẹn", query.data.data.statistics.total_appointments],
-                            ["Đã hoàn thành", query.data.data.statistics.completed_appointments],
-                            ["Sắp tới", query.data.data.statistics.upcoming_appointments],
-                            ["Đã hủy", query.data.data.statistics.cancelled_appointments],
-                            ["Đánh giá", query.data.data.statistics.reviews],
-                            ["Voucher khả dụng", query.data.data.statistics.available_vouchers],
-                        ].map(([label, value]) => (
-                            <div key={label} className="card-surface p-4">
-                                <p className="text-xs text-muted-foreground">{label}</p>
-                                <p className="mt-2 text-2xl font-semibold text-primary">{value}</p>
-                            </div>
-                        ))}
-                    </section>
-
-                    <LoyaltyCard summary={query.data.data.loyalty} />
-
-                    <section className="card-surface p-5 sm:p-6">
-                        <h2 className="text-2xl text-primary">Voucher thành viên đã cấp</h2>
-                        {query.data.data.loyalty_vouchers.length === 0 ? (
-                            <p className="mt-4 text-sm text-muted-foreground">
-                                Khách hàng chưa nhận Voucher từ mốc thành viên.
-                            </p>
-                        ) : (
-                            <div className="mt-5 grid gap-4 md:grid-cols-2">
-                                {query.data.data.loyalty_vouchers.map((voucher) => (
-                                    <article key={voucher.id} className="rounded-xl border p-4">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <p className="text-xs font-semibold uppercase tracking-[.12em] text-secondary-foreground">
-                                                    Mốc {voucher.milestone} lần
-                                                </p>
-                                                <p className="mt-2 text-2xl text-primary">
-                                                    Voucher {Number(voucher.value)}%
-                                                </p>
-                                            </div>
-                                            <Badge
-                                                tone={
-                                                    voucher.status === "active"
-                                                        ? "success"
-                                                        : "default"
-                                                }
-                                            >
-                                                {voucher.status === "active"
-                                                    ? "Còn hiệu lực"
-                                                    : voucher.status === "used"
-                                                      ? "Đã sử dụng"
-                                                      : voucher.status === "expired"
-                                                        ? "Đã hết hạn"
-                                                        : "Đã thu hồi"}
-                                            </Badge>
-                                        </div>
-                                        <p className="mt-4 text-sm text-muted-foreground">
-                                            Hết hạn: {formatDate(voucher.expires_at)}
-                                        </p>
-                                    </article>
-                                ))}
-                            </div>
-                        )}
-                    </section>
-                </div>
-            )}
-        </AdminGuard>
-    );
-}
-
 function DoctorInformationEditor({
     doctor,
     onSaved,
@@ -1584,11 +1481,17 @@ function ScheduleRow({ doctorId, schedule }: { doctorId: number; schedule: Docto
     const [notice, setNotice] = useState("");
     const update = useMutation({
         mutationFn: (body: ScheduleInput) => adminApi.updateSchedule(doctorId, schedule.id, body),
-        onSuccess: () => client.invalidateQueries({ queryKey: ["doctor-schedules", doctorId] }),
+        onSuccess: async () => {
+            toast.success("Cập nhật ca làm việc thành công.");
+            await client.invalidateQueries({ queryKey: ["doctor-schedules", doctorId] });
+        },
     });
     const remove = useMutation({
         mutationFn: () => adminApi.deleteSchedule(doctorId, schedule.id),
-        onSuccess: () => client.invalidateQueries({ queryKey: ["doctor-schedules", doctorId] }),
+        onSuccess: async () => {
+            toast.success("Xóa ca làm việc thành công.");
+            await client.invalidateQueries({ queryKey: ["doctor-schedules", doctorId] });
+        },
     });
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -1619,7 +1522,7 @@ function ScheduleRow({ doctorId, schedule }: { doctorId: number; schedule: Docto
             <Input name="start_time" type="time" defaultValue={schedule.start_time} />
             <Input name="end_time" type="time" defaultValue={schedule.end_time} />
             <Button className="min-h-10" disabled={update.isPending} type="submit">
-                Lưu
+                {update.isPending ? "Đang lưu..." : "Lưu"}
             </Button>
             <Button
                 className="min-h-10 text-red-700"
@@ -1627,6 +1530,7 @@ function ScheduleRow({ doctorId, schedule }: { doctorId: number; schedule: Docto
                 disabled={remove.isPending}
                 type="button"
                 onClick={async () => {
+                    if (!window.confirm("Xóa ca làm việc này?")) return;
                     try {
                         await remove.mutateAsync();
                     } catch (reason) {
@@ -1634,7 +1538,7 @@ function ScheduleRow({ doctorId, schedule }: { doctorId: number; schedule: Docto
                     }
                 }}
             >
-                Xóa
+                {remove.isPending ? "Đang xóa..." : "Xóa"}
             </Button>
             {notice && <p className="text-sm text-red-700 sm:col-span-5">{notice}</p>}
         </form>
@@ -1646,11 +1550,17 @@ function TimeOffRow({ doctorId, timeOff }: { doctorId: number; timeOff: DoctorTi
     const [notice, setNotice] = useState("");
     const update = useMutation({
         mutationFn: (body: TimeOffInput) => adminApi.updateTimeOff(doctorId, timeOff.id, body),
-        onSuccess: () => client.invalidateQueries({ queryKey: ["doctor-time-offs", doctorId] }),
+        onSuccess: async () => {
+            toast.success("Cập nhật thời gian nghỉ thành công.");
+            await client.invalidateQueries({ queryKey: ["doctor-time-offs", doctorId] });
+        },
     });
     const remove = useMutation({
         mutationFn: () => adminApi.deleteTimeOff(doctorId, timeOff.id),
-        onSuccess: () => client.invalidateQueries({ queryKey: ["doctor-time-offs", doctorId] }),
+        onSuccess: async () => {
+            toast.success("Xóa thời gian nghỉ thành công.");
+            await client.invalidateQueries({ queryKey: ["doctor-time-offs", doctorId] });
+        },
     });
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -1683,7 +1593,7 @@ function TimeOffRow({ doctorId, timeOff }: { doctorId: number; timeOff: DoctorTi
             </label>
             <div className="flex gap-2">
                 <Button className="min-h-10" disabled={update.isPending} type="submit">
-                    Lưu
+                    {update.isPending ? "Đang lưu..." : "Lưu"}
                 </Button>
                 <Button
                     className="min-h-10 text-red-700"
@@ -1691,6 +1601,7 @@ function TimeOffRow({ doctorId, timeOff }: { doctorId: number; timeOff: DoctorTi
                     disabled={remove.isPending}
                     type="button"
                     onClick={async () => {
+                        if (!window.confirm("Xóa thời gian nghỉ này?")) return;
                         try {
                             await remove.mutateAsync();
                         } catch (reason) {
@@ -1698,7 +1609,7 @@ function TimeOffRow({ doctorId, timeOff }: { doctorId: number; timeOff: DoctorTi
                         }
                     }}
                 >
-                    Xóa
+                    {remove.isPending ? "Đang xóa..." : "Xóa"}
                 </Button>
             </div>
             {notice && <p className="text-sm text-red-700 md:col-span-6">{notice}</p>}
@@ -1723,7 +1634,7 @@ function ServiceEditor({
     const update = useMutation({
         mutationFn: (body: FormData) => adminApi.updateService(service.id, body),
         onSuccess: async () => {
-            setNotice("Đã lưu.");
+            setNotice("Cập nhật dịch vụ thành công.");
             setErrors({});
             await client.invalidateQueries({ queryKey: ["admin-services"] });
             await client.invalidateQueries({ queryKey: ["admin-service-categories"] });

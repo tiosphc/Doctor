@@ -65,8 +65,16 @@ class CustomerController extends Controller
                 ->where('status', Appointment::STATUS_CANCELLED),
         ]);
         $customer->load('user');
+        $customer->load(['appointments' => fn ($query) => $query
+            ->with(['service:id,name', 'doctor:id,name'])
+            ->latest('appointment_date')->orderByDesc('id')->limit(5)]);
+
+        $availableVouchers = collect();
 
         if ($customer->user !== null) {
+            $availableVouchers = Voucher::query()->where('user_id', $customer->user_id)
+                ->where('status', Voucher::STATUS_ACTIVE)->where('expires_at', '>=', now())
+                ->latest('created_at')->orderByDesc('id')->limit(8)->get();
             $customer->user->loadCount([
                 'reviews',
                 'vouchers as available_vouchers_count' => fn (Builder $query): Builder => $query
@@ -88,6 +96,6 @@ class CustomerController extends Controller
             ]
             : $loyaltyService->summary($customer->user);
 
-        return new CustomerDetailResource($customer, $loyalty);
+        return new CustomerDetailResource($customer, $loyalty, $availableVouchers);
     }
 }

@@ -14,7 +14,7 @@ class StockMovementController extends Controller
         $data = $request->validate([
             'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
             'product_variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
-            'movement_type' => ['nullable', 'in:OPENING_BALANCE,GOODS_RECEIPT,ADJUSTMENT_IN,ADJUSTMENT_OUT'],
+            'movement_type' => ['nullable', 'in:OPENING_BALANCE,GOODS_RECEIPT,ADJUSTMENT_IN,ADJUSTMENT_OUT,PURCHASE_RETURN'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
             'reference' => ['nullable', 'string', 'max:100'],

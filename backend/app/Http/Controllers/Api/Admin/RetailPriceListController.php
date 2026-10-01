@@ -19,7 +19,7 @@ class RetailPriceListController extends Controller
             'status' => ['nullable', 'in:active,inactive'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
-        $query = PriceList::query()->withCount('items');
+        $query = PriceList::query()->where('pricing_context', 'retail')->withCount('items');
         if (isset($data['search'])) {
             $query->where(fn ($query) => $query->where('name', 'like', '%'.$data['search'].'%')->orWhere('code', 'like', '%'.$data['search'].'%'));
         }
@@ -39,11 +39,14 @@ class RetailPriceListController extends Controller
 
     public function show(PriceList $priceList): JsonResponse
     {
+        abort_unless($priceList->pricing_context === 'retail', 404);
+
         return response()->json(['data' => $priceList->load(['items.variant:id,product_id,sku,variant_name'])]);
     }
 
     public function update(SaveRetailPriceListRequest $request, PriceList $priceList, RetailPricingService $pricing): JsonResponse
     {
+        abort_unless($priceList->pricing_context === 'retail', 404);
         DB::transaction(function () use ($request, $priceList, $pricing): void {
             PriceList::query()->orderBy('id')->lockForUpdate()->get();
             $priceList->update($request->validated());

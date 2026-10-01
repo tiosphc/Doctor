@@ -21,8 +21,10 @@ class ProductCatalogResource extends JsonResource
             'id' => $variant->id,
             'sku' => $variant->sku,
             'variant_name' => $variant->variant_name,
+            'track_inventory' => $variant->track_inventory,
             'unit' => $variant->unit?->name,
             'unit_symbol' => $variant->unit?->symbol,
+            'unit_precision' => $variant->unit?->decimal_precision,
             'specifications' => collect($variant->specifications ?? [])
                 ->filter(fn (mixed $value, int|string $key): bool => is_string($key)
                     && is_string($value)
@@ -37,6 +39,8 @@ class ProductCatalogResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'description' => $this->description,
+            'gift_promotions' => $this->gift_promotions ?? [],
+            'retail_promotions' => $this->retail_promotions ?? [],
             'youtube_videos' => $this->youtube_videos ?? [],
             'usage_instructions' => $this->usage_instructions,
             'category' => $this->category?->only(['id', 'code', 'name']),

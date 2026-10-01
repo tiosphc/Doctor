@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Support\Sku;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProductWizardService
 {
-    public function __construct(private readonly InventoryService $inventory, private readonly AuditLogger $audit) {}
+    public function __construct(private readonly InventoryService $inventory, private readonly AuditLogger $audit, private readonly ProductPricingService $pricing) {}
 
     /** @param array<string, mixed> $data */
     public function complete(Product $draft, array $data, int $actorId): Product
@@ -41,6 +41,8 @@ class ProductWizardService
                 'brand_id' => $data['brand_id'] ?? null,
                 'base_sku' => $data['sku'],
                 'track_inventory' => $data['track_inventory'],
+                'can_be_gift' => $data['can_be_gift'] ?? false,
+                'gift_only' => $data['gift_only'] ?? false,
                 'default_low_stock_threshold' => $data['low_stock_threshold'] ?? null,
                 'youtube_videos' => $data['youtube_videos'] ?? [],
                 'usage_instructions' => $data['usage_instructions'] ?? null,
@@ -48,10 +50,10 @@ class ProductWizardService
             ]);
 
             $variants = $this->createVariants($product, $data);
-            if ($data['sellable_retail']) {
+            if ($data['sellable_retail'] && ! ($data['gift_only'] ?? false)) {
                 $this->createRetailPrices($product, $variants, $data);
             }
-            if ($data['sellable_dealer']) {
+            if ($data['sellable_dealer'] && ! ($data['gift_only'] ?? false)) {
                 $this->createDealerPrices($product, $variants, $data);
             }
             if ($data['track_inventory']) {
@@ -80,8 +82,8 @@ class ProductWizardService
                 'variant_name' => $specifications === [] ? 'Default' : implode(' / ', array_values($specifications)),
                 'unit_id' => $data['unit_id'],
                 'specifications' => $specifications === [] ? null : $specifications,
-                'sellable_retail' => $data['sellable_retail'],
-                'sellable_dealer' => $data['sellable_dealer'],
+                'sellable_retail' => $data['sellable_retail'] && ! ($data['gift_only'] ?? false),
+                'sellable_dealer' => $data['sellable_dealer'] && ! ($data['gift_only'] ?? false),
                 'track_inventory' => $data['track_inventory'],
                 'weight' => $data['weight'] ?? null,
                 'length' => $data['length'] ?? null,
@@ -105,54 +107,25 @@ class ProductWizardService
     /** @param list<ProductVariant> $variants @param array<string, mixed> $data */
     private function createRetailPrices(Product $product, array $variants, array $data): void
     {
-        $list = PriceList::create([
-            'code' => 'WIZR-'.$product->id,
-            'name' => 'Retail - '.$product->product_code,
-            'pricing_context' => 'retail',
-            'scope_type' => 'all',
-            'currency' => 'VND',
-            'priority' => 0,
-            'status' => 'active',
-        ]);
         foreach ($variants as $index => $variant) {
             $row = $data['has_variants'] ? $data['variants'][$index] : [];
-            $list->items()->create([
-                'product_variant_id' => $variant->id,
-                'unit_price' => $row['retail_price_override'] ?? $data['retail_price'],
-                'minimum_quantity' => 1,
-            ]);
-            foreach ($data['retail_breaks'] ?? [] as $break) {
-                $list->items()->create([
-                    'product_variant_id' => $variant->id,
-                    'unit_price' => $break['unit_price'],
-                    'minimum_quantity' => $break['min_quantity'],
-                ]);
-            }
+            $this->pricing->addInitialPrice($variant, 'retail', (string) ($row['retail_price_override'] ?? $data['retail_price']));
         }
     }
 
     /** @param list<ProductVariant> $variants @param array<string, mixed> $data */
     private function createDealerPrices(Product $product, array $variants, array $data): void
     {
+        $variantsBySku = collect($variants)->keyBy('sku');
         foreach (collect($data['dealer_rules'])->groupBy('tier_id') as $tierId => $rules) {
-            $list = PriceList::create([
-                'code' => 'WIZD-'.$product->id.'-'.$tierId,
-                'name' => 'Dealer - '.$product->product_code.' - '.$tierId,
-                'pricing_context' => 'dealer',
-                'scope_type' => 'tier',
-                'dealer_tier_id' => $tierId,
-                'currency' => 'VND',
-                'priority' => 0,
-                'status' => 'active',
-            ]);
-            foreach ($variants as $variant) {
-                foreach ($rules as $rule) {
-                    $list->items()->create([
-                        'product_variant_id' => $variant->id,
-                        'unit_price' => $rule['unit_price'],
-                        'minimum_quantity' => $rule['min_quantity'],
-                    ]);
-                }
+            foreach ($rules as $rule) {
+                $this->pricing->addInitialPrice(
+                    $variantsBySku->get(Sku::normalize($rule['sku'])),
+                    'dealer',
+                    (string) $rule['unit_price'],
+                    (int) $rule['min_quantity'],
+                    (int) $tierId,
+                );
             }
         }
     }

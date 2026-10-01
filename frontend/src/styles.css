@@ -78,6 +78,11 @@ h4 {
     font-family: var(--font-display);
     letter-spacing: 0;
 }
+.dealer-portal :is(h1, h2, h3, h4) {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+}
 button,
 a,
 input,

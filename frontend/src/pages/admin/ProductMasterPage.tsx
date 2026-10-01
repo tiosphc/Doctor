@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
 import { errorMessage, firstFieldErrors } from "@/services/api";
 import { productApi, productKeys, type MasterKind } from "@/services/productApi";
@@ -11,9 +12,10 @@ import {
     secondaryButtonClass,
 } from "./ProductAdminShared";
 
-const labels: Record<MasterKind, string> = {
+type VisibleMasterKind = Extract<MasterKind, "categories" | "units">;
+
+const labels: Record<VisibleMasterKind, string> = {
     categories: "Danh mục",
-    brands: "Thương hiệu",
     units: "Đơn vị",
 };
 const empty = {
@@ -29,7 +31,7 @@ const empty = {
 
 export function ProductMasterPage() {
     const client = useQueryClient();
-    const [kind, setKind] = useState<MasterKind>("categories");
+    const [kind, setKind] = useState<VisibleMasterKind>("categories");
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState<Master | null>(null);
     const [form, setForm] = useState(empty);
@@ -60,12 +62,20 @@ export function ProductMasterPage() {
                 : productApi.createMaster(kind, body);
         },
         onSuccess: async () => {
-            setNotice("Đã lưu dữ liệu.");
+            toast.success(
+                selected?.status === "active" && form.status === "inactive"
+                    ? `Đã ngừng hoạt động ${labels[kind].toLowerCase()}.`
+                    : selected?.status === "inactive" && form.status === "active"
+                      ? `Đã kích hoạt ${labels[kind].toLowerCase()}.`
+                      : `${selected ? "Cập nhật" : "Thêm"} ${labels[kind].toLowerCase()} thành công.`,
+            );
+            setNotice("");
             setErrors({});
             setSelected(null);
             setForm(empty);
             await client.invalidateQueries({ queryKey: productKeys.masters(kind) });
         },
+        onError: (reason) => toast.error(errorMessage(reason)),
     });
     function edit(item: Master) {
         setSelected(item);
@@ -83,13 +93,15 @@ export function ProductMasterPage() {
     }
     return (
         <ProductAdminGuard>
-            <div className="space-y-7">
+            <div className="space-y-7 font-sans">
                 <div>
-                    <p className="label-luxury">Product Master</p>
-                    <h1 className="mt-2 text-3xl text-primary">Danh mục, thương hiệu & đơn vị</h1>
+                    <p className="label-luxury">QUẢN LÝ SẢN PHẨM</p>
+                    <h1 className="mt-2 font-sans text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+                        Danh mục & đơn vị
+                    </h1>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    {(Object.keys(labels) as MasterKind[]).map((value) => (
+                    {(Object.keys(labels) as VisibleMasterKind[]).map((value) => (
                         <button
                             key={value}
                             type="button"
@@ -107,7 +119,9 @@ export function ProductMasterPage() {
                 </div>
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
                     <section className="rounded-xl border bg-card p-5">
-                        <h2 className="text-xl text-primary">{labels[kind]} hiện có</h2>
+                        <h2 className="font-sans text-lg font-semibold text-primary">
+                            {labels[kind]} hiện có
+                        </h2>
                         {query.isPending ? (
                             <LoadingState />
                         ) : query.isError ? (
@@ -158,6 +172,15 @@ export function ProductMasterPage() {
                         className="h-fit space-y-4 rounded-xl border bg-card p-5"
                         onSubmit={async (event) => {
                             event.preventDefault();
+                            if (save.isPending) return;
+                            if (
+                                selected?.status === "active" &&
+                                form.status === "inactive" &&
+                                !window.confirm(
+                                    `Ngừng hoạt động ${labels[kind].toLowerCase()} "${selected.name}"?`,
+                                )
+                            )
+                                return;
                             setNotice("");
                             setErrors({});
                             try {
@@ -168,7 +191,7 @@ export function ProductMasterPage() {
                             }
                         }}
                     >
-                        <h2 className="text-xl text-primary">
+                        <h2 className="font-sans text-lg font-semibold text-primary">
                             {selected ? "Sửa" : "Thêm"} {labels[kind].toLowerCase()}
                         </h2>
                         {notice && (
@@ -296,7 +319,7 @@ export function ProductMasterPage() {
                         </label>
                         <div className="flex gap-2">
                             <button disabled={save.isPending} className={buttonClass}>
-                                Lưu
+                                {save.isPending ? "Đang lưu..." : "Lưu"}
                             </button>
                             {selected && (
                                 <button

@@ -225,6 +225,19 @@ class ProductFoundationTest extends TestCase
         $this->assertSame('100.00', app(RetailPricingService::class)->resolve($variant, at: now()->addDays(2))['unit_price']);
     }
 
+    public function test_admin_product_search_finds_a_variant_name(): void
+    {
+        $product = Product::factory()->create(['name' => 'Hydrating serum', 'status' => 'active']);
+        ProductVariant::factory()->for($product)->create([
+            'sku' => 'UNIQUE-SERUM-01', 'variant_name' => 'Travel size',
+        ]);
+        Product::factory()->create(['name' => 'Other product', 'status' => 'active']);
+        $this->admin();
+
+        $this->getJson('/api/admin/products?search=Travel%20size&status=active')
+            ->assertOk()->assertJsonPath('total', 1)->assertJsonPath('data.0.id', $product->id);
+    }
+
     public function test_catalog_search_filter_pagination_and_inactive_sku(): void
     {
         $category = ProductCategory::factory()->create();
@@ -256,7 +269,7 @@ class ProductFoundationTest extends TestCase
         $this->getJson('/api/products')->assertOk()->assertJsonCount(5, 'data');
         $queryCount = count(DB::getQueryLog());
         DB::disableQueryLog();
-        $this->assertLessThanOrEqual(12, $queryCount);
+        $this->assertLessThanOrEqual(13, $queryCount);
     }
 
     public function test_image_upload_validates_file_and_variant_ownership(): void

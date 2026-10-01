@@ -14,6 +14,9 @@ import type {
     StaffUser,
     AdminCustomerDetail,
     AdminCustomerSummary,
+    AdminCustomerPurchaseSummary,
+    AdminCustomerPurchasedProduct,
+    Voucher,
 } from "@/types";
 import type { StaffAccountInput } from "./staffApi";
 
@@ -139,7 +142,6 @@ export type AdminDashboardResponse = {
         name: string;
         appointments: number;
     }>;
-    revenue: null;
 };
 
 export type DoctorInput = Pick<Doctor, "name" | "specialty"> & {
@@ -285,6 +287,19 @@ export const adminApi = {
         }),
     customer: (id: number) =>
         apiRequest<ResourceResponse<AdminCustomerDetail>>(`/api/admin/customers/${id}`),
+    customerPurchases: (id: number) =>
+        apiRequest<ResourceResponse<AdminCustomerPurchaseSummary>>(
+            `/api/admin/customers/${id}/purchases`,
+        ),
+    customerPurchasedProducts: (id: number, page: number) =>
+        apiRequest<PaginatedResponse<AdminCustomerPurchasedProduct>>(
+            `/api/admin/customers/${id}/purchased-products`,
+            { query: { page } },
+        ),
+    customerVouchers: (id: number, page: number) =>
+        apiRequest<PaginatedResponse<Voucher>>(`/api/admin/customers/${id}/vouchers`, {
+            query: { page },
+        }),
     blogs: (params: { search?: string | undefined; page?: number | undefined } = {}) =>
         apiRequest<PaginatedResponse<Blog>>("/api/admin/blogs", { query: params }),
     createBlog: (body: BlogInput) =>

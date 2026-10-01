@@ -40,6 +40,8 @@ class AuditLogger
 
     public const ACTION_GOODS_RECEIPT = 'GOODS_RECEIPT';
 
+    public const ACTION_PURCHASE_RETURN = 'PURCHASE_RETURN';
+
     public const ACTION_ADJUSTMENT_IN = 'ADJUSTMENT_IN';
 
     public const ACTION_ADJUSTMENT_OUT = 'ADJUSTMENT_OUT';
@@ -55,6 +57,20 @@ class AuditLogger
     public const ACTION_FULFILL = 'FULFILL';
 
     public const ACTION_SALES_ORDER_SHIPMENT = 'SALES_ORDER_SHIPMENT';
+
+    public const ACTION_PAYMENT_RECORDED = 'PAYMENT_RECORDED';
+
+    public const ACTION_REFUND_COMPLETED = 'REFUND_COMPLETED';
+
+    public const ACTION_RETURN_COMPLETED = 'RETURN_COMPLETED';
+
+    public const ACTION_RETURN_RECEIVED = 'RETURN_RECEIVED';
+
+    public const ACTION_RETURN_REQUESTED = 'RETURN_REQUESTED';
+
+    public const ACTION_RETURN_APPROVED = 'RETURN_APPROVED';
+
+    public const ACTION_RETURN_REJECTED = 'RETURN_REJECTED';
 
     public const ACTIONS = [
         self::ACTION_CREATE,
@@ -72,6 +88,7 @@ class AuditLogger
         self::ACTION_RESCHEDULE,
         self::ACTION_OPENING_STOCK,
         self::ACTION_GOODS_RECEIPT,
+        self::ACTION_PURCHASE_RETURN,
         self::ACTION_ADJUSTMENT_IN,
         self::ACTION_ADJUSTMENT_OUT,
         self::ACTION_REPRICE,
@@ -80,6 +97,13 @@ class AuditLogger
         self::ACTION_CONSUME,
         self::ACTION_FULFILL,
         self::ACTION_SALES_ORDER_SHIPMENT,
+        self::ACTION_PAYMENT_RECORDED,
+        self::ACTION_REFUND_COMPLETED,
+        self::ACTION_RETURN_COMPLETED,
+        self::ACTION_RETURN_RECEIVED,
+        self::ACTION_RETURN_REQUESTED,
+        self::ACTION_RETURN_APPROVED,
+        self::ACTION_RETURN_REJECTED,
     ];
 
     public const MODULE_STAFF = 'STAFF';
@@ -100,9 +124,29 @@ class AuditLogger
 
     public const MODULE_INVENTORY = 'INVENTORY';
 
+    public const MODULE_PROCUREMENT = 'PROCUREMENT';
+
     public const MODULE_PRODUCT = 'PRODUCT';
 
     public const MODULE_SALES_ORDER = 'SALES_ORDER';
+
+    public const MODULE_DEALER_APPLICATION = 'DEALER_APPLICATION';
+
+    public const MODULE_DEALER_ACCOUNT = 'DEALER_ACCOUNT';
+
+    public const MODULE_DEALER_MEMBERSHIP = 'DEALER_MEMBERSHIP';
+
+    public const MODULE_DEALER_TIER = 'DEALER_TIER';
+
+    public const MODULE_DEALER_ORDER_IMPORT = 'DEALER_ORDER_IMPORT';
+
+    public const MODULE_PAYMENT = 'PAYMENT';
+
+    public const MODULE_REFUND = 'REFUND';
+
+    public const MODULE_RETURN = 'SALES_RETURN';
+
+    public const MODULE_SALES_PROMOTION = 'SALES_PROMOTION';
 
     public const MODULES = [
         self::MODULE_STAFF,
@@ -114,8 +158,18 @@ class AuditLogger
         self::MODULE_BLOG,
         self::MODULE_WAREHOUSE,
         self::MODULE_INVENTORY,
+        self::MODULE_PROCUREMENT,
         self::MODULE_PRODUCT,
         self::MODULE_SALES_ORDER,
+        self::MODULE_DEALER_APPLICATION,
+        self::MODULE_DEALER_ACCOUNT,
+        self::MODULE_DEALER_MEMBERSHIP,
+        self::MODULE_DEALER_TIER,
+        self::MODULE_DEALER_ORDER_IMPORT,
+        self::MODULE_PAYMENT,
+        self::MODULE_REFUND,
+        self::MODULE_RETURN,
+        self::MODULE_SALES_PROMOTION,
     ];
 
     /** @var list<string> */

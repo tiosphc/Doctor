@@ -46,7 +46,9 @@ class InventoryController extends Controller
         }
         if (isset($data['search'])) {
             $query->whereHas('variant', fn ($builder) => $builder->where('sku', 'like', '%'.$data['search'].'%')
-                ->orWhereHas('product', fn ($product) => $product->where('name', 'like', '%'.$data['search'].'%')));
+                ->orWhere('variant_name', 'like', '%'.$data['search'].'%')
+                ->orWhereHas('product', fn ($product) => $product->where('name', 'like', '%'.$data['search'].'%')
+                    ->orWhere('product_code', 'like', '%'.$data['search'].'%')));
         }
         if ($data['low_stock'] ?? false) {
             $query->whereHas('variant.product', fn ($builder) => $builder

@@ -7,11 +7,16 @@ use App\Http\Resources\ProductCatalogResource;
 use App\Models\Brand;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\SalesPromotion;
+use App\Models\SalesPromotionGiftRule;
+use App\Services\SalesGiftPromotionVisibilityService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class ProductCatalogController extends Controller
 {
@@ -31,8 +36,30 @@ class ProductCatalogController extends Controller
             'brand' => ['nullable', 'integer', 'exists:brands,id'],
             'sort' => ['nullable', 'in:newest,name'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'promotions_only' => ['nullable', 'boolean'],
         ]);
         $query = $this->visible();
+        $promotions = $this->retailDiscounts();
+        if ($data['promotions_only'] ?? false) {
+            $giftCandidates = app(SalesGiftPromotionVisibilityService::class)->isAvailable()
+                ? SalesPromotionGiftRule::query()->whereHas('promotion', fn (Builder $query) => $query
+                    ->where('status', 'active')->whereIn('sales_scope', ['retail', 'both'])
+                    ->where(fn (Builder $query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+                    ->where(fn (Builder $query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now())))
+                    ->pluck('buy_product_id')->all()
+                : [];
+            $giftSummaries = app(SalesGiftPromotionVisibilityService::class)->forProducts($giftCandidates, 'retail');
+            $giftProductIds = array_keys(array_filter($giftSummaries,
+                fn (array $summaries): bool => collect($summaries)->contains('gift_available', true)));
+            $productIds = $promotions->flatMap(fn (SalesPromotion $promotion) => $promotion->targets->pluck('product_id'))
+                ->filter()->merge($giftProductIds)->unique()->all();
+            $categoryIds = $promotions->flatMap(fn (SalesPromotion $promotion) => $promotion->targets->pluck('product_category_id'))
+                ->filter()->unique()->all();
+            if (! $promotions->contains(fn (SalesPromotion $promotion): bool => $promotion->targets->isEmpty())) {
+                $query->where(fn (Builder $query) => $query->whereIn('id', $productIds)
+                    ->orWhereIn('product_category_id', $categoryIds));
+            }
+        }
         if (isset($data['search'])) {
             $search = $data['search'];
             $query->where(fn (Builder $query) => $query->where('name', 'like', '%'.$search.'%')
@@ -50,7 +77,10 @@ class ProductCatalogController extends Controller
             $query->latest('id');
         }
 
-        return ProductCatalogResource::collection($query->paginate($data['per_page'] ?? 15)->withQueryString());
+        $page = $query->paginate($data['per_page'] ?? 15)->withQueryString();
+        $this->attachPromotions($page->getCollection(), $promotions);
+
+        return ProductCatalogResource::collection($page);
     }
 
     public function show(string $product): ProductCatalogResource
@@ -58,7 +88,47 @@ class ProductCatalogController extends Controller
         $query = $this->visible()->where(fn (Builder $query) => $query->where('slug', $product)
             ->when(ctype_digit($product), fn (Builder $query) => $query->orWhereKey((int) $product)));
 
-        return new ProductCatalogResource($query->firstOrFail());
+        $record = $query->firstOrFail();
+        $this->attachPromotions(collect([$record]), $this->retailDiscounts());
+
+        return new ProductCatalogResource($record);
+    }
+
+    private function attachPromotions(Collection $products, Collection $discounts): void
+    {
+        $visible = app(SalesGiftPromotionVisibilityService::class)
+            ->forProducts($products->pluck('id')->all(), 'retail');
+        foreach ($products as $product) {
+            $product->setAttribute('gift_promotions', $visible[$product->id] ?? []);
+            $product->setAttribute('retail_promotions', $discounts
+                ->filter(fn (SalesPromotion $promotion): bool => $promotion->targets->isEmpty()
+                    || $promotion->targets->contains(fn ($target): bool => $target->product_id === $product->id
+                        || $target->product_category_id === $product->product_category_id))
+                ->map(fn (SalesPromotion $promotion): array => [
+                    'code' => $promotion->code,
+                    'discount_type' => $promotion->discount_type,
+                    'discount_value' => $promotion->discount_value,
+                    'max_discount_amount' => $promotion->max_discount_amount,
+                    'minimum_order_amount' => $promotion->minimum_order_amount,
+                    'total_usage_limit' => $promotion->total_usage_limit,
+                    'per_buyer_usage_limit' => $promotion->per_buyer_usage_limit,
+                ])->values()->all());
+        }
+    }
+
+    private function retailDiscounts(): Collection
+    {
+        $now = now();
+
+        return SalesPromotion::query()->with('targets')
+            ->withCount(['redemptions as redeemed_count' => fn (Builder $query) => $query->where('status', 'redeemed')])
+            ->where('status', 'active')->whereIn('sales_scope', ['retail', 'both'])
+            ->whereIn('discount_type', ['percentage', 'fixed_amount'])
+            ->where(fn (Builder $query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now))
+            ->where(fn (Builder $query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now))
+            ->orderBy('id')->get()
+            ->filter(fn (SalesPromotion $promotion): bool => $promotion->total_usage_limit === null
+                || $promotion->redeemed_count < $promotion->total_usage_limit);
     }
 
     private function visible(): Builder
@@ -76,8 +146,12 @@ class ProductCatalogController extends Controller
         $variants = static fn (Builder|Relation $query): Builder|Relation => $query
             ->where('status', 'active')->where('sellable_retail', true)->whereHas('priceItems', $priced);
 
-        return Product::query()
-            ->where('status', 'active')
+        $products = Product::query()->where('status', 'active');
+        if (Schema::hasColumn('products', 'gift_only')) {
+            $products->where('gift_only', false);
+        }
+
+        return $products
             ->whereHas('variants', $variants)
             ->with(['category:id,name,code', 'brand:id,name,code',
                 'variants' => $variants, 'variants.unit:id,name,symbol', 'variants.product:id,status',
