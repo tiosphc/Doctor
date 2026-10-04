@@ -97,7 +97,7 @@ export function SupplierPage() {
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,400px)]">
                     <section className="rounded-xl border bg-card p-5">
                         <input
-                            className={fieldClass}
+                            className={`${fieldClass} max-w-md`}
                             aria-label="Tìm nhà cung cấp"
                             placeholder="Mã hoặc tên nhà cung cấp"
                             value={search}
@@ -151,7 +151,7 @@ export function SupplierPage() {
                         )}
                     </section>
                     <form
-                        className="space-y-3 rounded-xl border bg-card p-5"
+                        className="space-y-4 rounded-xl border bg-card p-5"
                         onSubmit={(event) => {
                             event.preventDefault();
                             if (save.isPending) return;
@@ -178,7 +178,7 @@ export function SupplierPage() {
                                 ["address", "Địa chỉ"],
                             ] as const
                         ).map(([key, label]) => (
-                            <label key={key} className="block text-sm">
+                            <label key={key} className="admin-form-field admin-form-label">
                                 {label}
                                 <input
                                     className={fieldClass}
@@ -196,10 +196,10 @@ export function SupplierPage() {
                                 )}
                             </label>
                         ))}
-                        <label className="block text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Trạng thái
                             <select
-                                className={fieldClass}
+                                className={`${fieldClass} admin-field-medium`}
                                 value={form.status}
                                 onChange={(event) =>
                                     setForm((current) => ({
@@ -213,10 +213,7 @@ export function SupplierPage() {
                             </select>
                         </label>
                         <ErrorText error={save.error} />
-                        <div className="flex gap-2">
-                            <button className={buttonClass} disabled={save.isPending}>
-                                {save.isPending ? "Đang lưu..." : "Lưu"}
-                            </button>
+                        <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
                             {selected && (
                                 <button
                                     type="button"
@@ -238,6 +235,9 @@ export function SupplierPage() {
                                     Tạo mới
                                 </button>
                             )}
+                            <button className={buttonClass} disabled={save.isPending}>
+                                {save.isPending ? "Đang lưu..." : "Lưu"}
+                            </button>
                         </div>
                     </form>
                 </div>

@@ -51,10 +51,10 @@ export function DealerTopUpPage() {
     if (!account) return <EmptyState message="Chưa có tài khoản đại lý đang hoạt động." />;
 
     return (
-        <div className="mx-auto max-w-4xl space-y-6">
+        <div className="dealer-page-form space-y-6">
             <header>
                 <p className="text-xs font-semibold tracking-[.14em] text-[#bc9151]">TÀI CHÍNH</p>
-                <h1 className="mt-2 text-3xl font-semibold text-[#092b5c]">Ví trả trước</h1>
+                <h1 className="dealer-page-title mt-2 text-[#092b5c]">Ví trả trước</h1>
                 <p className="mt-3 text-sm leading-6 text-[#68758a]">
                     Số dư ví dùng để thanh toán đơn hàng đại lý.
                 </p>
@@ -66,7 +66,7 @@ export function DealerTopUpPage() {
                     {errorMessage(wallet.error)}
                 </p>
             ) : (
-                <section className="max-w-xl">
+                <section className="max-w-2xl">
                     <div className="rounded-2xl bg-[#092b5c] p-6 text-white">
                         <WalletCards size={24} />
                         <p className="mt-6 text-sm text-white/70">Số dư khả dụng</p>
@@ -76,7 +76,7 @@ export function DealerTopUpPage() {
                         <Link
                             to="/dealer/quick-order"
                             search={{ sku: "", reorder: 0 }}
-                            className="mt-5 inline-flex rounded-xl border border-white/50 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+                            className="dealer-action mt-5 rounded-xl border border-white/50 px-4 py-2.5 text-white hover:bg-white/10"
                         >
                             Đặt hàng nhanh
                         </Link>
@@ -99,7 +99,7 @@ export function DealerTopUpPage() {
                         {transactions.data.data.map((transaction) => (
                             <div
                                 key={transaction.id}
-                                className="flex items-center justify-between gap-4 py-3 text-sm"
+                                className="flex items-center justify-between gap-4 py-4 text-sm"
                             >
                                 <div className="flex items-center gap-3">
                                     <span
@@ -119,7 +119,7 @@ export function DealerTopUpPage() {
                                                   ? "Hoàn tiền vào ví"
                                                   : "Nạp tiền vào ví"}
                                         </strong>
-                                        <span className="block text-xs text-muted-foreground">
+                                        <span className="dealer-meta block text-muted-foreground">
                                             {transaction.transaction_code}
                                         </span>
                                     </span>

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\AdministrativeWard;
 use App\Models\Appointment;
 use App\Models\DealerAccount;
 use App\Models\DealerApplication;
@@ -15,7 +16,6 @@ use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Models\PurchaseOrder;
 use App\Models\SalesOrder;
-use App\Models\SalesPromotion;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\Supplier;
@@ -32,7 +32,6 @@ use App\Services\PaymentService;
 use App\Services\ProcurementService;
 use App\Services\RefundService;
 use App\Services\SalesOrderService;
-use App\Services\SalesPromotionService;
 use App\Services\SalesReturnService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -58,7 +57,6 @@ class DemoDataSeeder extends Seeder
         $this->call(ProductUnitSeeder::class);
         $variants = $this->catalog();
         $dealers = $this->dealers($users);
-        $this->promotions($users['admin']);
         $suppliers = $this->suppliers();
         $this->procurement($users['admin'], $suppliers, $warehouses, $variants);
         $this->stock($users['admin'], $warehouses, $variants);
@@ -231,15 +229,6 @@ class DemoDataSeeder extends Seeder
         return $accounts;
     }
 
-    private function promotions(User $admin): void
-    {
-        foreach ([['DEMO10', 'percentage', '10.00', 'both'], ['DEMO50K', 'fixed_amount', '50000.00', 'retail'], ['DEMODEALER', 'percentage', '7.00', 'dealer']] as [$code, $type, $value, $scope]) {
-            SalesPromotion::query()->firstOrCreate(['normalized_code' => $code], ['code' => $code,
-                'name' => 'Demo promotion '.$code, 'discount_type' => $type, 'discount_value' => $value,
-                'minimum_order_amount' => '150000.00', 'sales_scope' => $scope, 'status' => 'active', 'created_by_user_id' => $admin->id]);
-        }
-    }
-
     /** @return list<Supplier> */
     private function suppliers(): array
     {
@@ -339,7 +328,6 @@ class DemoDataSeeder extends Seeder
     {
         $orders = app(SalesOrderService::class);
         $payments = app(PaymentService::class);
-        $promotions = app(SalesPromotionService::class);
         $returns = app(SalesReturnService::class);
         $refunds = app(RefundService::class);
         $admin = $users['admin'];
@@ -349,7 +337,7 @@ class DemoDataSeeder extends Seeder
                 continue;
             }
             $customer = $users['retail'.(($i - 1) % 10 + 1)];
-            $this->at($this->activityDate($i), function () use ($orders, $payments, $promotions, $returns, $refunds, $admin, $customer, $warehouse, $variants, $i, $key): void {
+            $this->at($this->activityDate($i), function () use ($orders, $payments, $returns, $refunds, $admin, $customer, $warehouse, $variants, $i, $key): void {
                 $order = $orders->createDraft(['operation_key' => $key, 'sales_channel' => 'retail',
                     'buyer_user_id' => $customer->id, 'warehouse_id' => $warehouse->id, 'currency' => 'VND',
                     'items' => [['sku' => $variants[($i * 3) % 20]->sku, 'quantity' => (string) (1 + $i % 3)]],
@@ -357,9 +345,6 @@ class DemoDataSeeder extends Seeder
                     'recipient_email' => $customer->email, 'shipping_address_line1' => 'Demo Street '.$i,
                     'shipping_city' => 'Ho Chi Minh', 'shipping_province' => 'Ho Chi Minh', 'shipping_country' => 'VN',
                     'delivery_note' => self::NOTE], $admin->id);
-                if ($i % 4 === 0) {
-                    $promotions->redeem($order, $i % 8 === 0 ? 'DEMO50K' : 'DEMO10');
-                }
                 $order = $orders->confirm($order, $this->key('retail-confirm-'.$i), $admin->id);
                 if ($i === 7) {
                     $orders->cancel($order, $this->key('retail-cancel-'.$i), self::NOTE, $admin->id);
@@ -400,6 +385,7 @@ class DemoDataSeeder extends Seeder
         $quick = app(DealerQuickOrderService::class);
         $orders = app(SalesOrderService::class);
         $refunds = app(RefundService::class);
+        $wardCode = AdministrativeWard::query()->where('province_code', '79')->orderBy('code')->value('code');
         foreach (range(1, 16) as $i) {
             $key = $this->key('dealer-order-'.$i);
             if (SalesOrder::query()->where('creation_operation_key', $key)->exists()) {
@@ -408,17 +394,19 @@ class DemoDataSeeder extends Seeder
             $account = $dealers[$i % 4 === 0 ? 4 : (($i - 1) % 3)];
             $owner = $account->memberships()->where('membership_role', 'owner')->firstOrFail()->user;
             $items = [['product_variant_id' => $variants[($i * 2) % 20]->id, 'quantity' => (string) (1 + $i % 2)]];
-            $this->at($this->activityDate($i + 10), function () use ($quick, $orders, $refunds, $admin, $account, $owner, $items, $i, $key): void {
-                $review = $quick->review($owner, $account, $items);
+            $this->at($this->activityDate($i + 10), function () use ($quick, $orders, $refunds, $admin, $account, $owner, $items, $i, $key, $wardCode): void {
+                $shipping = ['recipient_name' => $owner->name, 'recipient_phone' => $owner->phone,
+                    'shipping_address_line1' => 'Demo Dealer Street',
+                    'shipping_city' => 'Ho Chi Minh', 'shipping_province' => 'Ho Chi Minh',
+                    'shipping_province_code' => '79', 'shipping_ward_code' => $wardCode,
+                    'shipping_country' => 'VN', 'delivery_note' => self::NOTE];
+                $review = $quick->review($owner, $account, $items, $shipping);
                 if (! $review['can_submit']) {
                     throw new RuntimeException('Demo Quick Order review failed: '.json_encode($review, JSON_THROW_ON_ERROR));
                 }
                 $order = $quick->submit($owner, $account, ['operation_key' => $key,
                     'review_fingerprint' => $review['review_fingerprint'], 'items' => $items,
-                    'recipient_name' => $owner->name,
-                    'recipient_phone' => $owner->phone, 'shipping_address_line1' => 'Demo Dealer Street',
-                    'shipping_city' => 'Ho Chi Minh', 'shipping_province' => 'Ho Chi Minh',
-                    'shipping_country' => 'VN', 'delivery_note' => self::NOTE]);
+                    ...$shipping]);
                 if ($i % 3 !== 0) {
                     $quantities = $order->items->mapWithKeys(fn ($item): array => [$item->id => (string) (int) $item->quantity])->all();
                     $order = $orders->fulfill($order, $this->key('dealer-fulfill-'.$i), $quantities, $admin->id);

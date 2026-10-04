@@ -122,7 +122,7 @@ class SalesVoucherTest extends TestCase
             'product_variant_id' => $variant->id, 'unit_price' => '100.00']);
         app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
             'product_variant_id' => $variant->id, 'quantity' => '5', 'operation_key' => (string) Str::uuid()], $admin->id);
-        SalesPromotion::factory()->create(['discount_type' => 'fixed_amount', 'discount_value' => '20.00',
+        SalesPromotion::factory()->create(['discount_type' => 'percentage', 'discount_value' => '20.00',
             'sales_scope' => 'retail']);
         $voucher = $this->voucher($admin, ['discount_type' => 'percentage', 'discount_value' => '10.00',
             'total_usage_limit' => 1, 'per_buyer_usage_limit' => 1]);

@@ -3,7 +3,17 @@ import { LoaderCircle } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
     Dialog,
     DialogContent,
@@ -14,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { errorMessage, firstFieldErrors } from "@/services/api";
 import { formatProductQuantity, isPositiveProductQuantity } from "@/lib/productQuantity";
+import { formatPercentage } from "@/lib/formatPercentage";
 import { productApi } from "@/services/productApi";
 import type { Product } from "@/types/product";
 import {
@@ -39,8 +50,6 @@ const emptyForm: SalesPromotionInput = {
     description: null,
     discount_type: "percentage",
     discount_value: "10",
-    max_discount_amount: null,
-    minimum_order_amount: "0",
     sales_scope: "both",
     starts_at: null,
     ends_at: null,
@@ -101,6 +110,12 @@ export function SalesPromotionPage({
     const editingId = mode === "edit" ? (promotionId ?? null) : null;
     const loadedEditId = useRef<number | null>(null);
     const [detailId, setDetailId] = useState<number | null>(null);
+    const [pendingStatusChange, setPendingStatusChange] = useState<{
+        id: number;
+        code: string;
+        name: string;
+        active: boolean;
+    } | null>(null);
     const [form, setForm] = useState<SalesPromotionInput>(emptyForm);
     const [giftMode, setGiftMode] = useState<GiftMode>("other");
     const [notice, setNotice] = useState("");
@@ -131,6 +146,7 @@ export function SalesPromotionPage({
         mutationFn: ({ id, active }: { id: number; active: boolean }) =>
             salesPromotionApi.setActive(id, active),
         onSuccess: async (_result, variables) => {
+            setPendingStatusChange(null);
             toast.success(
                 variables.active ? "Đã kích hoạt ưu đãi bán hàng." : "Đã ngừng ưu đãi bán hàng.",
             );
@@ -185,7 +201,6 @@ export function SalesPromotionPage({
                     ? {
                           ...base,
                           discount_value: "0",
-                          max_discount_amount: undefined,
                           dealer_tier_ids:
                               form.sales_scope === "retail" ? [] : form.dealer_tier_ids,
                           product_ids: undefined,
@@ -193,6 +208,7 @@ export function SalesPromotionPage({
                       }
                     : {
                           ...base,
+                          category_ids: form.sales_scope === "dealer" ? form.category_ids : [],
                           dealer_tier_ids:
                               form.sales_scope === "retail" ? [] : form.dealer_tier_ids,
                           gift_rule: undefined,
@@ -242,9 +258,10 @@ export function SalesPromotionPage({
             name: promotion.name,
             description: promotion.description,
             discount_type: promotion.discount_type,
-            discount_value: promotion.discount_value,
-            max_discount_amount: promotion.max_discount_amount,
-            minimum_order_amount: promotion.minimum_order_amount,
+            discount_value:
+                promotion.discount_type === "fixed_amount"
+                    ? String(Number(promotion.discount_value))
+                    : promotion.discount_value,
             sales_scope: promotion.sales_scope,
             starts_at: serverDateInput(promotion.starts_at) || null,
             ends_at: serverDateInput(promotion.ends_at) || null,
@@ -383,18 +400,18 @@ export function SalesPromotionPage({
 
     return (
         <ProductAdminGuard>
-            <div className="space-y-6">
+            <div className={`${mode === "list" ? "" : adminFormLayout.standard} space-y-6`}>
                 <header className="flex flex-wrap items-end justify-between gap-4">
                     <div>
                         <p className="label-luxury">Bán hàng</p>
-                        <h1 className="mt-2 text-3xl text-primary">
+                        <h1 className="admin-page-title mt-2 text-primary">
                             {mode === "list"
                                 ? "Ưu đãi bán hàng"
                                 : mode === "create"
                                   ? "Thêm ưu đãi"
                                   : "Sửa ưu đãi"}
                         </h1>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        <p className="admin-helper-text mt-2">
                             Quản lý các chương trình giảm giá và quà tặng.
                         </p>
                     </div>
@@ -516,18 +533,11 @@ export function SalesPromotionPage({
                             }}
                         >
                             <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
-                                <div className="flex items-center justify-between gap-3">
-                                    <h2 className="text-xl text-primary">
-                                        {editingId === null
-                                            ? "Tạo ưu đãi"
-                                            : `Sửa ưu đãi #${editingId}`}
-                                    </h2>
-                                </div>
-                                <h3 className="text-base font-semibold text-primary">
+                                <h2 className="admin-section-title text-primary">
                                     Thông tin cơ bản
-                                </h3>
+                                </h2>
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
-                                    <label className="grid min-w-0 gap-1 text-sm lg:col-span-4">
+                                    <label className="admin-form-label grid min-w-0 gap-1.5 lg:col-span-4">
                                         Mã chương trình
                                         <div className="flex gap-2">
                                             <input
@@ -552,7 +562,7 @@ export function SalesPromotionPage({
                                             <span className="text-red-700">{errors["code"]}</span>
                                         )}
                                     </label>
-                                    <label className="grid min-w-0 gap-1 text-sm lg:col-span-5">
+                                    <label className="admin-form-label grid min-w-0 gap-1.5 lg:col-span-5">
                                         Tên ưu đãi
                                         <input
                                             className={fieldClass}
@@ -564,7 +574,7 @@ export function SalesPromotionPage({
                                             <span className="text-red-700">{errors["name"]}</span>
                                         )}
                                     </label>
-                                    <label className="grid min-w-0 gap-1 text-sm sm:col-span-2 lg:col-span-3">
+                                    <label className="admin-form-label grid min-w-0 gap-1.5 sm:col-span-2 lg:col-span-3">
                                         Phạm vi
                                         <select
                                             className={fieldClass}
@@ -594,14 +604,14 @@ export function SalesPromotionPage({
                                 </div>
                             </section>
                             <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
-                                <h3 className="text-base font-semibold text-primary">
+                                <h2 className="admin-section-title text-primary">
                                     Điều kiện & giới hạn áp dụng
-                                </h3>
-                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
-                                    <label className="grid min-w-0 gap-1 text-sm lg:col-span-4">
+                                </h2>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <label className="admin-form-label grid min-w-0 gap-1.5">
                                         Kiểu giảm
                                         <select
-                                            className={fieldClass}
+                                            className={`${fieldClass} sm:max-w-64`}
                                             value={form.discount_type}
                                             onChange={(event) =>
                                                 setForm((current) => {
@@ -614,22 +624,24 @@ export function SalesPromotionPage({
                                                         discount_value:
                                                             discountType === "buy_a_get_b"
                                                                 ? "0"
-                                                                : value <= 0 ||
-                                                                    (discountType ===
-                                                                        "percentage" &&
-                                                                        value > 100)
-                                                                  ? "10"
-                                                                  : current.discount_value,
-                                                        max_discount_amount:
-                                                            discountType === "buy_a_get_b"
-                                                                ? null
-                                                                : current.max_discount_amount,
+                                                                : discountType === "fixed_amount" &&
+                                                                    current.discount_type !==
+                                                                        "fixed_amount"
+                                                                  ? "50000"
+                                                                  : value <= 0 ||
+                                                                      (discountType ===
+                                                                          "percentage" &&
+                                                                          value > 100)
+                                                                    ? "10"
+                                                                    : current.discount_value,
                                                     };
                                                 })
                                             }
                                         >
                                             <option value="percentage">Phần trăm</option>
-                                            <option value="fixed_amount">Số tiền cố định</option>
+                                            <option value="fixed_amount">
+                                                Số tiền cố định (VND)
+                                            </option>
                                             <option value="buy_a_get_b">Mua A tặng A hoặc B</option>
                                         </select>
                                         {errors["discount_type"] && (
@@ -639,24 +651,41 @@ export function SalesPromotionPage({
                                         )}
                                     </label>
                                     {form.discount_type !== "buy_a_get_b" && (
-                                        <label className="grid min-w-0 gap-1 text-sm lg:col-span-4">
-                                            Giá trị
+                                        <label className="admin-form-label grid min-w-0 gap-1.5">
+                                            {form.discount_type === "fixed_amount"
+                                                ? "Giá trị giảm (VND)"
+                                                : "Giá trị (%)"}
                                             <input
-                                                className={fieldClass}
+                                                className={`${fieldClass} sm:max-w-64`}
                                                 type="number"
-                                                min="0.01"
+                                                min={
+                                                    form.discount_type === "fixed_amount"
+                                                        ? "1"
+                                                        : "0.01"
+                                                }
                                                 max={
                                                     form.discount_type === "percentage"
                                                         ? 100
                                                         : undefined
                                                 }
-                                                step="0.01"
+                                                step={
+                                                    form.discount_type === "fixed_amount"
+                                                        ? "1"
+                                                        : "0.01"
+                                                }
                                                 required
                                                 value={form.discount_value}
                                                 onChange={(event) =>
                                                     set("discount_value", event.target.value)
                                                 }
                                             />
+                                            {form.discount_type === "fixed_amount" &&
+                                                Number(form.discount_value) > 0 && (
+                                                    <span className="admin-helper-text">
+                                                        Giảm {money(form.discount_value)} cho mỗi
+                                                        đơn vị sản phẩm đủ điều kiện.
+                                                    </span>
+                                                )}
                                             {errors["discount_value"] && (
                                                 <span className="text-red-700">
                                                     {errors["discount_value"]}
@@ -664,53 +693,13 @@ export function SalesPromotionPage({
                                             )}
                                         </label>
                                     )}
-                                    {form.discount_type !== "buy_a_get_b" && (
-                                        <label className="grid min-w-0 gap-1 text-sm lg:col-span-4">
-                                            Giảm tối đa
-                                            <input
-                                                className={fieldClass}
-                                                type="number"
-                                                min="0.01"
-                                                step="0.01"
-                                                value={form.max_discount_amount ?? ""}
-                                                onChange={(event) =>
-                                                    set(
-                                                        "max_discount_amount",
-                                                        event.target.value || null,
-                                                    )
-                                                }
-                                            />
-                                            {errors["max_discount_amount"] && (
-                                                <span className="text-red-700">
-                                                    {errors["max_discount_amount"]}
-                                                </span>
-                                            )}
-                                        </label>
-                                    )}
-                                    <label className="grid min-w-0 gap-1 text-sm lg:col-span-4">
-                                        Đơn tối thiểu
-                                        <input
-                                            className={fieldClass}
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={form.minimum_order_amount}
-                                            onChange={(event) =>
-                                                set("minimum_order_amount", event.target.value)
-                                            }
-                                        />
-                                        {errors["minimum_order_amount"] && (
-                                            <span className="text-red-700">
-                                                {errors["minimum_order_amount"]}
-                                            </span>
-                                        )}
-                                    </label>
-                                    <label className="grid min-w-0 gap-1 text-sm lg:col-span-4">
+                                    <label className="admin-form-label grid min-w-0 gap-1.5">
                                         Lượt dùng tối đa
                                         <input
-                                            className={fieldClass}
+                                            className={`${fieldClass} sm:max-w-64`}
                                             type="number"
                                             min="1"
+                                            step="1"
                                             placeholder="Để trống nếu không giới hạn"
                                             value={form.total_usage_limit ?? ""}
                                             onChange={(event) =>
@@ -728,12 +717,13 @@ export function SalesPromotionPage({
                                             </span>
                                         )}
                                     </label>
-                                    <label className="grid min-w-0 gap-1 text-sm lg:col-span-6">
+                                    <label className="admin-form-label grid min-w-0 gap-1.5">
                                         Lượt dùng mỗi người mua / đại lý
                                         <input
-                                            className={fieldClass}
+                                            className={`${fieldClass} sm:max-w-64`}
                                             type="number"
                                             min="1"
+                                            step="1"
                                             placeholder="Để trống nếu không giới hạn"
                                             value={form.per_buyer_usage_limit ?? ""}
                                             onChange={(event) =>
@@ -751,10 +741,10 @@ export function SalesPromotionPage({
                                             </span>
                                         )}
                                     </label>
-                                    <label className="grid min-w-0 gap-1 text-sm sm:col-span-2 lg:col-span-6">
+                                    <label className="admin-form-label grid min-w-0 gap-1.5">
                                         Trạng thái
                                         <select
-                                            className={fieldClass}
+                                            className={`${fieldClass} sm:max-w-64`}
                                             value={form.status}
                                             onChange={(event) =>
                                                 set(
@@ -771,9 +761,9 @@ export function SalesPromotionPage({
                                 </div>
                             </section>
                             <section className="space-y-3 rounded-xl border bg-card p-4 sm:p-6">
-                                <h3 className="text-base font-semibold text-primary">
+                                <h2 className="admin-section-title text-primary">
                                     Thời gian áp dụng
-                                </h3>
+                                </h2>
                                 <PromotionDateRangePicker
                                     start={form.starts_at}
                                     end={form.ends_at}
@@ -796,8 +786,8 @@ export function SalesPromotionPage({
                                 />
                             </section>
                             <section className="space-y-3 rounded-xl border bg-card p-4 sm:p-6">
-                                <h3 className="text-base font-semibold text-primary">Mô tả</h3>
-                                <label className="grid gap-1 text-sm">
+                                <h2 className="admin-section-title text-primary">Mô tả</h2>
+                                <label className="admin-form-label grid gap-1.5">
                                     Nội dung
                                     <textarea
                                         className={fieldClass}
@@ -851,10 +841,10 @@ export function SalesPromotionPage({
                             {form.discount_type !== "buy_a_get_b" &&
                                 form.sales_scope !== "retail" && (
                                     <section className="grid gap-2 rounded-xl border bg-card p-4 text-sm sm:p-6">
-                                        <h3 className="text-base font-semibold text-primary">
+                                        <h2 className="admin-section-title text-primary">
                                             Hạng đại lý được áp dụng
-                                        </h3>
-                                        <p className="text-xs text-muted-foreground">
+                                        </h2>
+                                        <p className="admin-helper-text">
                                             Để trống để áp dụng cho tất cả hạng đại lý.
                                         </p>
                                         {dealerTiers.data?.data.map((tier) => (
@@ -894,64 +884,81 @@ export function SalesPromotionPage({
                                 )}
                             {form.discount_type !== "buy_a_get_b" && (
                                 <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
-                                    <h3 className="text-base font-semibold text-primary">
-                                        Sản phẩm & danh mục áp dụng
-                                    </h3>
-                                    <div className="grid gap-4 lg:grid-cols-2">
-                                        <div className="rounded-lg border p-3">
-                                            <h3 className="font-medium">Danh mục áp dụng</h3>
-                                            <p className="mb-2 text-xs text-muted-foreground">
-                                                Để trống cả sản phẩm và danh mục để áp dụng toàn
-                                                đơn.
-                                            </p>
-                                            <div className="max-h-44 space-y-1 overflow-auto">
-                                                {categories.data?.data.map((category) => (
-                                                    <label
-                                                        key={category.id}
-                                                        className="flex gap-2 text-sm"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={form.category_ids.includes(
-                                                                category.id,
-                                                            )}
-                                                            onChange={() =>
-                                                                toggle("category_ids", category.id)
+                                    <h2 className="admin-section-title text-primary">
+                                        {form.sales_scope === "dealer"
+                                            ? "Sản phẩm & danh mục áp dụng"
+                                            : "Sản phẩm áp dụng"}
+                                    </h2>
+                                    <div
+                                        className={`grid gap-4 ${form.sales_scope === "dealer" ? "lg:grid-cols-2" : ""}`}
+                                    >
+                                        {form.sales_scope === "dealer" && (
+                                            <div className="rounded-lg border p-3">
+                                                <h3 className="admin-subsection-title">
+                                                    Danh mục áp dụng
+                                                </h3>
+                                                <p className="mb-2 text-xs text-muted-foreground">
+                                                    Để trống cả sản phẩm và danh mục để áp dụng toàn
+                                                    đơn.
+                                                </p>
+                                                <div className="max-h-44 space-y-1 overflow-auto">
+                                                    {categories.data?.data.map((category) => (
+                                                        <label
+                                                            key={category.id}
+                                                            className="flex gap-2 text-sm"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={form.category_ids.includes(
+                                                                    category.id,
+                                                                )}
+                                                                onChange={() =>
+                                                                    toggle(
+                                                                        "category_ids",
+                                                                        category.id,
+                                                                    )
+                                                                }
+                                                            />
+                                                            {category.name}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                                {categories.data && (
+                                                    <Pagination
+                                                        current={categories.data.current_page}
+                                                        last={categories.data.last_page}
+                                                        onPage={setCategoryPage}
+                                                    />
+                                                )}
+                                                <p className="mt-2 text-xs text-muted-foreground">
+                                                    Đã chọn ID:{" "}
+                                                    {form.category_ids.join(", ") || "—"}
+                                                </p>
+                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                    {form.category_ids.map((id) => (
+                                                        <button
+                                                            key={id}
+                                                            type="button"
+                                                            className="rounded border px-2 py-1 text-xs"
+                                                            onClick={() =>
+                                                                toggle("category_ids", id)
                                                             }
-                                                        />
-                                                        {category.name}
-                                                    </label>
-                                                ))}
+                                                            aria-label={`Bỏ danh mục ${id}`}
+                                                        >
+                                                            Danh mục #{id} ×
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            {categories.data && (
-                                                <Pagination
-                                                    current={categories.data.current_page}
-                                                    last={categories.data.last_page}
-                                                    onPage={setCategoryPage}
-                                                />
-                                            )}
-                                            <p className="mt-2 text-xs text-muted-foreground">
-                                                Đã chọn ID: {form.category_ids.join(", ") || "—"}
-                                            </p>
-                                            <div className="mt-2 flex flex-wrap gap-1">
-                                                {form.category_ids.map((id) => (
-                                                    <button
-                                                        key={id}
-                                                        type="button"
-                                                        className="rounded border px-2 py-1 text-xs"
-                                                        onClick={() => toggle("category_ids", id)}
-                                                        aria-label={`Bỏ danh mục ${id}`}
-                                                    >
-                                                        Danh mục #{id} ×
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
+                                        )}
                                         <div className="min-w-0 rounded-lg border p-3">
-                                            <h3 className="font-medium">Sản phẩm áp dụng</h3>
+                                            <h3 className="admin-subsection-title">
+                                                Sản phẩm áp dụng
+                                            </h3>
                                             <p className="mb-3 text-xs text-muted-foreground">
-                                                Để trống cả sản phẩm và danh mục để áp dụng toàn
-                                                đơn.
+                                                {form.sales_scope === "dealer"
+                                                    ? "Để trống cả sản phẩm và danh mục để áp dụng toàn đơn."
+                                                    : "Chọn ít nhất một sản phẩm. Mỗi sản phẩm chỉ có một ưu đãi giảm giá đang hoạt động."}
                                             </p>
                                             <PromotionProductPicker
                                                 label="Tìm sản phẩm áp dụng"
@@ -961,7 +968,20 @@ export function SalesPromotionPage({
                                                 }
                                                 onChooseMany={addApplicableProducts}
                                                 multiple
+                                                checkDiscountAvailability
+                                                promotionScope={form.sales_scope}
+                                                promotionTierIds={form.dealer_tier_ids}
+                                                promotionStartsAt={form.starts_at}
+                                                promotionEndsAt={form.ends_at}
+                                                {...(editingId !== null
+                                                    ? { excludePromotionId: editingId }
+                                                    : {})}
                                             />
+                                            {errors["product_ids"] && (
+                                                <p className="mt-2 text-sm text-red-700">
+                                                    {errors["product_ids"]}
+                                                </p>
+                                            )}
                                             {form.product_ids.length > 0 && (
                                                 <div className="mt-3 flex flex-wrap gap-2">
                                                     {form.product_ids.map((id) => (
@@ -1078,22 +1098,40 @@ export function SalesPromotionPage({
                                     retry={() => void list.refetch()}
                                 />
                             ) : list.data.data.length === 0 ? (
-                                <EmptyState
-                                    message={
-                                        search || statusFilter || scopeFilter || typeFilter
-                                            ? "Không tìm thấy ưu đãi phù hợp."
-                                            : "Chưa có ưu đãi nào."
-                                    }
-                                />
+                                search || statusFilter || scopeFilter || typeFilter ? (
+                                    <EmptyState message="Không tìm thấy ưu đãi phù hợp." />
+                                ) : (
+                                    <div className="rounded-xl border bg-card px-5 py-10 text-center sm:px-8">
+                                        <h3 className="text-lg font-semibold text-primary">
+                                            Chưa có ưu đãi nào
+                                        </h3>
+                                        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                                            Tạo chương trình ưu đãi đầu tiên để áp dụng giảm giá
+                                            hoặc quà tặng cho sản phẩm.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            className={`${buttonClass} mt-5`}
+                                            onClick={() =>
+                                                void navigate({
+                                                    to: "/admin/sales-promotions/create",
+                                                })
+                                            }
+                                        >
+                                            + Thêm ưu đãi
+                                        </button>
+                                    </div>
+                                )
                             ) : (
                                 <div className="overflow-x-auto">
-                                    <table className="w-full min-w-[720px] text-left text-sm">
+                                    <table className="w-full min-w-[800px] text-left text-sm">
                                         <thead className="border-b text-muted-foreground">
                                             <tr>
                                                 <th className="py-2">Mã / tên</th>
                                                 <th>Phạm vi</th>
                                                 <th>Loại ưu đãi</th>
                                                 <th>Giảm</th>
+                                                <th>Sản phẩm</th>
                                                 <th>Hiệu lực</th>
                                                 <th>Sử dụng</th>
                                                 <th>Trạng thái</th>
@@ -1112,7 +1150,13 @@ export function SalesPromotionPage({
                                                             {promotion.name}
                                                         </span>
                                                     </td>
-                                                    <td>{promotion.sales_scope}</td>
+                                                    <td>
+                                                        {promotion.sales_scope === "both"
+                                                            ? "Retail & Đại lý"
+                                                            : promotion.sales_scope === "dealer"
+                                                              ? "Đại lý"
+                                                              : "Retail"}
+                                                    </td>
                                                     <td>
                                                         {promotion.discount_type === "percentage"
                                                             ? "Giảm %"
@@ -1131,8 +1175,23 @@ export function SalesPromotionPage({
                                                             ? `Mua A tặng ${promotion.gift_rule?.buy_product_id === promotion.gift_rule?.gift_product_id ? "A" : "B"} · ${formatProductQuantity(promotion.gift_units_granted ?? "0")} quà`
                                                             : promotion.discount_type ===
                                                                 "percentage"
-                                                              ? `${promotion.discount_value}%`
+                                                              ? formatPercentage(
+                                                                    promotion.discount_value,
+                                                                )
                                                               : money(promotion.discount_value)}
+                                                    </td>
+                                                    <td>
+                                                        {promotion.discount_type === "buy_a_get_b"
+                                                            ? "1 sản phẩm mua"
+                                                            : promotion.targets.some(
+                                                                    (target) =>
+                                                                        target.product_category_id !==
+                                                                        null,
+                                                                )
+                                                              ? "Theo danh mục"
+                                                              : promotion.targets.length === 0
+                                                                ? "Toàn bộ"
+                                                                : `${promotion.targets.length} sản phẩm`}
                                                     </td>
                                                     <td>
                                                         {promotion.starts_at?.slice(0, 10) ?? "—"} →{" "}
@@ -1185,22 +1244,16 @@ export function SalesPromotionPage({
                                                             type="button"
                                                             className={secondaryButtonClass}
                                                             disabled={statusChange.isPending}
-                                                            onClick={() => {
-                                                                if (
-                                                                    window.confirm(
-                                                                        promotion.status ===
-                                                                            "active"
-                                                                            ? "Tạm dừng ưu đãi này?"
-                                                                            : "Kích hoạt ưu đãi này?",
-                                                                    )
-                                                                )
-                                                                    statusChange.mutate({
-                                                                        id: promotion.id,
-                                                                        active:
-                                                                            promotion.status !==
-                                                                            "active",
-                                                                    });
-                                                            }}
+                                                            onClick={() =>
+                                                                setPendingStatusChange({
+                                                                    id: promotion.id,
+                                                                    code: promotion.code,
+                                                                    name: promotion.name,
+                                                                    active:
+                                                                        promotion.status !==
+                                                                        "active",
+                                                                })
+                                                            }
                                                         >
                                                             {promotion.status === "active"
                                                                 ? "Tạm dừng"
@@ -1221,6 +1274,61 @@ export function SalesPromotionPage({
                                 />
                             )}
                         </section>
+                        <AlertDialog
+                            open={pendingStatusChange !== null}
+                            onOpenChange={(open) => {
+                                if (!open && !statusChange.isPending) setPendingStatusChange(null);
+                            }}
+                        >
+                            <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md rounded-xl">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-primary">
+                                        {pendingStatusChange?.active
+                                            ? "Kích hoạt ưu đãi?"
+                                            : "Tạm dừng ưu đãi?"}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription className="leading-6">
+                                        Bạn có chắc muốn{" "}
+                                        {pendingStatusChange?.active ? "kích hoạt" : "tạm dừng"} ưu
+                                        đãi{" "}
+                                        <strong className="font-semibold text-foreground">
+                                            {pendingStatusChange?.name} ({pendingStatusChange?.code}
+                                            )
+                                        </strong>
+                                        ?{" "}
+                                        {pendingStatusChange?.active
+                                            ? "Ưu đãi sẽ áp dụng theo điều kiện và thời gian đã cấu hình."
+                                            : "Ưu đãi sẽ ngừng áp dụng cho các đơn hàng mới."}
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="gap-2">
+                                    <AlertDialogCancel disabled={statusChange.isPending}>
+                                        Hủy
+                                    </AlertDialogCancel>
+                                    <button
+                                        type="button"
+                                        className={buttonClass}
+                                        disabled={
+                                            statusChange.isPending || pendingStatusChange === null
+                                        }
+                                        onClick={() => {
+                                            if (pendingStatusChange) {
+                                                statusChange.mutate({
+                                                    id: pendingStatusChange.id,
+                                                    active: pendingStatusChange.active,
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        {statusChange.isPending
+                                            ? "Đang xử lý..."
+                                            : pendingStatusChange?.active
+                                              ? "Xác nhận kích hoạt"
+                                              : "Xác nhận tạm dừng"}
+                                    </button>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                         <Dialog
                             open={detailId !== null}
                             onOpenChange={(open) => {

@@ -13,6 +13,7 @@ export type Master = {
 };
 export type RetailPrice = {
     unit_price: string;
+    discounted_unit_price?: string | null;
     currency: string;
     pricing_context: "retail";
     price_list_id?: number;
@@ -34,6 +35,7 @@ export type GiftPromotionSummary = {
     gift_available: boolean;
 };
 export type RetailPromotionSummary = {
+    id?: number;
     code: string;
     discount_type: "percentage" | "fixed_amount";
     discount_value: string;
@@ -87,6 +89,13 @@ export type Product = {
     gift_only?: boolean;
     gift_promotions?: GiftPromotionSummary[];
     retail_promotions?: RetailPromotionSummary[];
+    retail_discount_promotion?: RetailPromotionSummary | null;
+    active_discount_promotion?: {
+        id: number;
+        name: string;
+        discount_type: "percentage" | "fixed_amount";
+        discount_value: string;
+    } | null;
     track_batch?: boolean;
     track_expiry?: boolean;
     default_low_stock_threshold?: string | null;

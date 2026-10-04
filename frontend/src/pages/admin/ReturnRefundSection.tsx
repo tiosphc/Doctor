@@ -423,7 +423,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                     </DialogHeader>
                     {mode === "refund" && (
                         <div className="grid gap-3 border-t pt-4 sm:grid-cols-2">
-                            <label className="grid gap-1 text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Số tiền hoàn
                                 <input
                                     className={fieldClass}
@@ -436,7 +436,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                                     placeholder={order.refundable_amount}
                                 />
                             </label>
-                            <label className="grid gap-1 text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Phương thức
                                 <select
                                     className={fieldClass}
@@ -455,7 +455,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                                     )}
                                 </select>
                             </label>
-                            <label className="grid gap-1 text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Lý do
                                 <select
                                     className={fieldClass}
@@ -472,7 +472,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                                     <option value="other">Khác</option>
                                 </select>
                             </label>
-                            <label className="grid gap-1 text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Phiếu trả hàng liên kết{" "}
                                 {reason === "return" ? "*" : "(không bắt buộc)"}
                                 <select
@@ -493,7 +493,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                                         ))}
                                 </select>
                             </label>
-                            <label className="grid gap-1 text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Mã giao dịch hoàn
                                 <input
                                     className={fieldClass}
@@ -504,7 +504,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                                     }}
                                 />
                             </label>
-                            <label className="grid gap-1 text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Ghi chú nội bộ
                                 <input
                                     className={fieldClass}
@@ -559,7 +559,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                                     Chờ kiểm tra
                                 </label>
                             </fieldset>
-                            <label className="grid gap-1 text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Lý do trả hàng
                                 <input
                                     className={fieldClass}
@@ -617,7 +617,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                                                     </td>
                                                     <td>
                                                         <input
-                                                            className={fieldClass}
+                                                            className={`${fieldClass} admin-field-compact`}
                                                             type="number"
                                                             min={1}
                                                             step={1}
@@ -641,7 +641,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                                                     {returnMode === "immediate" && (
                                                         <td>
                                                             <input
-                                                                className={fieldClass}
+                                                                className={`${fieldClass} admin-field-compact`}
                                                                 type="number"
                                                                 min={0}
                                                                 step={1}
@@ -1022,7 +1022,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                         </DialogDescription>
                     </DialogHeader>
                     {decision?.action === "reject" && (
-                        <label className="grid gap-1 text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Lý do từ chối *
                             <textarea
                                 className={fieldClass}
@@ -1091,7 +1091,7 @@ export function ReturnRefundSection({ order }: { order: SalesOrder }) {
                                     <label className="grid gap-1">
                                         Nhập lại kho
                                         <input
-                                            className={fieldClass}
+                                            className={`${fieldClass} admin-field-compact`}
                                             type="number"
                                             min={0}
                                             max={Number(item.quantity)}

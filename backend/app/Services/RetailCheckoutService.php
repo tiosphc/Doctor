@@ -101,9 +101,14 @@ class RetailCheckoutService
                 'items' => $items,
             ];
             $order = $this->orders->createDraft($orderData, $userId, 'cart');
+            $promotionCodes = array_column($review['promotions'], 'code');
+            $primaryPromotionCode = array_shift($promotionCodes);
             $order = $this->orders->submitRetail($order,
                 substr(hash('sha256', 'submit:'.$data['checkout_operation_key']), 0, 36),
-                $userId, $review['promotion']['code'] ?? null, $review['voucher']['code'] ?? null);
+                $userId, $primaryPromotionCode,
+                $review['voucher']['code'] ?? null,
+                ($review['gift_promotion']['qualified'] ?? false) ? $review['gift_promotion']['code'] : null,
+                $promotionCodes);
             $cart->update([
                 'status' => 'converted', 'converted_sales_order_id' => $order->id,
                 'checkout_operation_key' => $data['checkout_operation_key'],

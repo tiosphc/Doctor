@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import { ErrorState, LoadingState } from "@/components/common/AsyncState";
 import { errorMessage, firstFieldErrors } from "@/services/api";
 import { inventoryApi } from "@/services/inventoryApi";
@@ -327,11 +328,11 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
                     </div>
                 </div>
             ) : (
-                <div className="mx-auto max-w-6xl space-y-6 pb-24">
+                <div className={`${adminFormLayout.standard} space-y-6 pb-24`}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <p className="label-luxury">Product Master</p>
-                            <h1 className="mt-2 text-3xl text-primary">Thêm sản phẩm</h1>
+                            <h1 className="admin-page-title mt-2 text-primary">Thêm sản phẩm</h1>
                             <p className="mt-2 text-sm text-muted-foreground">
                                 {draftId ? `Bản nháp #${draftId}` : "Wizard tạo sản phẩm"}
                             </p>

@@ -43,9 +43,7 @@ class ProductCatalogController extends Controller
         if ($data['promotions_only'] ?? false) {
             $giftCandidates = app(SalesGiftPromotionVisibilityService::class)->isAvailable()
                 ? SalesPromotionGiftRule::query()->whereHas('promotion', fn (Builder $query) => $query
-                    ->where('status', 'active')->whereIn('sales_scope', ['retail', 'both'])
-                    ->where(fn (Builder $query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
-                    ->where(fn (Builder $query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now())))
+                    ->effectiveAt()->forChannel('retail'))
                     ->pluck('buy_product_id')->all()
                 : [];
             $giftSummaries = app(SalesGiftPromotionVisibilityService::class)->forProducts($giftCandidates, 'retail');
@@ -100,32 +98,31 @@ class ProductCatalogController extends Controller
             ->forProducts($products->pluck('id')->all(), 'retail');
         foreach ($products as $product) {
             $product->setAttribute('gift_promotions', $visible[$product->id] ?? []);
-            $product->setAttribute('retail_promotions', $discounts
+            $discount = $discounts
                 ->filter(fn (SalesPromotion $promotion): bool => $promotion->targets->isEmpty()
                     || $promotion->targets->contains(fn ($target): bool => $target->product_id === $product->id
                         || $target->product_category_id === $product->product_category_id))
-                ->map(fn (SalesPromotion $promotion): array => [
-                    'code' => $promotion->code,
-                    'discount_type' => $promotion->discount_type,
-                    'discount_value' => $promotion->discount_value,
-                    'max_discount_amount' => $promotion->max_discount_amount,
-                    'minimum_order_amount' => $promotion->minimum_order_amount,
-                    'total_usage_limit' => $promotion->total_usage_limit,
-                    'per_buyer_usage_limit' => $promotion->per_buyer_usage_limit,
-                ])->values()->all());
+                ->first();
+            $summary = $discount === null ? null : [
+                'code' => $discount->code,
+                'discount_type' => $discount->discount_type,
+                'discount_value' => $discount->discount_value,
+                'max_discount_amount' => $discount->max_discount_amount,
+                'minimum_order_amount' => $discount->minimum_order_amount,
+                'total_usage_limit' => $discount->total_usage_limit,
+                'per_buyer_usage_limit' => $discount->per_buyer_usage_limit,
+            ];
+            $product->setAttribute('retail_discount_promotion', $summary);
+            $product->setAttribute('retail_discount_model', $discount);
+            $product->setAttribute('retail_promotions', $summary === null ? [] : [$summary]);
         }
     }
 
     private function retailDiscounts(): Collection
     {
-        $now = now();
-
         return SalesPromotion::query()->with('targets')
             ->withCount(['redemptions as redeemed_count' => fn (Builder $query) => $query->where('status', 'redeemed')])
-            ->where('status', 'active')->whereIn('sales_scope', ['retail', 'both'])
-            ->whereIn('discount_type', ['percentage', 'fixed_amount'])
-            ->where(fn (Builder $query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now))
-            ->where(fn (Builder $query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now))
+            ->effectiveAt()->forChannel('retail')->whereIn('discount_type', ['percentage', 'fixed_amount'])
             ->orderBy('id')->get()
             ->filter(fn (SalesPromotion $promotion): bool => $promotion->total_usage_limit === null
                 || $promotion->redeemed_count < $promotion->total_usage_limit);

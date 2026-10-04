@@ -16,6 +16,19 @@ class DealerSalesOrderResource extends JsonResource
     public function toArray(Request $request): array
     {
         $payment = app(OrderPaymentSummaryService::class)->summary($this->resource);
+        $redemptions = $this->resource->relationLoaded('promotionRedemptions')
+            ? $this->promotionRedemptions : collect();
+        $promotions = $redemptions->where('discount_type_snapshot', '!=', 'buy_a_get_b')
+            ->map(fn ($redemption): array => [
+                'code' => $redemption->promotion_code_snapshot,
+                'name' => $redemption->promotion_code_snapshot === $this->promotion_code_snapshot
+                    ? $this->promotion_name_snapshot : ($redemption->promotion?->name ?? $redemption->promotion_code_snapshot),
+                'discount_type' => $redemption->discount_type_snapshot,
+                'discount_value' => $redemption->discount_value_snapshot,
+                'discount_amount' => $redemption->discount_amount,
+            ])->values()->all();
+        $giftRedemption = $redemptions->firstWhere('discount_type_snapshot', 'buy_a_get_b');
+        $primaryPromotion = $redemptions->firstWhere('promotion_code_snapshot', $this->promotion_code_snapshot);
 
         return [
             'id' => $this->id,
@@ -78,7 +91,15 @@ class DealerSalesOrderResource extends JsonResource
                 'code' => $this->promotion_code_snapshot, 'name' => $this->promotion_name_snapshot,
                 'discount_type' => $this->promotion_discount_type_snapshot,
                 'discount_value' => $this->promotion_discount_value_snapshot,
-                'discount_amount' => $this->discount_total,
+                'discount_amount' => $primaryPromotion?->discount_amount ?? '0.00',
+                'gift' => $this->promotion_gift_snapshot,
+            ],
+            'promotions' => $promotions,
+            'gift_promotion' => $this->promotion_gift_snapshot === null ? null : [
+                'code' => $giftRedemption?->promotion_code_snapshot ?? $this->promotion_code_snapshot,
+                'name' => $giftRedemption?->promotion?->name
+                    ?? ($giftRedemption?->promotion_code_snapshot === $this->promotion_code_snapshot
+                        ? $this->promotion_name_snapshot : $giftRedemption?->promotion_code_snapshot),
                 'gift' => $this->promotion_gift_snapshot,
             ],
             'tax_total' => $this->tax_total,

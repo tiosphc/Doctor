@@ -86,11 +86,10 @@ class DemoDataSeederTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'data.0.images');
         $this->assertSame(33, DB::table('product_variants')->where('sku', 'like', 'DEMO-%')->count());
         $this->assertSame(3, DB::table('products')->where('gift_only', true)->where('can_be_gift', true)->count());
-        $this->assertSame(3, DB::table('sales_promotions')->where('discount_type', 'buy_a_get_b')->count());
-        $this->assertDatabaseHas('sales_promotion_gift_rules', ['minimum_buy_quantity' => '2.000', 'gift_quantity' => '1.000']);
+        $this->assertDatabaseCount('sales_promotions', 0);
+        $this->assertDatabaseCount('sales_promotion_gift_rules', 0);
         $this->assertSame(3, DB::table('stock_movements')->where('reason_detail', 'Demo gift opening stock')->count());
-        $this->getJson('/api/gift-promotions')->assertOk()->assertJsonCount(3, 'data')
-            ->assertJsonFragment(['code' => 'DEMOGIFT-CLEAN', 'gift_available' => true]);
+        $this->getJson('/api/gift-promotions')->assertOk()->assertJsonCount(0, 'data');
         $this->getJson('/api/products/demo-product-01')->assertOk()
             ->assertJsonPath('data.variants.0.unit_symbol', 'chai');
         $this->assertSame(25, DB::table('sales_orders')->where('sales_channel', 'retail')->count());

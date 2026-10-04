@@ -818,7 +818,7 @@ function AdminShell({ children, onLogout }: { children: React.ReactNode; onLogou
         <div className="flex h-full min-h-0 flex-col">
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/70 px-5">
                 <div className="min-w-0">
-                    <p className="font-display text-lg font-semibold tracking-[.12em] text-primary">
+                    <p className="font-sans text-lg font-semibold tracking-[.12em] text-primary">
                         JUNIE
                     </p>
                     <p className="text-[10px] font-semibold tracking-[.2em] text-secondary">
@@ -878,7 +878,7 @@ function AdminShell({ children, onLogout }: { children: React.ReactNode; onLogou
     );
 
     return (
-        <div className="min-h-screen bg-[#faf9f6] text-foreground">
+        <div className="admin-portal min-h-screen bg-[#faf9f6] text-foreground">
             <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-border/70 bg-white shadow-sm lg:flex">
                 {sidebar("desktop")}
             </aside>

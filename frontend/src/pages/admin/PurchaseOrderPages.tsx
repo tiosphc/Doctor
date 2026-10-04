@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
 import {
     DropdownMenu,
@@ -105,7 +106,7 @@ export function PurchaseOrdersPage() {
                 </header>
                 <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <label className="text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Tìm mã PO
                             <input
                                 className={fieldClass}
@@ -117,7 +118,7 @@ export function PurchaseOrdersPage() {
                                 placeholder="PO-…"
                             />
                         </label>
-                        <label className="text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Nhà cung cấp
                             <select
                                 className={fieldClass}
@@ -135,7 +136,7 @@ export function PurchaseOrdersPage() {
                                 ))}
                             </select>
                         </label>
-                        <label className="text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Kho nhận
                             <select
                                 className={fieldClass}
@@ -153,7 +154,7 @@ export function PurchaseOrdersPage() {
                                 ))}
                             </select>
                         </label>
-                        <label className="text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Trạng thái
                             <select
                                 className={fieldClass}
@@ -397,7 +398,7 @@ export function PurchaseOrderFormPage({ id }: { id?: number }) {
     };
     return (
         <ProductAdminGuard>
-            <div className="mx-auto max-w-6xl space-y-6">
+            <div className={`${adminFormLayout.standard} space-y-6`}>
                 {id ? (
                     <Link
                         to="/admin/purchase-orders/$id"
@@ -434,7 +435,7 @@ export function PurchaseOrderFormPage({ id }: { id?: number }) {
                 {(!id || existingOrder?.status === "draft") && (
                     <div className="space-y-5">
                         <section className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Nhà cung cấp *
                                 <select
                                     className={fieldClass}
@@ -460,7 +461,7 @@ export function PurchaseOrderFormPage({ id }: { id?: number }) {
                                     <span className="text-red-700">{errors["supplier_id"]}</span>
                                 )}
                             </label>
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Kho nhận *
                                 <select
                                     className={fieldClass}
@@ -498,7 +499,7 @@ export function PurchaseOrderFormPage({ id }: { id?: number }) {
                                     Ghi nhận tự động khi lưu PO.
                                 </span>
                             </p>
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Ngày giao dự kiến
                                 <input
                                     type="date"
@@ -509,7 +510,7 @@ export function PurchaseOrderFormPage({ id }: { id?: number }) {
                                     }
                                 />
                             </label>
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Mã tham chiếu nhà cung cấp
                                 <input
                                     className={fieldClass}
@@ -519,7 +520,7 @@ export function PurchaseOrderFormPage({ id }: { id?: number }) {
                                     }
                                 />
                             </label>
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Ghi chú
                                 <textarea
                                     className={fieldClass}
@@ -545,7 +546,7 @@ export function PurchaseOrderFormPage({ id }: { id?: number }) {
                                     + Thêm sản phẩm
                                 </button>
                             </div>
-                            <label className="block max-w-md text-sm">
+                            <label className="admin-form-field admin-form-label max-w-md">
                                 Tìm tên/SKU
                                 <input
                                     className={fieldClass}
@@ -616,7 +617,7 @@ export function PurchaseOrderFormPage({ id }: { id?: number }) {
                                                         type="number"
                                                         min="1"
                                                         step="1"
-                                                        className={fieldClass}
+                                                        className={`${fieldClass} admin-field-compact`}
                                                         value={line.quantity}
                                                         onChange={(event) =>
                                                             updateLine(index, {
@@ -631,7 +632,7 @@ export function PurchaseOrderFormPage({ id }: { id?: number }) {
                                                         type="number"
                                                         min="0"
                                                         step="0.01"
-                                                        className={fieldClass}
+                                                        className={`${fieldClass} admin-field-medium`}
                                                         value={line.unit_price}
                                                         onChange={(event) =>
                                                             updateLine(index, {
@@ -736,7 +737,7 @@ export function PurchaseOrderDetailPage({ id }: { id: number }) {
     });
     return (
         <ProductAdminGuard>
-            <div className="mx-auto max-w-6xl space-y-6">
+            <div className={`${adminFormLayout.standard} space-y-6`}>
                 <Link to="/admin/purchase-orders" className="text-sm text-primary underline">
                     ← Đơn mua hàng
                 </Link>
@@ -1154,11 +1155,11 @@ function PurchasePaymentDialog({
                         {money(remaining)}.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-3 text-sm">
-                    <label>
+                <div className="grid gap-4 text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Số tiền đã thanh toán *
                         <input
-                            className={fieldClass}
+                            className={`${fieldClass} admin-field-medium`}
                             inputMode="decimal"
                             value={amount}
                             onChange={(event) => {
@@ -1167,7 +1168,7 @@ function PurchasePaymentDialog({
                             }}
                         />
                     </label>
-                    <label>
+                    <label className="admin-form-field admin-form-label">
                         Phương thức *
                         <select
                             className={fieldClass}
@@ -1179,7 +1180,7 @@ function PurchasePaymentDialog({
                             <option value="other">Khác</option>
                         </select>
                     </label>
-                    <label>
+                    <label className="admin-form-field admin-form-label">
                         Ngày thanh toán *
                         <input
                             className={fieldClass}
@@ -1188,7 +1189,7 @@ function PurchasePaymentDialog({
                             onChange={(event) => setPaidAt(event.target.value)}
                         />
                     </label>
-                    <label>
+                    <label className="admin-form-field admin-form-label">
                         Mã tham chiếu
                         <input
                             className={fieldClass}
@@ -1196,7 +1197,7 @@ function PurchasePaymentDialog({
                             onChange={(event) => setReference(event.target.value)}
                         />
                     </label>
-                    <label>
+                    <label className="admin-form-field admin-form-label">
                         Ghi chú
                         <textarea
                             className={fieldClass}
@@ -1393,7 +1394,7 @@ function PurchaseOperationDrawer({
                                         type="number"
                                         min="1"
                                         step="1"
-                                        className={fieldClass}
+                                        className={`${fieldClass} admin-field-compact`}
                                         value={quantities[row.id] ?? ""}
                                         onChange={(event) => {
                                             setQuantities((current) => ({
@@ -1409,7 +1410,7 @@ function PurchaseOperationDrawer({
                         </div>
                         {mode === "receipt" ? (
                             <>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Mã phiếu giao từ nhà cung cấp
                                     <input
                                         className={fieldClass}
@@ -1420,7 +1421,7 @@ function PurchaseOperationDrawer({
                                         }}
                                     />
                                 </label>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Ghi chú
                                     <textarea
                                         className={fieldClass}
@@ -1434,7 +1435,7 @@ function PurchaseOperationDrawer({
                             </>
                         ) : (
                             <>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Lý do trả hàng *
                                     <textarea
                                         className={fieldClass}
@@ -1445,7 +1446,7 @@ function PurchaseOperationDrawer({
                                         }}
                                     />
                                 </label>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Ghi chú
                                     <textarea
                                         className={fieldClass}

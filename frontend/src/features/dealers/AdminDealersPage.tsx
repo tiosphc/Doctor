@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -387,7 +388,9 @@ function DealerEditor({ dealer, initialTab }: { dealer: DealerAccount; initialTa
             )}
             {tab === "info" && (
                 <>
-                    <section className="rounded-xl border bg-card p-5 sm:p-6">
+                    <section
+                        className={`${adminFormLayout.standard} rounded-xl border bg-card p-5 sm:p-6`}
+                    >
                         <div className="flex flex-wrap justify-between gap-2">
                             <h2 className="text-xl text-primary">Thông tin kinh doanh</h2>
                             {!editing && (

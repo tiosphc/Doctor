@@ -140,6 +140,7 @@ export type DealerAccountInput = Partial<
 
 export type DealerPrice = {
     unit_price: string;
+    discounted_unit_price?: string | null;
     base_unit_price: string;
     currency: "VND";
     minimum_quantity: string;
@@ -147,6 +148,14 @@ export type DealerPrice = {
 };
 
 export type DealerProduct = {
+    dealer_discount_promotion?: {
+        id: number;
+        code: string;
+        name: string;
+        discount_type: "percentage" | "fixed_amount";
+        discount_value: string;
+        minimum_order_amount: string;
+    } | null;
     active_promotions?: {
         name: string;
         discount_type: "percentage" | "fixed_amount";
@@ -220,6 +229,15 @@ export type DealerQuote = {
     base_unit_price: string;
     warehouse: DealerWarehouse | null;
     line_total: string;
+    discounted_unit_price?: string;
+    discounted_line_total?: string;
+    promotion?: {
+        code: string;
+        name: string;
+        discount_type: "percentage" | "fixed_amount";
+        discount_value: string;
+        discount_amount: string;
+    } | null;
     currency: string;
     minimum_quantity: string;
     meets_moq: boolean;
@@ -240,6 +258,9 @@ export type DealerQuickOrderLine = {
     base_unit_price?: string | null;
     minimum_quantity: string | null;
     line_total: string | null;
+    promotion_discount_amount?: string;
+    discounted_line_total?: string | null;
+    discounted_unit_price?: string | null;
     available_quantity: string;
     available_for_requested_quantity: boolean;
     availability_status: "available" | "insufficient";
@@ -287,6 +308,8 @@ export type DealerQuickOrderReview = {
         gift_product_name?: string;
         gift_variant_name?: string;
     } | null;
+    gift_promotion?: DealerQuickOrderReview["promotion"];
+    promotions?: NonNullable<DealerQuickOrderReview["promotion"]>[];
     tax_total: string;
     shipping_total: string;
     grand_total: string;
@@ -477,6 +500,14 @@ export type DealerOrder = DealerRecipient & {
         discount_value: string;
         discount_amount: string;
     } | null;
+    promotions?: {
+        code: string;
+        name: string;
+        discount_type: string;
+        discount_value: string;
+        discount_amount: string;
+    }[];
+    gift_promotion?: { code: string; name: string; gift: Record<string, unknown> } | null;
     tax_total: string;
     shipping_total: string;
     grand_total: string;
@@ -545,6 +576,9 @@ export type DealerImport = {
     preview_summary: {
         estimated_total: string;
         warehouse_id: number | null;
+        valid_row_count: number;
+        invalid_row_count: number;
+        sku_count: number;
         wallet_balance?: string;
         wallet_sufficient?: boolean;
     };

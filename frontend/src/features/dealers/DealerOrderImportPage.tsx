@@ -19,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ApiError, errorMessage } from "@/services/api";
 import { commerceCodeMessage } from "@/services/commerceErrors";
 import { dealerApi, dealerKeys } from "./api";
-import type { DealerImport, DealerImportError } from "./types";
+import type { DealerImport, DealerImportError, DealerRecipient } from "./types";
 
 const money = (value: string) =>
     new Intl.NumberFormat("vi-VN", {
@@ -32,15 +32,26 @@ const messages: Record<string, string> = {
     INVALID_PHONE: "Số điện thoại phải có chữ số hợp lệ.",
     INVALID_EMAIL: "Email không hợp lệ.",
     INVALID_QUANTITY: "Số lượng phải là số nguyên lớn hơn 0.",
+    PROVINCE_NOT_FOUND:
+        "Không tìm thấy tỉnh/thành phố trong dữ liệu địa chỉ. Hãy kiểm tra tên và tải lại file.",
+    WARD_PROVINCE_MISMATCH:
+        "Không tìm thấy phường/xã thuộc tỉnh/thành phố đã nhập. Hãy kiểm tra tên và tải lại file.",
+    ADDRESS_AMBIGUOUS: "Tên địa phương trùng nhiều kết quả. Hãy nhập tên đầy đủ và tải lại file.",
     INVALID_QUANTITY_PRECISION: "Số lượng vượt độ chính xác của đơn vị.",
     SKU_NOT_FOUND: "Không tìm thấy SKU.",
     DEALER_SKU_NOT_SELLABLE: "SKU không bán cho đại lý.",
     DEALER_PRICE_NOT_FOUND: "SKU chưa có giá đại lý cho Tier hiện tại.",
     DEALER_MOQ_NOT_MET: "Số lượng dưới mức MOQ.",
     ORDER_GROUP_RECIPIENT_MISMATCH: "Thông tin người nhận trong cùng đơn không khớp.",
+    ORDER_GROUP_NAME_MISMATCH:
+        "Cùng số điện thoại và địa chỉ nhưng tên người nhận khác nhau. Hãy sửa file.",
+    ORDER_GROUP_EMAIL_MISMATCH:
+        "Cùng số điện thoại và địa chỉ nhưng email khác nhau. Hãy sửa file.",
     ORDER_GROUP_NOTE_MISMATCH: "Ghi chú trong cùng đơn không khớp.",
     IMPORT_BATCH_INSUFFICIENT_STOCK: "Tổng nhu cầu của file vượt tồn khả dụng.",
     INSUFFICIENT_STOCK: "Không đủ tồn kho.",
+    WAREHOUSE_SERVICE_AREA_NOT_FOUND:
+        "Chưa có kho bán hàng đang hoạt động phục vụ địa chỉ này. Hãy chọn địa chỉ khác hoặc liên hệ quản trị viên.",
     DEALER_WALLET_INSUFFICIENT_BALANCE: "Số dư ví trả trước không đủ cho file này.",
     EXTERNAL_ORDER_REF_ALREADY_USED: "Đơn này đã được tạo từ file cùng nội dung.",
     DEALER_IMPORT_CHANGED: "Dữ liệu đã thay đổi kể từ lúc xem trước. Hãy kiểm tra lại.",
@@ -48,7 +59,7 @@ const messages: Record<string, string> = {
     FORBIDDEN_IMPORT_COLUMN:
         "File chứa cột không được phép (giá, Tier, kho hoặc thông tin thương mại khác).",
     FORMULA_NOT_ALLOWED: "File có ô công thức. Hãy thay bằng giá trị tĩnh.",
-    TEXT_CELL_REQUIRED: "Số điện thoại, mã bưu chính và SKU phải ở dạng Text trong Excel.",
+    TEXT_CELL_REQUIRED: "Số điện thoại và SKU phải ở dạng Text trong Excel để giữ số 0 đầu.",
     INVALID_XLSX: "File XLSX không hợp lệ.",
     IMPORT_ROW_LIMIT: "File vượt giới hạn 1.000 dòng.",
     IMPORT_ORDER_LIMIT: "File vượt giới hạn 100 đơn.",
@@ -69,11 +80,10 @@ const importFieldNames: Record<string, string> = {
     "Customer Name": "tên khách hàng",
     Phone: "số điện thoại",
     Email: "email",
-    Street: "đường và số nhà",
-    City: "thành phố",
-    State: "tỉnh/bang",
-    Country: "quốc gia",
-    "Zip Code": "mã bưu chính",
+    "Province / City": "tỉnh/thành phố",
+    District: "quận/huyện",
+    Ward: "phường/xã",
+    Street: "địa chỉ chi tiết",
     Quantity: "số lượng",
     Recipient: "người nhận",
     "Voucher Code": "mã ưu đãi",
@@ -87,7 +97,15 @@ function importError(error: unknown): string {
         : errorMessage(error);
 }
 
-function ErrorLine({ error, sku }: { error: DealerImportError; sku: string | undefined }) {
+function ErrorLine({
+    error,
+    sku,
+    recipient,
+}: {
+    error: DealerImportError;
+    sku: string | undefined;
+    recipient: DealerRecipient | undefined;
+}) {
     const value = error.value?.trim();
     const fieldName = importFieldNames[error.field] ?? error.field;
     const detail =
@@ -99,9 +117,13 @@ function ErrorLine({ error, sku }: { error: DealerImportError; sku: string | und
                 ? `Email '${value}' không đúng định dạng. Vui lòng nhập lại.`
                 : error.code === "INVALID_PHONE" && value
                   ? `Số điện thoại '${value}' không hợp lệ. Vui lòng nhập lại.`
-                  : error.code === "INVALID_QUANTITY" && value
-                    ? `Số lượng '${value}' phải là số nguyên lớn hơn 0.`
-                    : (messages[error.code] ?? commerceCodeMessage(error.code, sku));
+                  : error.code === "PROVINCE_NOT_FOUND" && value
+                    ? `Không tìm thấy tỉnh/thành phố '${value}' trong dữ liệu địa chỉ.`
+                    : error.code === "WARD_PROVINCE_MISMATCH" && value
+                      ? `Không tìm thấy phường/xã '${value}' thuộc ${recipient?.shipping_province || "tỉnh/thành phố đã nhập"}.`
+                      : error.code === "INVALID_QUANTITY" && value
+                        ? `Số lượng '${value}' phải là số nguyên lớn hơn 0.`
+                        : (messages[error.code] ?? commerceCodeMessage(error.code, sku));
     return (
         <li>
             {error.row === null ? "Toàn file" : `Dòng ${error.row}`} · {fieldName}: {detail}
@@ -200,11 +222,13 @@ export function DealerOrderImportPage() {
                 queryClient.invalidateQueries({ queryKey: ["dealer-order-imports"] }),
                 queryClient.invalidateQueries({ queryKey: ["dealer-orders"] }),
             ]);
-            toast.success(
-                response.data.status === "completed"
-                    ? "Đã tạo tất cả đơn."
-                    : "Đã xử lý import. Kiểm tra từng nhóm đơn.",
-            );
+            if (response.data.status === "completed") {
+                toast.success("Đã tạo tất cả đơn.");
+            } else {
+                toast.error(
+                    "Chưa tạo đủ đơn. Kiểm tra lỗi của từng đơn dự kiến trước khi thử lại.",
+                );
+            }
         });
     }
 
@@ -234,33 +258,33 @@ export function DealerOrderImportPage() {
     );
 
     return (
-        <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+        <main className="dealer-page-wide space-y-6">
             <header className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <p className="label-luxury">Junie B2B</p>
-                    <h1 className="mt-2 text-3xl text-primary">Nhập đơn Excel</h1>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Mỗi dòng là một SKU. Các dòng cùng Mã đơn được gộp thành một đơn; file cũ
-                        vẫn gộp theo số điện thoại và địa chỉ. Tải file XLSX, xem trước giá và MOQ,
-                        rồi xác nhận tạo đơn.
+                    <h1 className="dealer-page-title mt-2 text-primary">Nhập đơn Excel</h1>
+                    <p className="mt-2 max-w-3xl text-[15px] leading-6 text-muted-foreground">
+                        Mỗi dòng là một SKU. Các dòng cùng số điện thoại và địa chỉ được gộp thành
+                        một đơn. Nhập tên tỉnh/thành phố và phường/xã, xem trước giá và tồn kho rồi
+                        xác nhận.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4">
                     <button
                         type="button"
-                        className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm"
+                        className="dealer-action rounded-md border px-4 py-2"
                         disabled={Boolean(busy)}
                         onClick={() => void download()}
                     >
                         <Download size={16} /> Tải mẫu XLSX
                     </button>
-                    <Link to="/dealer/orders" className="text-sm text-primary underline">
+                    <Link to="/dealer/orders" className="dealer-action text-primary underline">
                         Đơn hàng đại lý
                     </Link>
                 </div>
             </header>
             {wallet.data && (
-                <p className="rounded-lg border border-[#d8e0eb] bg-white p-3 text-sm text-[#092b5c]">
+                <p className="rounded-lg border border-[#d8e0eb] bg-white p-4 text-[15px] text-[#092b5c]">
                     Ví trả trước: <strong>{money(wallet.data.data.available_balance)}</strong> · Dự
                     kiến file:{" "}
                     <strong>{money(current?.preview_summary.estimated_total ?? "0.00")}</strong>
@@ -269,28 +293,28 @@ export function DealerOrderImportPage() {
                     )}
                 </p>
             )}
-            <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
+            <section className="space-y-4 rounded-xl border bg-card p-5 sm:p-6">
                 <div className="flex items-center gap-2">
                     <UploadCloud size={20} />
-                    <h2 className="text-xl text-primary">Tải file lên</h2>
+                    <h2 className="dealer-section-title text-primary">Tải file lên</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                    Chỉ .xlsx · tối đa 5 MB · 1.000 dòng · 100 đơn · 50 SKU mỗi đơn. File được đọc
+                    Chỉ .xlsx · tối đa 5 MB · 1.000 dòng · 500 đơn · 50 SKU mỗi đơn. File được đọc
                     riêng tư và xóa sau khi xử lý.
                 </p>
                 <div className="flex flex-wrap items-end gap-3">
-                    <label className="grid min-w-0 flex-1 gap-2 text-sm">
+                    <label className="grid min-w-0 flex-1 gap-2 text-sm font-medium">
                         Chọn workbook
                         <input
                             type="file"
                             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                            className="min-w-0 rounded-md border bg-background p-2"
+                            className="dealer-control min-w-0 rounded-md border bg-background p-2"
                             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
                         />
                     </label>
                     <button
                         type="button"
-                        className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50"
+                        className="dealer-action rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
                         disabled={!file || Boolean(busy)}
                         onClick={() => void upload()}
                     >
@@ -316,52 +340,55 @@ export function DealerOrderImportPage() {
                 </p>
             )}
             {current && (
-                <section className="space-y-5 rounded-xl border bg-card p-4 sm:p-6">
+                <section className="space-y-5 rounded-xl border bg-card p-5 sm:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <p className="text-sm text-muted-foreground">
                                 Import #{current.id} · {current.original_filename} ·{" "}
                                 {Math.ceil(current.file_size / 1024)} KB
                             </p>
-                            <h2 className="mt-1 text-xl text-primary">Xem trước đơn</h2>
+                            <h2 className="dealer-section-title mt-1 text-primary">
+                                Xem trước đơn
+                            </h2>
                         </div>
                         <button
                             type="button"
-                            className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm"
+                            className="dealer-action rounded-md border px-4 py-2"
                             disabled={Boolean(busy)}
                             onClick={() => void revalidate()}
                         >
                             <RefreshCw size={15} /> Kiểm tra lại
                         </button>
                     </div>
-                    <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-md bg-muted p-3">
-                            Dòng: <strong>{current.row_count}</strong>
+                    <div className="grid gap-3 text-[14px] sm:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-md bg-muted p-4">
+                            Dòng Excel: <strong>{current.row_count}</strong>
                         </div>
-                        <div className="rounded-md bg-muted p-3">
-                            Đơn hợp lệ:{" "}
-                            <strong>
-                                {current.valid_order_count}/{current.order_count}
-                            </strong>
+                        <div className="rounded-md bg-muted p-4">
+                            Dòng hợp lệ: <strong>{current.preview_summary.valid_row_count}</strong>
                         </div>
-                        <div className="rounded-md bg-muted p-3">
-                            Đơn lỗi: <strong>{current.invalid_order_count}</strong>
+                        <div className="rounded-md bg-muted p-4">
+                            Dòng lỗi: <strong>{current.preview_summary.invalid_row_count}</strong>
                         </div>
-                        <div className="rounded-md bg-muted p-3">
-                            Ước tính:{" "}
-                            <strong>{money(current.preview_summary.estimated_total)}</strong>
+                        <div className="rounded-md bg-muted p-4">
+                            Đơn dự kiến: <strong>{current.order_count}</strong>
                         </div>
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                        {current.preview_summary.sku_count} SKU · {current.valid_order_count} đơn
+                        hợp lệ · {current.invalid_order_count} đơn lỗi · Ước tính{" "}
+                        {money(current.preview_summary.estimated_total)}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                         Trạng thái: {current.status} · Người tải: {current.uploaded_by}. Xem trước
                         không giữ hàng.
                     </p>
-                    {current.groups.map((group) => (
-                        <article key={group.id} className="space-y-3 rounded-lg border p-4">
+                    {current.groups.map((group, index) => (
+                        <article key={group.id} className="space-y-3 rounded-lg border p-4 sm:p-5">
                             <div className="flex flex-wrap justify-between gap-2">
                                 <div>
-                                    <h3 className="font-semibold text-primary">
-                                        {group.external_reference}
+                                    <h3 className="text-base font-semibold text-primary">
+                                        Đơn dự kiến #{index + 1}
                                     </h3>
                                     <p className="text-sm text-muted-foreground">
                                         {group.preview?.recipient.recipient_name} ·{" "}
@@ -383,11 +410,9 @@ export function DealerOrderImportPage() {
                                             {[
                                                 group.preview.recipient.recipient_email,
                                                 group.preview.recipient.shipping_address_line1,
-                                                group.preview.recipient.shipping_address_line2,
-                                                group.preview.recipient.shipping_city,
+                                                group.preview.recipient.shipping_ward,
+                                                group.preview.recipient.shipping_district,
                                                 group.preview.recipient.shipping_province,
-                                                group.preview.recipient.shipping_country,
-                                                group.preview.recipient.shipping_postal_code,
                                             ]
                                                 .filter(Boolean)
                                                 .join(" · ")}
@@ -418,13 +443,13 @@ export function DealerOrderImportPage() {
                                 </p>
                             )}
                             {group.preview?.effective_tier && (
-                                <p className="text-xs text-muted-foreground">
+                                <p className="dealer-meta text-muted-foreground">
                                     Tier: {group.preview.effective_tier.name} · Kho:{" "}
                                     {group.preview.warehouse?.name ?? "—"}
                                 </p>
                             )}
                             {group.preview?.preferred_warehouse && (
-                                <p className="text-xs text-muted-foreground">
+                                <p className="dealer-meta text-muted-foreground">
                                     Kho ưu tiên: {group.preview.preferred_warehouse.name} · Kho thực
                                     tế: {group.preview.warehouse?.name ?? "—"}
                                 </p>
@@ -438,10 +463,10 @@ export function DealerOrderImportPage() {
                             )}
                             {group.preview?.items.length ? (
                                 <div className="overflow-x-auto">
-                                    <table className="w-full min-w-[650px] text-left text-sm">
+                                    <table className="w-full min-w-[880px] text-left text-[14px]">
                                         <thead className="border-b text-muted-foreground">
                                             <tr>
-                                                <th className="py-2">SKU / Sản phẩm</th>
+                                                <th className="py-3 pr-4">SKU / Sản phẩm</th>
                                                 <th>Số lượng</th>
                                                 <th>MOQ</th>
                                                 <th>Đơn giá</th>
@@ -455,7 +480,7 @@ export function DealerOrderImportPage() {
                                                     key={item.product_variant_id}
                                                     className="border-b last:border-0"
                                                 >
-                                                    <td className="py-2">
+                                                    <td className="py-3 pr-4">
                                                         {item.sku} · {item.product_name} ·{" "}
                                                         {item.variant_name}
                                                     </td>
@@ -490,6 +515,7 @@ export function DealerOrderImportPage() {
                                         <ErrorLine
                                             key={index}
                                             error={error}
+                                            recipient={group.preview?.recipient}
                                             sku={
                                                 current.rows.find((row) => row.row === error.row)
                                                     ?.sku
@@ -524,7 +550,7 @@ export function DealerOrderImportPage() {
                     )}
                     <button
                         type="button"
-                        className="rounded-md bg-primary px-5 py-2 text-sm text-primary-foreground disabled:opacity-50"
+                        className="dealer-action rounded-md bg-primary px-5 py-2 text-primary-foreground disabled:opacity-50"
                         disabled={!canConfirm || walletInsufficient || Boolean(busy)}
                         onClick={() => setConfirmOpen(true)}
                     >
@@ -532,10 +558,10 @@ export function DealerOrderImportPage() {
                     </button>
                 </section>
             )}
-            <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
+            <section className="space-y-4 rounded-xl border bg-card p-5 sm:p-6">
                 <div className="flex items-center gap-2">
                     <FileSpreadsheet size={20} />
-                    <h2 className="text-xl text-primary">Lịch sử import</h2>
+                    <h2 className="dealer-section-title text-primary">Lịch sử import</h2>
                 </div>
                 {history.isPending ? (
                     <LoadingState />
@@ -553,7 +579,7 @@ export function DealerOrderImportPage() {
                                 <button
                                     key={item.id}
                                     type="button"
-                                    className="flex flex-wrap justify-between gap-2 rounded-md border p-3 text-left text-sm hover:bg-muted"
+                                    className="flex flex-wrap justify-between gap-3 rounded-md border p-4 text-left text-[14px] hover:bg-muted"
                                     onClick={() =>
                                         void run("detail", async () => {
                                             const result = await dealerApi.importDetail(
@@ -589,8 +615,7 @@ export function DealerOrderImportPage() {
                             Xác nhận tạo {current?.order_count} đơn?
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Hệ thống sẽ kiểm tra lại giá, Tier, kho và tồn kho; mỗi nhóm đơn hợp lệ
-                            được tạo và giữ hàng riêng.
+                            Hệ thống sẽ kiểm tra lại giá, Tier, kho và tồn kho trước khi tạo đơn.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { Check, ChevronsUpDown, CircleAlert, Copy, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/common/Button";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/AsyncState";
 import { OperationNotice } from "@/components/common/Feedback";
 import { Field, Input, Textarea } from "@/components/common/Fields";
@@ -203,7 +204,7 @@ export function DoctorManagement({ id }: { id: number }) {
     const doctor = doctorQuery.data.data;
 
     return (
-        <div className="pb-8">
+        <div className={`${adminFormLayout.complex} pb-8`}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <p className="label-luxury">Quản lý bác sĩ</p>

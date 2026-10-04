@@ -39,27 +39,27 @@ export function DealerShippingAddressSelector({
     ) => onChange({ ...value, [field]: next });
 
     return (
-        <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+        <section className="space-y-5 rounded-xl border bg-card p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                    <h2 className="text-lg font-semibold text-primary">Thông tin giao hàng</h2>
-                    <p className="text-xs text-muted-foreground">
+                    <h2 className="dealer-section-title text-primary">Thông tin giao hàng</h2>
+                    <p className="dealer-meta mt-1 text-muted-foreground">
                         Nhập người nhận của đơn này. Địa chỉ chỉ được lưu khi bạn chọn bên dưới.
                     </p>
                 </div>
                 <button
                     type="button"
-                    className="rounded-md border px-3 py-2 text-sm text-primary hover:bg-accent"
+                    className="dealer-action rounded-md border px-3 text-primary hover:bg-accent"
                     onClick={() => setSavedOpen(true)}
                 >
                     Chọn từ địa chỉ đã lưu
                 </button>
             </div>
             <div className="grid gap-4 text-sm sm:grid-cols-2">
-                <label className="grid gap-1">
+                <label className="grid gap-2 font-medium">
                     Họ tên người nhận *
                     <input
-                        className="rounded-md border bg-background px-3 py-2"
+                        className="dealer-control rounded-md border bg-background px-3 font-normal"
                         value={value.recipient_name}
                         onChange={(event) => setField("recipient_name", event.target.value)}
                         aria-invalid={Boolean(errors.recipient_name)}
@@ -68,11 +68,11 @@ export function DealerShippingAddressSelector({
                         <span className="text-red-700">{errors.recipient_name}</span>
                     )}
                 </label>
-                <label className="grid gap-1">
+                <label className="grid gap-2 font-medium">
                     Số điện thoại *
                     <input
                         type="tel"
-                        className="rounded-md border bg-background px-3 py-2"
+                        className="dealer-control rounded-md border bg-background px-3 font-normal"
                         value={value.recipient_phone}
                         onChange={(event) => setField("recipient_phone", event.target.value)}
                         aria-invalid={Boolean(errors.recipient_phone)}
@@ -81,10 +81,10 @@ export function DealerShippingAddressSelector({
                         <span className="text-red-700">{errors.recipient_phone}</span>
                     )}
                 </label>
-                <label className="grid gap-1">
+                <label className="grid gap-2 font-medium">
                     Tỉnh / Thành phố *
                     <select
-                        className="rounded-md border bg-background px-3 py-2"
+                        className="dealer-control rounded-md border bg-background px-3 font-normal"
                         value={value.province_code}
                         onChange={(event) =>
                             onChange({
@@ -107,10 +107,10 @@ export function DealerShippingAddressSelector({
                         <span className="text-red-700">{errors.province_code}</span>
                     )}
                 </label>
-                <label className="grid gap-1">
+                <label className="grid gap-2 font-medium">
                     Quận / Huyện (nếu có)
                     <input
-                        className="rounded-md border bg-background px-3 py-2"
+                        className="dealer-control rounded-md border bg-background px-3 font-normal"
                         value={value.shipping_district}
                         onChange={(event) => setField("shipping_district", event.target.value)}
                         aria-invalid={Boolean(errors.shipping_district)}
@@ -119,10 +119,10 @@ export function DealerShippingAddressSelector({
                         <span className="text-red-700">{errors.shipping_district}</span>
                     )}
                 </label>
-                <label className="grid gap-1">
+                <label className="grid gap-2 font-medium">
                     Phường / Xã *
                     <select
-                        className="rounded-md border bg-background px-3 py-2"
+                        className="dealer-control rounded-md border bg-background px-3 font-normal"
                         value={value.ward_code}
                         disabled={!value.province_code || wards.isPending}
                         onChange={(event) => setField("ward_code", event.target.value)}
@@ -137,10 +137,10 @@ export function DealerShippingAddressSelector({
                     </select>
                     {errors.ward_code && <span className="text-red-700">{errors.ward_code}</span>}
                 </label>
-                <label className="grid gap-1 sm:col-span-2">
+                <label className="grid gap-2 font-medium sm:col-span-2">
                     Địa chỉ chi tiết *
                     <input
-                        className="rounded-md border bg-background px-3 py-2"
+                        className="dealer-control rounded-md border bg-background px-3 font-normal"
                         placeholder="Ví dụ: 636 Lê Văn Lương"
                         value={value.address_line}
                         onChange={(event) => setField("address_line", event.target.value)}
@@ -169,13 +169,15 @@ export function DealerShippingAddressSelector({
                 />
                 Lưu địa chỉ này để dùng lần sau
             </label>
-            <p className="text-xs text-muted-foreground">
+            <p className="dealer-meta text-muted-foreground">
                 Kho được tự động xác định theo địa chỉ giao hàng và tình trạng tồn kho.
             </p>
             <Dialog open={savedOpen} onOpenChange={setSavedOpen}>
-                <DialogContent className="w-[calc(100%-2rem)] max-w-xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto p-5 sm:p-6">
                     <DialogHeader>
-                        <DialogTitle>Chọn từ địa chỉ đã lưu</DialogTitle>
+                        <DialogTitle className="dealer-modal-title">
+                            Chọn từ địa chỉ đã lưu
+                        </DialogTitle>
                     </DialogHeader>
                     {addresses.isPending && <p className="text-sm">Đang tải địa chỉ...</p>}
                     {addresses.isError && (
@@ -193,7 +195,7 @@ export function DealerShippingAddressSelector({
                             <button
                                 key={address.id}
                                 type="button"
-                                className="rounded-md border p-3 text-left text-sm hover:bg-accent"
+                                className="rounded-md border p-4 text-left text-[14px] leading-6 hover:bg-accent"
                                 onClick={() => {
                                     onChange({
                                         recipient_name: address.recipient_name,
@@ -213,7 +215,7 @@ export function DealerShippingAddressSelector({
                                 <strong>{address.recipient_name}</strong> ·{" "}
                                 {address.recipient_phone}
                                 {address.is_default && (
-                                    <span className="ml-2 text-xs text-primary">Mặc định</span>
+                                    <span className="dealer-meta ml-2 text-primary">Mặc định</span>
                                 )}
                                 <p>
                                     {address.address_line}, {address.ward.name}
@@ -226,7 +228,7 @@ export function DealerShippingAddressSelector({
                     </div>
                     <button
                         type="button"
-                        className="w-full rounded-md border px-3 py-2 text-sm text-primary hover:bg-accent"
+                        className="dealer-action w-full rounded-md border px-3 text-primary hover:bg-accent"
                         onClick={() => {
                             onChange(emptyDealerShippingForm);
                             setSavedOpen(false);

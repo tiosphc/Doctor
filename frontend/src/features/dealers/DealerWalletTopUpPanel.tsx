@@ -71,7 +71,7 @@ export function DealerWalletTopUpPanel({ accountId }: { accountId: number }) {
                 <QrCode className="text-[#092b5c]" size={22} />
                 <h2 className="text-xl font-semibold text-[#092b5c]">Nạp tiền bằng mã QR</h2>
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-[15px] leading-6 text-muted-foreground">
                 Số dư chỉ tăng sau khi PayOS xác nhận đã thanh toán qua webhook. Trang quay về không
                 cộng tiền.
             </p>
@@ -88,7 +88,7 @@ export function DealerWalletTopUpPanel({ accountId }: { accountId: number }) {
                     }
                 }}
             >
-                <label className="flex-1 text-sm font-medium text-[#092b5c]">
+                <label className="min-w-0 flex-1 text-sm font-semibold text-[#092b5c]">
                     Số tiền nạp (VND)
                     <input
                         type="number"
@@ -102,13 +102,13 @@ export function DealerWalletTopUpPanel({ accountId }: { accountId: number }) {
                             operationKey.current = null;
                             setCreated(null);
                         }}
-                        className="mt-2 block w-full rounded-xl border border-[#d8dee8] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#092b5c]"
+                        className="dealer-control mt-2 block w-full rounded-xl border border-[#d8dee8] bg-white px-3 focus:border-[#092b5c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#092b5c]"
                     />
                 </label>
                 <button
                     type="submit"
                     disabled={create.isPending}
-                    className="rounded-xl bg-[#092b5c] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                    className="dealer-action rounded-xl bg-[#092b5c] px-5 text-white disabled:opacity-50"
                 >
                     {create.isPending ? "Đang tạo QR..." : "Tạo mã QR"}
                 </button>
@@ -141,7 +141,7 @@ export function DealerWalletTopUpPanel({ accountId }: { accountId: number }) {
                         )}
                 </div>
             )}
-            <h3 className="mt-6 text-sm font-semibold text-[#092b5c]">Yêu cầu nạp gần đây</h3>
+            <h3 className="mt-6 text-lg font-semibold text-[#092b5c]">Yêu cầu nạp gần đây</h3>
             {topUps.isPending ? (
                 <p className="mt-2 text-sm text-muted-foreground">Đang tải...</p>
             ) : topUps.isError ? (
@@ -155,7 +155,7 @@ export function DealerWalletTopUpPanel({ accountId }: { accountId: number }) {
                     {topUps.data.data.map((topUp) => (
                         <div
                             key={topUp.id}
-                            className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
+                            className="flex flex-wrap items-center justify-between gap-3 py-4 text-[15px]"
                         >
                             <span>
                                 <strong>{topUp.top_up_code}</strong> · {money(topUp.amount)} ·{" "}
@@ -200,12 +200,12 @@ export function DealerWalletTopUpPanel({ accountId }: { accountId: number }) {
                 </p>
             )}
             {topUps.data && topUps.data.last_page > 1 && (
-                <div className="mt-3 flex items-center justify-end gap-3 text-sm">
+                <div className="mt-4 flex items-center justify-end gap-3 text-sm">
                     <button
                         type="button"
                         disabled={page <= 1}
                         onClick={() => setPage(page - 1)}
-                        className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
+                        className="dealer-action rounded-lg border px-3 disabled:opacity-40"
                     >
                         Trước
                     </button>
@@ -216,7 +216,7 @@ export function DealerWalletTopUpPanel({ accountId }: { accountId: number }) {
                         type="button"
                         disabled={page >= topUps.data.last_page}
                         onClick={() => setPage(page + 1)}
-                        className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
+                        className="dealer-action rounded-lg border px-3 disabled:opacity-40"
                     >
                         Sau
                     </button>

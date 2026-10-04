@@ -73,6 +73,7 @@ class SalesPromotionController extends Controller
                 if (SalesPromotion::query()->where('normalized_code', $normalized)->exists()) {
                     throw ValidationException::withMessages(['code' => 'Promotion code already exists.']);
                 }
+                $promotions->assertDiscountAvailability($data);
                 $promotion = SalesPromotion::create($this->attributes($data, $normalized)
                     + ['created_by_user_id' => $request->user()->id]);
                 $this->syncTargets($promotion, $data);
@@ -98,6 +99,7 @@ class SalesPromotionController extends Controller
         try {
             $promotion = DB::transaction(function () use ($data, $promotion, $promotions, $audit): SalesPromotion {
                 $locked = SalesPromotion::query()->lockForUpdate()->findOrFail($promotion->id);
+                $promotions->assertDiscountAvailability($data, $locked->id);
                 $normalized = $promotions->normalize($data['code']);
                 if ($normalized !== $locked->normalized_code && $locked->redemptions()->exists()) {
                     throw new HttpResponseException(response()->json([
@@ -126,20 +128,32 @@ class SalesPromotionController extends Controller
         return response()->json(['data' => $this->details($promotion)]);
     }
 
-    public function activate(SalesPromotion $promotion, AuditLogger $audit): JsonResponse
+    public function activate(SalesPromotion $promotion, SalesPromotionService $promotions, AuditLogger $audit): JsonResponse
     {
-        return $this->changeStatus($promotion, 'active', $audit);
+        return $this->changeStatus($promotion, 'active', $promotions, $audit);
     }
 
-    public function deactivate(SalesPromotion $promotion, AuditLogger $audit): JsonResponse
+    public function deactivate(SalesPromotion $promotion, SalesPromotionService $promotions, AuditLogger $audit): JsonResponse
     {
-        return $this->changeStatus($promotion, 'inactive', $audit);
+        return $this->changeStatus($promotion, 'inactive', $promotions, $audit);
     }
 
-    private function changeStatus(SalesPromotion $promotion, string $status, AuditLogger $audit): JsonResponse
+    private function changeStatus(SalesPromotion $promotion, string $status, SalesPromotionService $promotions, AuditLogger $audit): JsonResponse
     {
-        $promotion = DB::transaction(function () use ($promotion, $status, $audit): SalesPromotion {
+        $promotion = DB::transaction(function () use ($promotion, $status, $promotions, $audit): SalesPromotion {
             $locked = SalesPromotion::query()->lockForUpdate()->findOrFail($promotion->id);
+            if ($status === 'active') {
+                $promotions->assertDiscountAvailability([
+                    'sales_scope' => $locked->sales_scope,
+                    'discount_type' => $locked->discount_type,
+                    'status' => 'active',
+                    'product_ids' => $locked->targets()->whereNotNull('product_id')->pluck('product_id')->all(),
+                    'category_ids' => $locked->targets()->whereNotNull('product_category_id')->pluck('product_category_id')->all(),
+                    'dealer_tier_ids' => $locked->dealerTiers()->pluck('dealer_tiers.id')->all(),
+                    'starts_at' => $locked->starts_at?->toDateTimeString(),
+                    'ends_at' => $locked->ends_at?->toDateTimeString(),
+                ], $locked->id);
+            }
             if ($status === 'active' && $locked->discount_type === 'buy_a_get_b'
                 && (! $locked->giftRule()->exists() || ! $this->giftRuleIsAvailable($locked))) {
                 throw ValidationException::withMessages(['gift_rule' => 'Gift rule or Product is no longer available.']);

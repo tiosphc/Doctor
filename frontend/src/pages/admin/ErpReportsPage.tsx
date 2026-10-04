@@ -12,6 +12,7 @@ import {
     Legend,
 } from "recharts";
 import { AdminGuard, AdminTitle } from "@/pages/admin/AdminPages";
+import { fieldClass } from "./ProductAdminShared";
 import { formatProductQuantity } from "@/lib/productQuantity";
 import { ErrorState } from "@/components/common/AsyncState";
 import {
@@ -554,7 +555,7 @@ export function ErpReportsPage() {
                     ))}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                    <label className="text-xs text-muted-foreground">
+                    <label className="admin-form-field admin-form-label">
                         Từ ngày
                         <input
                             type="date"
@@ -563,10 +564,10 @@ export function ErpReportsPage() {
                             onChange={(event) =>
                                 setFilters((old) => ({ ...old, from: event.target.value }))
                             }
-                            className="mt-1 w-full rounded-lg border bg-background p-2 text-sm"
+                            className={fieldClass}
                         />
                     </label>
-                    <label className="text-xs text-muted-foreground">
+                    <label className="admin-form-field admin-form-label">
                         Đến ngày
                         <input
                             type="date"
@@ -575,10 +576,10 @@ export function ErpReportsPage() {
                             onChange={(event) =>
                                 setFilters((old) => ({ ...old, to: event.target.value }))
                             }
-                            className="mt-1 w-full rounded-lg border bg-background p-2 text-sm"
+                            className={fieldClass}
                         />
                     </label>
-                    <label className="text-xs text-muted-foreground">
+                    <label className="admin-form-field admin-form-label">
                         Kênh bán
                         <select
                             value={filters.channel}
@@ -588,7 +589,7 @@ export function ErpReportsPage() {
                                     channel: event.target.value as "all" | "retail" | "dealer",
                                 }))
                             }
-                            className="mt-1 w-full rounded-lg border bg-background p-2 text-sm"
+                            className={fieldClass}
                         >
                             <option value="all">Tất cả</option>
                             <option value="retail">Bán lẻ</option>

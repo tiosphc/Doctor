@@ -56,25 +56,25 @@ export function DealerOrdersPage() {
     const selected = accounts.data?.data[0];
     return (
         <Access>
-            <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-                <header className="flex flex-wrap items-end justify-between gap-3">
+            <main className="dealer-page-wide space-y-6">
+                <header className="flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-semibold text-primary">Đơn hàng đại lý</h1>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        <h1 className="dealer-page-title text-primary">Đơn hàng đại lý</h1>
+                        <p className="mt-1.5 text-[15px] leading-6 text-muted-foreground">
                             Theo dõi và quản lý đơn hàng của bạn và các thành viên.
                         </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 max-sm:w-full">
                         <Link
                             to="/dealer/import-orders"
-                            className="rounded-md border px-4 py-2 text-sm font-medium text-primary hover:bg-accent"
+                            className="dealer-action rounded-md border px-4 py-2 text-primary hover:bg-accent max-sm:flex-1"
                         >
                             Nhập Excel
                         </Link>
                         <Link
                             to="/dealer/quick-order"
                             search={{ sku: "", reorder: 0 }}
-                            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                            className="dealer-action rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 max-sm:flex-1"
                         >
                             Đặt hàng nhanh
                         </Link>
@@ -101,14 +101,14 @@ function OrderBody({ order }: { order: DealerOrder }) {
         <div className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
                 <section className="rounded-xl border bg-card p-5">
-                    <h2 className="text-lg text-primary">Giá đại lý</h2>
+                    <h2 className="dealer-section-title text-primary">Giá đại lý</h2>
                     <p className="mt-2 text-sm">
                         Tier {order.effective_tier.name} · {order.effective_tier.source}
                     </p>
                     <p className="text-sm">Người đặt: {order.placed_by?.name ?? "—"}</p>
                 </section>
                 <section className="rounded-xl border bg-card p-5">
-                    <h2 className="text-lg text-primary">Giao hàng</h2>
+                    <h2 className="dealer-section-title text-primary">Giao hàng</h2>
                     <p className="mt-2">
                         {order.recipient_name} · {order.recipient_phone}
                     </p>
@@ -134,18 +134,18 @@ function OrderBody({ order }: { order: DealerOrder }) {
                 </section>
             </div>
             <section className="rounded-xl border bg-card p-5">
-                <h2 className="text-lg text-primary">Mặt hàng</h2>
+                <h2 className="dealer-section-title text-primary">Mặt hàng</h2>
                 <div className="mt-3 divide-y">
                     {order.items?.map((item) => (
                         <div
                             key={item.id}
-                            className="grid gap-2 py-3 text-sm sm:grid-cols-[1fr_auto_auto]"
+                            className="grid gap-2 py-4 text-[14px] md:grid-cols-[1fr_auto_auto]"
                         >
                             <div>
                                 <strong>{item.sku}</strong> · {item.product_name} ·{" "}
                                 {item.variant_name}
                                 {item.is_gift && (
-                                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-900">
+                                    <span className="dealer-meta ml-2 rounded-full bg-amber-100 px-2.5 py-1 text-amber-900">
                                         Quà tặng
                                     </span>
                                 )}
@@ -161,13 +161,16 @@ function OrderBody({ order }: { order: DealerOrder }) {
                         </div>
                     ))}
                 </div>
-                {order.promotion && (
+                {(order.promotions?.length || order.gift_promotion) && (
                     <div className="mt-4 space-y-1 text-right text-sm">
                         <p>Tạm tính: {money(order.subtotal)}</p>
-                        <p>
-                            Ưu đãi {order.promotion.name} ({order.promotion.code}): −
-                            {money(order.discount_total)}
-                        </p>
+                        {order.promotions?.map((promotion) => (
+                            <p key={promotion.code}>
+                                Ưu đãi {promotion.name} ({promotion.code}): −
+                                {money(promotion.discount_amount)}
+                            </p>
+                        ))}
+                        {order.gift_promotion && <p>Quà tặng: {order.gift_promotion.name}</p>}
                     </div>
                 )}
                 <p className="mt-4 text-right text-lg font-semibold">
@@ -238,8 +241,8 @@ function DealerOrderRecord({ orderId }: { orderId: number }) {
         (Number(order.refundable_amount) === 0 || order.payment_method === "dealer_wallet");
     return (
         <Access>
-            <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
-                <Link to="/dealer/orders" className="text-sm text-primary underline">
+            <main className="dealer-page-form space-y-6">
+                <Link to="/dealer/orders" className="dealer-action text-primary underline">
                     ← Đơn hàng đại lý
                 </Link>
                 {accounts.isPending ? (
@@ -262,13 +265,15 @@ function DealerOrderRecord({ orderId }: { orderId: number }) {
                     <>
                         <header>
                             <p className="label-luxury">Chi tiết đơn đại lý</p>
-                            <h1 className="mt-2 text-3xl text-primary">{order.order_code}</h1>
+                            <h1 className="dealer-page-title mt-2 text-primary">
+                                {order.order_code}
+                            </h1>
                             {order.external_reference && (
                                 <p className="mt-1 text-sm">
                                     Mã tham chiếu: {order.external_reference}
                                 </p>
                             )}
-                            <p className="mt-1 text-xs text-muted-foreground">
+                            <p className="dealer-meta mt-1 text-muted-foreground">
                                 Nguồn: {salesOrderSourceLabel(order.order_source)}
                             </p>
                             <div
@@ -310,7 +315,7 @@ function DealerOrderRecord({ orderId }: { orderId: number }) {
                             <Link
                                 to="/dealer/quick-order"
                                 search={{ sku: "", reorder: order.id }}
-                                className="inline-block rounded-md border px-4 py-2 text-sm font-medium text-primary hover:bg-accent"
+                                className="dealer-action rounded-md border px-4 py-2 text-primary hover:bg-accent"
                             >
                                 Đặt lại
                             </Link>
@@ -323,7 +328,7 @@ function DealerOrderRecord({ orderId }: { orderId: number }) {
                                         cancellation.reset();
                                         setCancelOpen(true);
                                     }}
-                                    className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                                    className="dealer-action rounded-md border border-red-300 px-4 py-2 text-red-700 hover:bg-red-50"
                                 >
                                     Hủy đơn hàng
                                 </button>
@@ -333,9 +338,9 @@ function DealerOrderRecord({ orderId }: { orderId: number }) {
                                         if (!cancellation.isPending) setCancelOpen(open);
                                     }}
                                 >
-                                    <AlertDialogContent>
+                                    <AlertDialogContent className="w-[calc(100%-2rem)] max-w-lg p-5 sm:p-6">
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>
+                                            <AlertDialogTitle className="dealer-modal-title">
                                                 Hủy đơn hàng {order.order_code}?
                                             </AlertDialogTitle>
                                             <AlertDialogDescription>
@@ -369,7 +374,7 @@ function DealerOrderRecord({ orderId }: { orderId: number }) {
                                                 type="button"
                                                 onClick={() => cancellation.mutate()}
                                                 disabled={cancellation.isPending}
-                                                className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
+                                                className="dealer-action rounded-md bg-red-700 px-4 py-2 text-white hover:bg-red-800 disabled:opacity-50"
                                             >
                                                 {cancellation.isPending
                                                     ? "Đang hủy..."

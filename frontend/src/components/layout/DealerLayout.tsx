@@ -178,7 +178,7 @@ export function DealerLayout({
                         className={index === 0 ? "" : "mt-6"}
                     >
                         {section.label && (
-                            <p className="mb-2 px-3 text-[10px] font-semibold tracking-[.14em] text-[#6b778c]">
+                            <p className="mb-2 px-3 text-[11px] font-semibold tracking-[.12em] text-[#52627a]">
                                 {section.label}
                             </p>
                         )}
@@ -193,9 +193,9 @@ export function DealerLayout({
                                         {...(item.search ? { search: item.search } : {})}
                                         onClick={() => setDrawerOpen(false)}
                                         aria-current={active ? "page" : undefined}
-                                        className={`focus-premium flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${active ? "bg-[#eaf0fa] text-[#092b5c]" : "text-[#4e5b70] hover:bg-[#f3f6fa] hover:text-[#092b5c]"}`}
+                                        className={`focus-premium flex min-h-11 min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors ${active ? "bg-[#eaf0fa] font-semibold text-[#092b5c]" : "text-[#4e5b70] hover:bg-[#f3f6fa] hover:text-[#092b5c]"}`}
                                     >
-                                        <Icon size={18} className="shrink-0" aria-hidden="true" />
+                                        <Icon size={19} className="shrink-0" aria-hidden="true" />
                                         <span className="min-w-0 truncate">{item.label}</span>
                                     </Link>
                                 );
@@ -209,7 +209,7 @@ export function DealerLayout({
                     <Link
                         to="/account"
                         onClick={() => setDrawerOpen(false)}
-                        className="focus-premium flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#5d687a] transition-colors hover:bg-[#f3f6fa] hover:text-[#092b5c]"
+                        className="focus-premium flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-[#5d687a] transition-colors hover:bg-[#f3f6fa] hover:text-[#092b5c]"
                     >
                         <UserRound size={18} /> Tài khoản cá nhân
                     </Link>
@@ -217,7 +217,7 @@ export function DealerLayout({
                         to="/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="focus-premium flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#5d687a] transition-colors hover:bg-[#f3f6fa] hover:text-[#092b5c]"
+                        className="focus-premium flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-[#5d687a] transition-colors hover:bg-[#f3f6fa] hover:text-[#092b5c]"
                     >
                         <ExternalLink size={18} /> Về website Junie
                     </Link>
@@ -225,7 +225,7 @@ export function DealerLayout({
                 <button
                     type="button"
                     onClick={() => void logout()}
-                    className="focus-premium flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[#5d687a] transition-colors hover:bg-[#f3f6fa] hover:text-[#092b5c]"
+                    className="focus-premium flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-[#5d687a] transition-colors hover:bg-[#f3f6fa] hover:text-[#092b5c]"
                 >
                     <LogOut size={18} /> Đăng xuất
                 </button>
@@ -273,7 +273,7 @@ export function DealerLayout({
                     <div className="flex min-w-0 flex-wrap items-center justify-end gap-1 sm:gap-2 lg:flex-nowrap lg:gap-3">
                         <Link
                             to="/dealer/top-up"
-                            className="focus-premium hidden items-center gap-1.5 rounded-xl border border-[#d9b478] bg-[#fffaf1] px-3 py-2 text-xs font-semibold text-[#7b5019] transition-colors hover:bg-[#fdf1db] sm:inline-flex"
+                            className="focus-premium hidden min-h-10 items-center gap-1.5 rounded-xl border border-[#d9b478] bg-[#fffaf1] px-3 py-2 text-sm font-semibold text-[#7b5019] transition-colors hover:bg-[#fdf1db] sm:inline-flex"
                         >
                             <CircleDollarSign size={16} /> Nạp tiền
                         </Link>
@@ -289,7 +289,7 @@ export function DealerLayout({
                                     <span>{balance}</span>
                                 </span>
                                 <span
-                                    className={`inline-flex min-h-8 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-bold tracking-[.14em] shadow-sm ${tierColor}`}
+                                    className={`inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold tracking-[.1em] shadow-sm ${tierColor}`}
                                     aria-label={`Hạng đại lý: ${tierCode}`}
                                 >
                                     <Crown size={14} strokeWidth={1.8} aria-hidden="true" />
@@ -303,7 +303,7 @@ export function DealerLayout({
                                 <button
                                     type="button"
                                     aria-label="Menu tài khoản đại lý"
-                                    className="focus-premium flex items-center gap-2 rounded-xl px-1.5 py-1 text-[#092b5c] hover:bg-[#f3f6fa]"
+                                    className="focus-premium flex min-h-10 items-center gap-2 rounded-xl px-1.5 py-1 text-[#092b5c] hover:bg-[#f3f6fa]"
                                 >
                                     <span className="grid size-9 place-items-center rounded-full bg-[#092b5c] text-xs font-semibold text-white">
                                         {initials(user.name)}
@@ -344,7 +344,7 @@ export function DealerLayout({
                         </DropdownMenu>
                     </div>
                 </header>
-                <main className="mx-auto w-full max-w-[1600px] min-w-0 px-4 py-7 sm:px-6 lg:px-8">
+                <main className="mx-auto w-full max-w-[1600px] min-w-0 px-4 py-7 sm:px-6 lg:px-8 xl:py-8">
                     {children}
                 </main>
             </div>

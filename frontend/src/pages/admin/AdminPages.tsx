@@ -145,7 +145,7 @@ export function AdminDoctorsPage() {
                             <div className="mb-2 grid size-11 place-items-center rounded-full bg-primary text-primary-foreground">
                                 <UserPlus className="size-5" />
                             </div>
-                            <DialogTitle className="font-serif text-2xl text-primary sm:text-3xl">
+                            <DialogTitle className="font-sans text-xl font-bold leading-snug text-primary sm:text-2xl">
                                 Thêm bác sĩ mới
                             </DialogTitle>
                             <DialogDescription className="max-w-2xl leading-6">
@@ -2045,7 +2045,7 @@ export function AdminTitle({
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
                 <p className="label-luxury">Quản trị</p>
-                <h1 className="mt-2 text-3xl text-primary md:text-4xl">{title}</h1>
+                <h1 className="admin-page-title mt-2 text-primary">{title}</h1>
                 <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
                     {description}
                 </p>

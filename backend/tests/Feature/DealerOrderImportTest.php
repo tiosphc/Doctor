@@ -75,7 +75,8 @@ class DealerOrderImportTest extends TestCase
             ? '1 Main Street' : strtoupper(trim($addressGroup)).' Main Street';
 
         return [$sku, 'Receiving Manager', '0900000000', 'receiver@example.com',
-            $street, AdministrativeWard::query()->where('province_code', '79')->value('name'), 'HCM', 'VN', '', $quantity];
+            'TP. Hồ Chí Minh', '', AdministrativeWard::query()->where('province_code', '79')->value('name'),
+            $street, $quantity];
     }
 
     /** @param list<list<string>> $rows
@@ -114,8 +115,12 @@ class DealerOrderImportTest extends TestCase
         $this->assertStringContainsString('<col min="3" max="3" style="1"',
             (new PharData($template))['xl/worksheets/sheet1.xml']->getContent());
         $headers = DealerOrderImportWorkbook::HEADERS;
-        $this->assertSame(['SKU', 'Customer Name', 'Phone', 'Email', 'Street', 'City',
-            'State', 'Country', 'Zip Code', 'Quantity'], $headers);
+        $this->assertSame(['SKU', 'Customer Name', 'Phone', 'Email', 'Province / City',
+            'District', 'Ward', 'Street', 'Quantity'], $headers);
+        $this->assertSame($headers, DealerOrderImportWorkbook::TEMPLATE_HEADERS);
+        $this->assertNotContains('Order Code', $headers);
+        $this->assertNotContains('Province Code', $headers);
+        $this->assertNotContains('Ward Code', $headers);
         $this->assertNotContains('External Order Ref', $headers);
         $this->assertNotContains('Size', $headers);
         $this->assertNotContains('Style', $headers);
@@ -184,8 +189,8 @@ class DealerOrderImportTest extends TestCase
             'amount' => '2000000.00', 'method' => 'other_manual'], $admin);
         Sanctum::actingAs($user);
         $hanoiRow = $this->row('PO-HN', $variant->sku);
-        $hanoiRow[5] = AdministrativeWard::query()->where('province_code', '1')->value('name');
-        $hanoiRow[6] = 'Hà Nội';
+        $hanoiRow[4] = 'Hà Nội';
+        $hanoiRow[6] = AdministrativeWard::query()->where('province_code', '1')->value('name');
         $path = $this->workbook([$hanoiRow]);
         $base = "/api/dealer/accounts/{$account->id}/order-imports";
         $preview = $this->postJson($base, ['file' => new UploadedFile($path, 'hanoi.xlsx', null, null, true)])->assertCreated()
@@ -202,7 +207,7 @@ class DealerOrderImportTest extends TestCase
             'unit_price_snapshot' => '850000.00']);
     }
 
-    public function test_order_code_groups_lines_and_each_destination_resolves_its_own_warehouse(): void
+    public function test_address_groups_lines_and_each_destination_resolves_its_own_warehouse(): void
     {
         [$user, $account, $variant, $hcm] = $this->fixture('20');
         $second = ProductVariant::factory()->create(['sellable_dealer' => true, 'track_inventory' => true]);
@@ -217,14 +222,13 @@ class DealerOrderImportTest extends TestCase
                 'product_variant_id' => $stockVariant->id, 'quantity' => '20',
                 'operation_key' => (string) Str::uuid()], $admin->id);
         }
-        $wardHanoi = AdministrativeWard::query()->where('province_code', '1')->value('code');
-        $wardHcm = AdministrativeWard::query()->where('province_code', '79')->value('code');
-        $headers = ['Order Code', 'SKU', 'Customer Name', 'Phone', 'Street', 'Province Code', 'Ward Code', 'Quantity'];
+        $wardHanoi = AdministrativeWard::query()->where('province_code', '1')->value('name');
+        $wardHcm = AdministrativeWard::query()->where('province_code', '79')->value('name');
         $path = $this->workbook([
-            ['ORDER001', $variant->sku, 'Sang', '0901000000', '1 Street', '1', $wardHanoi, '2'],
-            ['ORDER001', $second->sku, 'Sang', '0901000000', '1 Street', '1', $wardHanoi, '2'],
-            ['ORDER002', $variant->sku, 'Đồng', '0902000000', '2 Street', '79', $wardHcm, '2'],
-        ], $headers);
+            [$variant->sku, 'Sang', '0901000000', '', 'Hà Nội', '', $wardHanoi, '1 Street', '2'],
+            [$second->sku, 'Sang', '0901000000', '', 'Hà Nội', '', $wardHanoi, '1 Street', '2'],
+            [$variant->sku, 'Đồng', '0902000000', '', 'TP Hồ Chí Minh', '', $wardHcm, '2 Street', '2'],
+        ]);
         Sanctum::actingAs($user);
         $url = "/api/dealer/accounts/{$account->id}/order-imports";
 
@@ -238,16 +242,16 @@ class DealerOrderImportTest extends TestCase
             'preview_fingerprint' => $preview['preview_fingerprint']])->assertOk()
             ->assertJsonPath('data.status', 'completed');
 
-        $this->assertDatabaseHas('sales_orders', ['external_reference' => 'ORDER001', 'warehouse_id' => $hanoi->id]);
-        $this->assertDatabaseHas('sales_orders', ['external_reference' => 'ORDER002', 'warehouse_id' => $hcm->id]);
+        $this->assertDatabaseHas('sales_orders', ['external_reference' => null, 'warehouse_id' => $hanoi->id]);
+        $this->assertDatabaseHas('sales_orders', ['external_reference' => null, 'warehouse_id' => $hcm->id]);
         $listed = $this->getJson("/api/dealer/accounts/{$account->id}/orders")
             ->assertOk()->assertJsonCount(2, 'data')->json('data');
-        $hanoiOrder = collect($listed)->firstWhere('external_reference', 'ORDER001');
+        $hanoiOrder = collect($listed)->first(fn (array $order): bool => $order['warehouse']['code'] === $hanoi->code);
         $this->assertSame('Sang', $hanoiOrder['recipient_name']);
         $this->assertSame(2, $hanoiOrder['item_count']);
         $this->assertSame('4.000', $hanoiOrder['total_quantity']);
         $this->assertSame($hanoi->code, $hanoiOrder['warehouse']['code']);
-        $this->assertSame('Đồng', collect($listed)->firstWhere('external_reference', 'ORDER002')['recipient_name']);
+        $this->assertSame('Đồng', collect($listed)->first(fn (array $order): bool => $order['warehouse']['code'] === $hcm->code)['recipient_name']);
     }
 
     public function test_automatic_promotion_discount_is_repriced_and_debited_by_shared_order_core(): void
@@ -262,8 +266,8 @@ class DealerOrderImportTest extends TestCase
             'discount_value' => '50.00', 'sales_scope' => 'dealer']);
         Sanctum::actingAs($user);
         $hanoiRow = $this->row('PO-PROMO', $variant->sku);
-        $hanoiRow[5] = AdministrativeWard::query()->where('province_code', '1')->value('name');
-        $hanoiRow[6] = 'Hà Nội';
+        $hanoiRow[4] = 'Hà Nội';
+        $hanoiRow[6] = AdministrativeWard::query()->where('province_code', '1')->value('name');
         $path = $this->workbook([$hanoiRow]);
         $url = "/api/dealer/accounts/{$account->id}/order-imports";
         $preview = $this->postJson($url, ['file' => new UploadedFile($path, 'promotion.xlsx', null, null, true)])
@@ -348,7 +352,7 @@ class DealerOrderImportTest extends TestCase
         $formula = $this->workbook([$this->row('PO-001', 'SKU-A')]);
         $archive = new PharData($formula);
         $xml = $archive['xl/worksheets/sheet1.xml']->getContent();
-        $xml = preg_replace('~<c r="J2".*?</c>~', '<c r="J2"><f>1+1</f><v>2</v></c>', $xml);
+        $xml = preg_replace('~<c r="I2".*?</c>~', '<c r="I2"><f>1+1</f><v>2</v></c>', $xml);
         $archive->addFromString('xl/worksheets/sheet1.xml', $xml);
         try {
             app(DealerOrderImportWorkbook::class)->parse($formula);
@@ -363,7 +367,7 @@ class DealerOrderImportTest extends TestCase
         [$user, $account, $variant] = $this->fixture('3');
         Sanctum::actingAs($user);
         $second = $this->row('PO-001', $variant->sku);
-        $second[1] = 'Different Recipient';
+        $second[7] = 'Different Street';
         $path = $this->workbook([$this->row('PO-001', $variant->sku), $second]);
         $url = "/api/dealer/accounts/{$account->id}/order-imports";
         $preview = $this->postJson($url, ['file' => new UploadedFile($path, 'duplicates.xlsx', null, null, true)])
@@ -508,7 +512,7 @@ class DealerOrderImportTest extends TestCase
 
         $formatted = $this->row('PO-001', $second->sku, '3');
         $formatted[2] = '0900-000-000';
-        $formatted[4] = '  1 main street  ';
+        $formatted[7] = '  1 main street  ';
         $otherPhone = $this->row('PO-001', $variant->sku);
         $otherPhone[2] = '0900 000 001';
         $path = $this->workbook([$this->row('PO-001', $variant->sku), $formatted,
@@ -539,7 +543,7 @@ class DealerOrderImportTest extends TestCase
         ]);
     }
 
-    public function test_import_keeps_different_recipients_at_one_phone_and_address_in_separate_orders(): void
+    public function test_import_rejects_different_names_at_one_phone_and_address(): void
     {
         [$user, $account, $variant] = $this->fixture('20');
         $first = $this->row('PO-001', $variant->sku);
@@ -550,12 +554,14 @@ class DealerOrderImportTest extends TestCase
         $url = "/api/dealer/accounts/{$account->id}/order-imports";
 
         $preview = $this->postJson($url, ['file' => new UploadedFile($path, 'recipients.xlsx', null, null, true)])
-            ->assertCreated()->assertJsonPath('data.order_count', 2)->json('data');
+            ->assertCreated()->assertJsonPath('data.order_count', 1)
+            ->assertJsonPath('data.invalid_order_count', 1)->json('data');
+        $this->assertContains('ORDER_GROUP_NAME_MISMATCH',
+            array_column($preview['groups'][0]['preview']['errors'], 'code'));
         $this->postJson("$url/{$preview['id']}/confirm", [
             'operation_key' => (string) Str::uuid(), 'preview_fingerprint' => $preview['preview_fingerprint'],
-        ])->assertOk()->assertJsonPath('data.status', 'completed');
-        $this->assertDatabaseCount('sales_orders', 2);
-        $this->assertSame(2, SalesOrder::query()->where('dealer_account_id', $account->id)->count());
+        ])->assertConflict();
+        $this->assertDatabaseCount('sales_orders', 0);
         $this->assertDatabaseCount('dealer_shipping_addresses', 0);
     }
 
@@ -600,6 +606,120 @@ class DealerOrderImportTest extends TestCase
         $this->assertSame('INVALID_QUANTITY', $preview['groups'][1]['preview']['errors'][0]['code']);
         $this->assertSame('0', $preview['groups'][1]['preview']['errors'][0]['value']);
         $this->assertDatabaseCount('sales_orders', 0);
+    }
+
+    public function test_address_names_resolve_to_same_group_and_phone_keeps_leading_zero(): void
+    {
+        [$user, $account, $variant] = $this->fixture('10');
+        Sanctum::actingAs($user);
+        $first = $this->row('PO-001', $variant->sku);
+        $second = $this->row('PO-001', $variant->sku, '3');
+        $first[4] = ' TP Hồ Chí Minh ';
+        $second[4] = 'Hồ Chí Minh';
+        $second[7] = ' 1 MAIN STREET ';
+        $preview = $this->postJson("/api/dealer/accounts/{$account->id}/order-imports", [
+            'file' => new UploadedFile($this->workbook([$first, $second]), 'normalized.xlsx', null, null, true),
+        ])->assertCreated()->assertJsonPath('data.order_count', 1)
+            ->assertJsonPath('data.preview_summary.valid_row_count', 2)
+            ->assertJsonPath('data.preview_summary.sku_count', 1)->json('data');
+        $this->assertSame('0900000000', $preview['groups'][0]['preview']['recipient']['recipient_phone']);
+        $this->assertSame('5', $preview['groups'][0]['preview']['items'][0]['quantity']);
+    }
+
+    public function test_same_phone_and_street_with_different_districts_create_two_orders(): void
+    {
+        [$user, $account, $variant] = $this->fixture();
+        Sanctum::actingAs($user);
+        $first = $this->row('PO-001', $variant->sku);
+        $first[5] = 'Quận 1';
+        $second = $first;
+        $second[5] = 'Quận 2';
+        $this->postJson("/api/dealer/accounts/{$account->id}/order-imports", [
+            'file' => new UploadedFile($this->workbook([$first, $second]), 'districts.xlsx', null, null, true),
+        ])->assertCreated()->assertJsonPath('data.order_count', 2);
+    }
+
+    public function test_two_customers_with_five_sku_rows_create_two_orders(): void
+    {
+        [$user, $account, $first, $warehouse] = $this->fixture('20');
+        $listId = PriceListItem::query()->where('product_variant_id', $first->id)->value('price_list_id');
+        $variants = [$first];
+        $admin = User::factory()->admin()->create();
+        for ($index = 0; $index < 2; $index++) {
+            $variant = ProductVariant::factory()->create(['sellable_dealer' => true, 'track_inventory' => true]);
+            PriceListItem::factory()->create(['price_list_id' => $listId, 'product_variant_id' => $variant->id,
+                'unit_price' => '100.00', 'minimum_quantity' => '1']);
+            app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
+                'product_variant_id' => $variant->id, 'quantity' => '20',
+                'operation_key' => (string) Str::uuid()], $admin->id);
+            $variants[] = $variant;
+        }
+        $rows = [$this->row('PO-001', $variants[0]->sku), $this->row('PO-001', $variants[1]->sku)];
+        foreach ($variants as $variant) {
+            $row = $this->row('PO-001', $variant->sku);
+            $row[1] = 'Customer B';
+            $row[2] = '0900000001';
+            $rows[] = $row;
+        }
+        Sanctum::actingAs($user);
+        $url = "/api/dealer/accounts/{$account->id}/order-imports";
+        $preview = $this->postJson($url, ['file' => new UploadedFile($this->workbook($rows),
+            'two-customers.xlsx', null, null, true)])->assertCreated()->assertJsonPath('data.order_count', 2)
+            ->assertJsonPath('data.preview_summary.sku_count', 3)->json('data');
+        $this->assertSame([2, 3], array_map(fn (array $group): int => count($group['preview']['items']),
+            $preview['groups']));
+        $this->postJson("$url/{$preview['id']}/confirm", ['operation_key' => (string) Str::uuid(),
+            'preview_fingerprint' => $preview['preview_fingerprint']])->assertOk()
+            ->assertJsonPath('data.status', 'completed');
+        $this->assertDatabaseCount('sales_orders', 2);
+        $this->assertDatabaseCount('sales_order_items', 5);
+    }
+
+    public function test_invalid_province_and_ward_report_source_rows(): void
+    {
+        [$user, $account, $variant] = $this->fixture();
+        Sanctum::actingAs($user);
+        $province = $this->row('PO-001', $variant->sku);
+        $province[4] = 'Tỉnh không tồn tại';
+        $ward = $this->row('PO-002', $variant->sku);
+        $ward[6] = AdministrativeWard::query()->where('province_code', '1')->value('name');
+        $preview = $this->postJson("/api/dealer/accounts/{$account->id}/order-imports", [
+            'file' => new UploadedFile($this->workbook([$province, $ward]), 'bad-address.xlsx', null, null, true),
+        ])->assertCreated()->assertJsonPath('data.preview_summary.invalid_row_count', 2)->json('data');
+        $this->assertEqualsCanonicalizing(['row' => 2, 'field' => 'Province / City', 'code' => 'PROVINCE_NOT_FOUND',
+            'value' => 'Tỉnh không tồn tại'], $preview['groups'][0]['preview']['errors'][0]);
+        $this->assertSame('WARD_PROVINCE_MISMATCH', $preview['groups'][1]['preview']['errors'][0]['code']);
+        $this->assertDatabaseCount('sales_orders', 0);
+    }
+
+    public function test_zero_negative_decimal_and_text_quantities_are_rejected(): void
+    {
+        [$user, $account, $variant] = $this->fixture();
+        Sanctum::actingAs($user);
+        $rows = [];
+        foreach (['0', '-1', '1.5', 'text'] as $index => $quantity) {
+            $rows[] = $this->row('PO-'.($index + 1), $variant->sku, $quantity);
+        }
+        $preview = $this->postJson("/api/dealer/accounts/{$account->id}/order-imports", [
+            'file' => new UploadedFile($this->workbook($rows), 'bad-quantities.xlsx', null, null, true),
+        ])->assertCreated()->assertJsonPath('data.preview_summary.invalid_row_count', 4)->json('data');
+        foreach ($preview['groups'] as $index => $group) {
+            $this->assertSame($index + 2, $group['preview']['errors'][0]['row']);
+            $this->assertSame('INVALID_QUANTITY', $group['preview']['errors'][0]['code']);
+        }
+    }
+
+    public function test_conflicting_emails_in_one_group_block_confirmation(): void
+    {
+        [$user, $account, $variant] = $this->fixture();
+        Sanctum::actingAs($user);
+        $second = $this->row('PO-001', $variant->sku);
+        $second[3] = 'other@example.com';
+        $preview = $this->postJson("/api/dealer/accounts/{$account->id}/order-imports", [
+            'file' => new UploadedFile($this->workbook([$this->row('PO-001', $variant->sku), $second]),
+                'conflicting-email.xlsx', null, null, true),
+        ])->assertCreated()->assertJsonPath('data.order_count', 1)->json('data');
+        $this->assertSame('ORDER_GROUP_EMAIL_MISMATCH', $preview['groups'][0]['preview']['errors'][0]['code']);
     }
 
     public function test_pending_legacy_import_keeps_its_external_reference_even_when_it_starts_with_auto(): void
@@ -654,6 +774,10 @@ class DealerOrderImportTest extends TestCase
             [[...DealerOrderImportWorkbook::HEADERS, 'Unit Price'], 'FORBIDDEN_IMPORT_COLUMN'],
             [[...DealerOrderImportWorkbook::HEADERS, 'Dealer Code'], 'FORBIDDEN_IMPORT_COLUMN'],
             [[...DealerOrderImportWorkbook::HEADERS, 'External Order Ref'], 'FORBIDDEN_IMPORT_COLUMN'],
+            [[...DealerOrderImportWorkbook::HEADERS, 'Order Code'], 'FORBIDDEN_IMPORT_COLUMN'],
+            [[...DealerOrderImportWorkbook::HEADERS, 'Province Code'], 'FORBIDDEN_IMPORT_COLUMN'],
+            [[...DealerOrderImportWorkbook::HEADERS, 'Ward Code'], 'FORBIDDEN_IMPORT_COLUMN'],
+            [[...DealerOrderImportWorkbook::HEADERS, 'Zip Code'], 'FORBIDDEN_IMPORT_COLUMN'],
             [[...DealerOrderImportWorkbook::HEADERS, 'Size'], 'FORBIDDEN_IMPORT_COLUMN'],
             [[...DealerOrderImportWorkbook::HEADERS, 'Style'], 'FORBIDDEN_IMPORT_COLUMN'],
             [[...DealerOrderImportWorkbook::HEADERS, 'Surprise'], 'UNKNOWN_COLUMN'],

@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\SalesPromotion;
 use App\Services\DealerEffectivePricingService;
 use App\Services\SalesGiftPromotionVisibilityService;
+use App\Services\SalesPromotionService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
 
 class DealerProductController extends Controller
 {
-    public function index(Request $request, DealerAccount $dealer, DealerEffectivePricingService $pricing): JsonResponse
+    public function index(Request $request, DealerAccount $dealer, DealerEffectivePricingService $pricing, SalesPromotionService $promotions): JsonResponse
     {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
@@ -42,9 +43,12 @@ class DealerProductController extends Controller
         $prices = $pricing->catalogPrices($context, $variants);
         $giftPromotions = app(SalesGiftPromotionVisibilityService::class)
             ->forProducts($page->getCollection()->pluck('id')->all(), 'dealer', $context['tier']->id);
+        $discounts = $promotions->discountOccupancy($page->getCollection()->pluck('id')->all(),
+            'dealer', $context['tier']->id, effectiveNow: true);
 
         return response()->json([
-            'data' => $page->getCollection()->map(fn (Product $product): array => $this->serialize($product, $prices, $giftPromotions[$product->id] ?? []))->all(),
+            'data' => $page->getCollection()->map(fn (Product $product): array => $this->serialize($product, $prices,
+                $giftPromotions[$product->id] ?? [], $discounts[$product->id] ?? null, $promotions))->all(),
             'dealer_account' => $dealer->only(['id', 'code', 'legal_name']),
             'effective_tier' => $context['resolution']['effective_tier'],
             'warehouse' => null,
@@ -53,7 +57,7 @@ class DealerProductController extends Controller
         ]);
     }
 
-    public function show(Request $request, DealerAccount $dealer, string $product, DealerEffectivePricingService $pricing): JsonResponse
+    public function show(Request $request, DealerAccount $dealer, string $product, DealerEffectivePricingService $pricing, SalesPromotionService $promotions): JsonResponse
     {
         $request->validate(['warehouse_id' => ['prohibited']]);
         $context = $pricing->context($request->user(), $dealer);
@@ -64,30 +68,16 @@ class DealerProductController extends Controller
         $prices = $pricing->catalogPrices($context, $record->variants);
         $giftPromotions = app(SalesGiftPromotionVisibilityService::class)
             ->forProducts([$record->id], 'dealer', $context['tier']->id);
+        $discounts = $promotions->discountOccupancy([$record->id], 'dealer', $context['tier']->id,
+            effectiveNow: true);
 
         return response()->json([
-            'data' => [...$this->serialize($record, $prices, $giftPromotions[$record->id] ?? []),
-                'active_promotions' => $this->discountOffers($record, $context['tier']->id)],
+            'data' => $this->serialize($record, $prices, $giftPromotions[$record->id] ?? [],
+                $discounts[$record->id] ?? null, $promotions),
             'dealer_account' => $dealer->only(['id', 'code', 'legal_name']),
             'effective_tier' => $context['resolution']['effective_tier'],
             'warehouse' => null,
         ]);
-    }
-
-    /** @return list<array<string, mixed>> */
-    private function discountOffers(Product $product, int $tierId): array
-    {
-        $now = now();
-
-        return SalesPromotion::query()->with(['targets', 'dealerTiers'])->where('status', 'active')
-            ->where('discount_type', '<>', 'buy_a_get_b')->whereIn('sales_scope', ['dealer', 'both'])
-            ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now))
-            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now))
-            ->get()->filter(fn (SalesPromotion $promotion): bool => ($promotion->dealerTiers->isEmpty() || $promotion->dealerTiers->contains('id', $tierId))
-                && ($promotion->targets->isEmpty() || $promotion->targets->contains(fn ($target): bool => $target->product_id === $product->id || $target->product_category_id === $product->product_category_id)))
-            ->map(fn (SalesPromotion $promotion): array => ['name' => $promotion->name,
-                'discount_type' => $promotion->discount_type, 'discount_value' => $promotion->discount_value,
-                'minimum_order_amount' => $promotion->minimum_order_amount])->values()->all();
     }
 
     public function visible(int $tierId): Builder
@@ -118,12 +108,21 @@ class DealerProductController extends Controller
     }
 
     /** @param array<int, array<string, mixed>> $prices @param list<array<string, mixed>> $giftPromotions @return array<string, mixed> */
-    private function serialize(Product $product, array $prices, array $giftPromotions): array
+    private function serialize(Product $product, array $prices, array $giftPromotions,
+        ?SalesPromotion $discount, SalesPromotionService $promotions): array
     {
+        $summary = $discount === null ? null : [
+            'id' => $discount->id, 'code' => $discount->code, 'name' => $discount->name,
+            'discount_type' => $discount->discount_type, 'discount_value' => $discount->discount_value,
+            'minimum_order_amount' => $discount->minimum_order_amount,
+        ];
+
         return [
             'id' => $product->id, 'product_code' => $product->product_code, 'name' => $product->name,
             'slug' => $product->slug, 'description' => $product->description,
             'gift_promotions' => $giftPromotions,
+            'dealer_discount_promotion' => $summary,
+            'active_promotions' => $summary === null ? [] : [$summary],
             'category' => $product->category?->only(['id', 'code', 'name']),
             'brand' => $product->brand?->only(['id', 'code', 'name']),
             'images' => $product->images->map(fn ($image): array => [
@@ -137,7 +136,11 @@ class DealerProductController extends Controller
                     'specifications' => $variant->specifications,
                     'unit' => $variant->unit?->name, 'unit_symbol' => $variant->unit?->symbol,
                     'unit_precision' => $variant->unit?->decimal_precision,
-                    'dealer_price' => $prices[$variant->id],
+                    'dealer_price' => [...$prices[$variant->id],
+                        'discounted_unit_price' => $discount !== null
+                            && bccomp($prices[$variant->id]['unit_price'], $discount->minimum_order_amount, 2) >= 0
+                                ? $promotions->discountedUnitPrice($prices[$variant->id]['unit_price'], $discount)
+                                : null],
                 ])->values()->all(),
         ];
     }

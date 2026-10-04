@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { formatPromotionDiscount } from "@/lib/formatPercentage";
 import { Link, Navigate } from "@tanstack/react-router";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
 import { Container } from "@/components/common/Container";
@@ -83,10 +84,10 @@ function DealerPromotionsPage() {
         );
     if (!selected) return <EmptyState message="Bạn chưa có tài khoản đại lý đang hoạt động." />;
     return (
-        <Container className="py-8">
+        <div className="dealer-page-wide space-y-0">
             <p className="label-luxury">Junie B2B</p>
-            <h1 className="mt-2 text-3xl text-primary md:text-4xl">Ưu đãi</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <h1 className="dealer-page-title mt-2 text-primary">Ưu đãi</h1>
+            <p className="mt-1.5 text-[15px] leading-6 text-muted-foreground">
                 Ưu đãi phù hợp được kiểm tra và áp dụng tự động khi đặt hàng.
             </p>
             {promotions.isPending ? (
@@ -99,13 +100,13 @@ function DealerPromotionsPage() {
             ) : !promotions.data?.data.length ? (
                 <EmptyState message="Hiện chưa có ưu đãi quà tặng phù hợp." />
             ) : (
-                <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                     {promotions.data.data.map((promotion) => (
                         <article
                             key={`${promotion.code}-${promotion.buy_product_id}`}
-                            className="rounded-xl border bg-card p-5 shadow-sm"
+                            className="rounded-xl border bg-card p-5 shadow-sm sm:p-6"
                         >
-                            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
+                            <span className="rounded-full bg-amber-100 px-3 py-1 text-[13px] font-semibold text-amber-900">
                                 {promotion.discount_type === "buy_a_get_b"
                                     ? "Quà tặng"
                                     : "Giảm giá"}
@@ -123,15 +124,17 @@ function DealerPromotionsPage() {
                                 </p>
                             ) : (
                                 <p className="mt-2 text-sm">
-                                    {promotion.discount_type === "percentage"
-                                        ? `Giảm ${promotion.discount_value}%`
-                                        : `Giảm ${Number(promotion.discount_value).toLocaleString("vi-VN")}đ`}{" "}
+                                    Giảm{" "}
+                                    {formatPromotionDiscount(
+                                        promotion.discount_type,
+                                        promotion.discount_value,
+                                    )}{" "}
                                     khi mua sản phẩm phù hợp.
                                 </p>
                             )}
                             {promotion.discount_type === "buy_a_get_b" &&
                                 promotion.repeat_per_multiple && (
-                                    <p className="mt-2 text-xs text-muted-foreground">
+                                    <p className="dealer-meta mt-2 text-muted-foreground">
                                         Tặng theo mỗi bội số mua đủ.
                                     </p>
                                 )}
@@ -140,7 +143,7 @@ function DealerPromotionsPage() {
                                     <p className="mt-2 text-sm text-amber-900">Quà tặng tạm hết.</p>
                                 )}
                             {promotion.ends_at && (
-                                <p className="mt-3 text-xs text-muted-foreground">
+                                <p className="dealer-meta mt-3 text-muted-foreground">
                                     Hạn đến:{" "}
                                     {new Date(promotion.ends_at).toLocaleDateString("vi-VN")}
                                 </p>
@@ -149,7 +152,7 @@ function DealerPromotionsPage() {
                                 <p className="mt-2 text-sm text-amber-900">Tạm hết hàng</p>
                             )}
                             {
-                                <p className="mt-2 text-xs text-muted-foreground">
+                                <p className="dealer-meta mt-2 text-muted-foreground">
                                     Dành cho:{" "}
                                     {promotion.dealer_tiers?.length
                                         ? promotion.dealer_tiers.join(", ")
@@ -161,7 +164,7 @@ function DealerPromotionsPage() {
                                     <Link
                                         to="/dealer/products/$slug"
                                         params={{ slug: promotion.buy_product_slug }}
-                                        className="mt-4 inline-block text-sm font-medium text-primary underline"
+                                        className="dealer-action mt-4 text-primary underline"
                                     >
                                         Xem sản phẩm
                                     </Link>
@@ -187,6 +190,6 @@ function DealerPromotionsPage() {
                     ))}
                 </div>
             )}
-        </Container>
+        </div>
     );
 }

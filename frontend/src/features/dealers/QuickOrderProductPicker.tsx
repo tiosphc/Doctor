@@ -81,10 +81,7 @@ export function QuickOrderProductPicker({
         retry: false,
     });
     const modal = useQuery({
-        queryKey: [
-            ...dealerKeys.products(userId, accountId, debouncedModalSearch, page),
-            "picker",
-        ],
+        queryKey: [...dealerKeys.products(userId, accountId, debouncedModalSearch, page), "picker"],
         queryFn: () =>
             dealerApi.products(accountId, {
                 search: debouncedModalSearch,
@@ -149,10 +146,10 @@ export function QuickOrderProductPicker({
 
     return (
         <>
-            <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
-                <h2 className="text-xl text-primary">Thêm sản phẩm</h2>
+            <section className="space-y-4 rounded-xl border bg-card p-5 sm:p-6">
+                <h2 className="dealer-section-title text-primary">Thêm sản phẩm</h2>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                    <label className="relative grid min-w-0 flex-1 gap-2 text-sm">
+                    <label className="relative grid min-w-0 flex-1 gap-2 text-sm font-medium">
                         Tìm tên sản phẩm, SKU hoặc biến thể
                         <span className="relative block">
                             <Search
@@ -162,7 +159,7 @@ export function QuickOrderProductPicker({
                             />
                             <input
                                 ref={inputRef}
-                                className="w-full rounded-md border bg-background py-2 pl-10 pr-3"
+                                className="dealer-control w-full rounded-lg border bg-background pl-10 pr-3"
                                 value={search}
                                 onChange={(event) => {
                                     setSearch(event.target.value);
@@ -220,7 +217,7 @@ export function QuickOrderProductPicker({
                                             role="option"
                                             aria-selected={index === activeIndex}
                                             type="button"
-                                            className={`flex w-full items-center gap-3 rounded-md p-2 text-left hover:bg-accent ${index === activeIndex ? "bg-accent" : ""}`}
+                                            className={`flex min-h-16 w-full items-center gap-3 rounded-md p-2.5 text-left text-sm hover:bg-accent ${index === activeIndex ? "bg-accent" : ""}`}
                                             onMouseEnter={() => setActiveIndex(index)}
                                             onClick={() => chooseSuggestion(row)}
                                         >
@@ -241,7 +238,7 @@ export function QuickOrderProductPicker({
                                                 </span>
                                             </span>
                                             {selectedIds.includes(row.product_variant_id) && (
-                                                <span className="text-xs text-muted-foreground">
+                                                <span className="dealer-meta text-muted-foreground">
                                                     Đã chọn
                                                 </span>
                                             )}
@@ -253,7 +250,7 @@ export function QuickOrderProductPicker({
                     </label>
                     <button
                         type="button"
-                        className="rounded-md border px-4 py-2 text-sm font-medium text-primary hover:bg-accent"
+                        className="dealer-action rounded-lg border px-4 text-primary hover:bg-accent"
                         onClick={() => setModalOpen(true)}
                     >
                         + Chọn sản phẩm
@@ -267,18 +264,18 @@ export function QuickOrderProductPicker({
                     if (!open) setStaged({});
                 }}
             >
-                <DialogContent className="flex max-h-[92vh] w-[96vw] max-w-[1440px] flex-col gap-4 overflow-hidden p-4 sm:w-[84vw] sm:p-6">
+                <DialogContent className="flex max-h-[92vh] w-[calc(100%-2rem)] max-w-[1360px] flex-col gap-4 overflow-hidden p-4 sm:w-[90vw] sm:p-6">
                     <DialogHeader>
-                        <DialogTitle>Chọn sản phẩm</DialogTitle>
+                        <DialogTitle className="dealer-modal-title">Chọn sản phẩm</DialogTitle>
                         <DialogDescription>
                             Chọn nhiều sản phẩm và kiểm tra số lượng trước khi thêm vào đơn.
                         </DialogDescription>
                     </DialogHeader>
-                    <label className="grid gap-1 text-sm">
+                    <label className="grid gap-2 text-sm font-medium">
                         Tìm tên sản phẩm, SKU hoặc biến thể
                         <input
                             autoFocus
-                            className="rounded-md border bg-background px-3 py-2"
+                            className="dealer-control rounded-lg border bg-background px-3"
                             value={modalSearch}
                             onChange={(event) => {
                                 setModalSearch(event.target.value);
@@ -316,7 +313,7 @@ export function QuickOrderProductPicker({
                                 return (
                                     <div
                                         key={row.product_variant_id}
-                                        className="grid gap-3 rounded-lg border p-3 text-sm sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] sm:items-center"
+                                        className="grid gap-3 rounded-lg border p-4 text-sm md:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] md:items-center"
                                     >
                                         <DealerProductThumbnail
                                             src={row.image_url}
@@ -327,13 +324,13 @@ export function QuickOrderProductPicker({
                                                 {row.product_name}
                                             </strong>
                                             <span>{row.variant_name}</span>
-                                            <span className="block text-xs text-muted-foreground">
+                                            <span className="dealer-meta block text-muted-foreground">
                                                 SKU: {row.sku}
                                             </span>
                                         </div>
-                                        <div className="sm:text-right">
+                                        <div className="md:text-right">
                                             <strong>{money(row.unit_price!)}</strong>
-                                            <span className="block text-xs text-muted-foreground">
+                                            <span className="dealer-meta block text-muted-foreground">
                                                 {tierName} · MOQ{" "}
                                                 {formatProductQuantity(row.minimum_quantity)}
                                             </span>
@@ -352,7 +349,7 @@ export function QuickOrderProductPicker({
                                                         Number(stagedRow.quantity) <=
                                                             Number(row.minimum_quantity)
                                                     }
-                                                    className="rounded-l-md border px-2 py-1 disabled:opacity-40"
+                                                    className="min-h-10 rounded-l-md border px-3 disabled:opacity-40"
                                                     onClick={() =>
                                                         setStaged((current) => ({
                                                             ...current,
@@ -382,7 +379,7 @@ export function QuickOrderProductPicker({
                                                             Number(stagedRow.quantity),
                                                         )
                                                     }
-                                                    className="w-16 border-y bg-background px-1 py-1 text-center disabled:opacity-50"
+                                                    className="min-h-10 w-16 border-y bg-background px-1 text-center disabled:opacity-50"
                                                     value={stagedRow?.quantity ?? row.quantity}
                                                     onChange={(event) =>
                                                         setStaged((current) => ({
@@ -400,7 +397,7 @@ export function QuickOrderProductPicker({
                                                     type="button"
                                                     aria-label={`Tăng số lượng ${row.product_name}`}
                                                     disabled={!stagedRow}
-                                                    className="rounded-r-md border px-2 py-1 disabled:opacity-40"
+                                                    className="min-h-10 rounded-r-md border px-3 disabled:opacity-40"
                                                     onClick={() =>
                                                         setStaged((current) => ({
                                                             ...current,
@@ -421,7 +418,10 @@ export function QuickOrderProductPicker({
                                                 </button>
                                             </span>
                                             {stagedRow && rowQuantityError(stagedRow) && (
-                                                <span role="alert" className="text-xs text-red-700">
+                                                <span
+                                                    role="alert"
+                                                    className="dealer-meta text-red-700"
+                                                >
                                                     {rowQuantityError(stagedRow)}
                                                 </span>
                                             )}
@@ -429,7 +429,7 @@ export function QuickOrderProductPicker({
                                         <button
                                             type="button"
                                             disabled={alreadyAdded}
-                                            className="rounded-md border px-3 py-2 text-primary disabled:opacity-50"
+                                            className="dealer-action rounded-md border px-3 text-primary disabled:opacity-50"
                                             onClick={() => toggleStage(row)}
                                         >
                                             {alreadyAdded
@@ -473,7 +473,7 @@ export function QuickOrderProductPicker({
                         <div className="flex gap-2">
                             <button
                                 type="button"
-                                className="rounded-md border px-4 py-2"
+                                className="dealer-action rounded-md border px-4"
                                 onClick={() => {
                                     setStaged({});
                                     setModalOpen(false);
@@ -487,7 +487,7 @@ export function QuickOrderProductPicker({
                                     stagedItems.length === 0 ||
                                     stagedItems.some((row) => Boolean(rowQuantityError(row)))
                                 }
-                                className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
+                                className="dealer-action rounded-md bg-primary px-4 text-primary-foreground disabled:opacity-50"
                                 onClick={apply}
                             >
                                 Thêm {stagedItems.length} sản phẩm vào đơn

@@ -5,6 +5,7 @@ import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/c
 import { Button } from "@/components/common/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatProductQuantity, isPositiveProductQuantity } from "@/lib/productQuantity";
+import { formatPromotionDiscount } from "@/lib/formatPercentage";
 import { ApiError, errorMessage } from "@/services/api";
 import { dealerApi, dealerKeys } from "./api";
 
@@ -32,12 +33,7 @@ export function DealerProductsPage() {
     });
     const selectedAccount = accounts.data?.data[0];
     const products = useQuery({
-        queryKey: dealerKeys.products(
-            user?.id,
-            selectedAccount?.id ?? 0,
-            search,
-            page,
-        ),
+        queryKey: dealerKeys.products(user?.id, selectedAccount?.id ?? 0, search, page),
         queryFn: () =>
             dealerApi.products(selectedAccount!.id, {
                 search,
@@ -61,11 +57,11 @@ export function DealerProductsPage() {
         return <EmptyState message="Bạn chưa có tài khoản đại lý đang hoạt động." />;
 
     return (
-        <main className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6">
+        <main className="dealer-page-wide space-y-7">
             <header className="space-y-2">
                 <p className="label-luxury">Junie B2B</p>
-                <h1 className="text-3xl text-primary sm:text-4xl">Sản phẩm</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="dealer-page-title text-primary">Sản phẩm</h1>
+                <p className="text-[15px] leading-6 text-muted-foreground">
                     Khám phá sản phẩm và mức giá dành riêng cho hạng đại lý của bạn.
                 </p>
             </header>
@@ -77,7 +73,7 @@ export function DealerProductsPage() {
                         setSearch(event.target.value);
                         setPage(1);
                     }}
-                    className="rounded-md border bg-background px-3 py-2"
+                    className="dealer-control rounded-md border bg-background px-3 py-2"
                     placeholder="Tên sản phẩm, mã hoặc SKU"
                 />
             </label>
@@ -115,7 +111,7 @@ export function DealerProductsPage() {
                                             />
                                         )}
                                     </div>
-                                    <div className="space-y-2 p-5">
+                                    <div className="space-y-2.5 p-5 sm:p-6">
                                         <p className="text-xs uppercase tracking-widest text-muted-foreground">
                                             {product.brand?.name || product.category?.name}
                                         </p>
@@ -125,11 +121,31 @@ export function DealerProductsPage() {
                                                 Có quà tặng
                                             </span>
                                         )}
+                                        {product.dealer_discount_promotion &&
+                                            first.dealer_price.discounted_unit_price && (
+                                                <span className="inline-block rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                                                    -
+                                                    {formatPromotionDiscount(
+                                                        product.dealer_discount_promotion
+                                                            .discount_type,
+                                                        product.dealer_discount_promotion
+                                                            .discount_value,
+                                                    )}
+                                                </span>
+                                            )}
                                         <p className="text-sm text-muted-foreground">
                                             {product.variants.length} biến thể đang khả dụng
                                         </p>
-                                        <p className="font-semibold text-primary">
-                                            {money(first.dealer_price.unit_price)}
+                                        {first.dealer_price.discounted_unit_price && (
+                                            <p className="text-sm text-muted-foreground line-through">
+                                                {money(first.dealer_price.unit_price)}
+                                            </p>
+                                        )}
+                                        <p className="text-lg font-semibold text-primary">
+                                            {money(
+                                                first.dealer_price.discounted_unit_price ??
+                                                    first.dealer_price.unit_price,
+                                            )}
                                             {(first.unit_symbol || first.unit) &&
                                                 ` / ${first.unit_symbol || first.unit}`}
                                         </p>
@@ -137,8 +153,9 @@ export function DealerProductsPage() {
                                             Giá dành cho hạng{" "}
                                             {products.data.effective_tier?.name ?? "đại lý"}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Giá Tier tham khảo. Giá cuối xác định theo địa chỉ giao hàng.
+                                        <p className="dealer-meta text-muted-foreground">
+                                            Giá Tier tham khảo. Giá cuối xác định theo địa chỉ giao
+                                            hàng.
                                         </p>
                                         <p className="text-sm text-muted-foreground">
                                             MOQ: {Number(first.dealer_price.minimum_quantity)}{" "}
@@ -205,7 +222,7 @@ export function DealerProductDetailPage({ slug }: { slug: string }) {
         product.images.find((item) => item.product_variant_id === null) ??
         product.images[0];
     return (
-        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <main className="dealer-page-wide">
             <Link to="/dealer/products" className="text-sm text-primary underline">
                 ← Sản phẩm
             </Link>
@@ -220,20 +237,19 @@ export function DealerProductDetailPage({ slug }: { slug: string }) {
                     )}
                 </div>
                 <div className="space-y-5">
-                    <h1 className="text-3xl text-primary sm:text-4xl">{product.name}</h1>
-                    {(!!product.gift_promotions?.length || !!product.active_promotions?.length) && (
+                    <h1 className="dealer-page-title text-primary">{product.name}</h1>
+                    {(!!product.gift_promotions?.length || !!product.dealer_discount_promotion) && (
                         <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
                             <strong>Ưu đãi có thể áp dụng</strong>
-                            {product.active_promotions?.map((promotion, index) => (
-                                <p key={`${promotion.name}-${index}`}>
-                                    {promotion.name}:{" "}
-                                    {promotion.discount_type === "percentage"
-                                        ? `giảm ${promotion.discount_value}%`
-                                        : `giảm ${Number(promotion.discount_value).toLocaleString("vi-VN")}đ`}
-                                    {Number(promotion.minimum_order_amount) > 0 &&
-                                        ` · Đơn từ ${Number(promotion.minimum_order_amount).toLocaleString("vi-VN")}đ`}
+                            {product.dealer_discount_promotion && (
+                                <p>
+                                    {product.dealer_discount_promotion.name}: giảm{" "}
+                                    {formatPromotionDiscount(
+                                        product.dealer_discount_promotion.discount_type,
+                                        product.dealer_discount_promotion.discount_value,
+                                    )}
                                 </p>
-                            ))}
+                            )}
                             {product.gift_promotions?.map((promotion) => (
                                 <p key={promotion.code}>
                                     <strong>{promotion.name}</strong>
@@ -270,7 +286,7 @@ export function DealerProductDetailPage({ slug }: { slug: string }) {
                                 setQuantity("1");
                                 quote.reset();
                             }}
-                            className="rounded-md border bg-background px-3 py-3"
+                            className="dealer-control rounded-md border bg-background px-3 py-2"
                         >
                             {product.variants.map((variant) => (
                                 <option key={variant.id} value={variant.id}>
@@ -280,15 +296,33 @@ export function DealerProductDetailPage({ slug }: { slug: string }) {
                         </select>
                     </label>
                     <div className="rounded-xl border bg-card p-5">
+                        {selected.dealer_price.discounted_unit_price && (
+                            <p className="text-sm text-muted-foreground line-through">
+                                {money(selected.dealer_price.unit_price)}
+                            </p>
+                        )}
                         <p className="text-sm text-muted-foreground">Giá dành cho bạn</p>
                         <p className="mt-2 text-3xl font-semibold text-primary">
-                            {money(selected.dealer_price.unit_price)}
+                            {money(
+                                selected.dealer_price.discounted_unit_price ??
+                                    selected.dealer_price.unit_price,
+                            )}
                             {(selected.unit_symbol || selected.unit) && (
                                 <span className="ml-1 text-lg font-medium">
                                     / {selected.unit_symbol || selected.unit}
                                 </span>
                             )}
                         </p>
+                        {product.dealer_discount_promotion &&
+                            selected.dealer_price.discounted_unit_price && (
+                                <span className="mt-2 inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                                    -
+                                    {formatPromotionDiscount(
+                                        product.dealer_discount_promotion.discount_type,
+                                        product.dealer_discount_promotion.discount_value,
+                                    )}
+                                </span>
+                            )}
                         <p className="mt-2 text-sm">
                             MOQ: {Number(selected.dealer_price.minimum_quantity)}{" "}
                             {selected.unit_symbol || selected.unit || "sản phẩm"}
@@ -302,7 +336,7 @@ export function DealerProductDetailPage({ slug }: { slug: string }) {
                         <Link
                             to="/dealer/quick-order"
                             search={{ sku: selected.sku, reorder: 0 }}
-                            className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
+                            className="dealer-action mt-4 rounded-md bg-primary px-4 py-2 text-primary-foreground"
                         >
                             Đặt hàng nhanh
                         </Link>
@@ -325,7 +359,7 @@ export function DealerProductDetailPage({ slug }: { slug: string }) {
                                     setQuantity(event.target.value);
                                     quote.reset();
                                 }}
-                                className="w-32 rounded-md border bg-background px-3 py-2"
+                                className="dealer-control w-32 rounded-md border bg-background px-3 py-2"
                             />
                             <Button
                                 disabled={quote.isPending || !isPositiveProductQuantity(quantity)}
@@ -349,7 +383,22 @@ export function DealerProductDetailPage({ slug }: { slug: string }) {
                         {quote.data && (
                             <p role="status" className="mt-3 text-sm">
                                 Thành tiền tham khảo:{" "}
-                                <strong>{money(quote.data.data.line_total)}</strong>.{" "}
+                                <strong>
+                                    {money(
+                                        quote.data.data.discounted_line_total ??
+                                            quote.data.data.line_total,
+                                    )}
+                                </strong>
+                                {quote.data.data.promotion && (
+                                    <span className="ml-2 text-rose-700">
+                                        Giảm{" "}
+                                        {formatPromotionDiscount(
+                                            quote.data.data.promotion.discount_type,
+                                            quote.data.data.promotion.discount_value,
+                                        )}
+                                    </span>
+                                )}
+                                .{" "}
                                 {quote.data.data.meets_moq
                                     ? "Số lượng đạt MOQ."
                                     : `Chưa đạt MOQ ${Number(quote.data.data.minimum_quantity)}.`}

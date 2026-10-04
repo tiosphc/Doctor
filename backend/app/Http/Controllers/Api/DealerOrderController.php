@@ -58,7 +58,7 @@ class DealerOrderController extends Controller
         }
         $statusCounts = (clone $base)->select('order_status')->selectRaw('COUNT(*) as total')
             ->groupBy('order_status')->pluck('total', 'order_status');
-        $query = $summaries->withSettledSum($base)->with(['buyer:id,name', 'warehouse:id,code,name',
+        $query = $summaries->withSettledSum($base)->with(['buyer:id,name', 'warehouse:id,code,name', 'promotionRedemptions.promotion:id,name',
             'refunds' => fn ($query) => $query->where('status', 'completed')])
             ->withCount(['items as items_count' => fn ($query) => $query->where('is_gift', false)])
             ->withSum(['items as total_quantity' => fn ($query) => $query->where('is_gift', false)], 'quantity');
@@ -87,7 +87,7 @@ class DealerOrderController extends Controller
         $record = $summaries->withSettledSum(SalesOrder::query())->whereKey($order)->where('sales_channel', 'dealer')
             ->where('dealer_account_id', $dealer->id)
             ->whereIn('order_status', ['pending', 'confirmed', 'preparing', 'shipping', 'processing', 'delivered', 'completed', 'cancelled'])
-            ->with(['buyer:id,name', 'warehouse:id,code,name', 'items',
+            ->with(['buyer:id,name', 'warehouse:id,code,name', 'items', 'promotionRedemptions.promotion:id,name',
                 'refunds' => fn ($query) => $query->where('status', 'completed'),
                 'salesReturns.items'])->firstOrFail();
 
@@ -102,7 +102,7 @@ class DealerOrderController extends Controller
         $data = $request->validate(['operation_key' => ['required', 'uuid']]);
         $record = $cancellations->cancel($dealer, $order, $data['operation_key'], $request->user());
 
-        return new DealerSalesOrderResource($record->load(['buyer:id,name', 'warehouse:id,code,name', 'items',
+        return new DealerSalesOrderResource($record->load(['buyer:id,name', 'warehouse:id,code,name', 'items', 'promotionRedemptions.promotion:id,name',
             'refunds' => fn ($query) => $query->where('status', 'completed'), 'salesReturns.items']));
     }
 }

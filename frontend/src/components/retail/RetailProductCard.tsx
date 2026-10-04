@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Gift, Package, Tag } from "lucide-react";
 import { formatProductQuantity } from "@/lib/productQuantity";
-import { primaryRetailPromotion } from "@/lib/retailPromotion";
+import { primaryRetailPromotion, retailDiscountPromotion } from "@/lib/retailPromotion";
 import type { Product } from "@/types/product";
 
 const money = (value: number) => `${Math.round(value).toLocaleString("vi-VN")}đ`;
@@ -9,7 +9,6 @@ const money = (value: number) => `${Math.round(value).toLocaleString("vi-VN")}đ
 /**
  * Badge color mapping:
  * - percentage discount → red
- * - fixed_amount discount → orange
  * - gift promotion → amber/gold
  */
 function badgeClasses(promotion: ReturnType<typeof primaryRetailPromotion>): string {
@@ -17,20 +16,20 @@ function badgeClasses(promotion: ReturnType<typeof primaryRetailPromotion>): str
     if (promotion.kind === "gift") {
         return "bg-gradient-to-r from-amber-500 to-yellow-400 text-white shadow-md shadow-amber-200/50";
     }
-    if (promotion.promotion.discount_type === "percentage") {
-        return "bg-gradient-to-r from-red-600 to-red-500 text-white shadow-md shadow-red-200/50";
-    }
-    return "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md shadow-orange-200/50";
+    return "bg-gradient-to-r from-red-600 to-red-500 text-white shadow-md shadow-red-200/50";
 }
 
 export function RetailProductCard({ product }: { product: Product }) {
     const image =
         product.images.find((item) => item.product_variant_id === null) ?? product.images[0];
     const promotion = primaryRetailPromotion(product);
+    const discountPromotion = retailDiscountPromotion(product);
     const price = Number(
         product.retail_price?.unit_price ?? product.variants[0]?.retail_price?.unit_price ?? 0,
     );
-    const directDiscount = promotion?.kind === "discount" && promotion.direct ? promotion : null;
+    const directDiscount = discountPromotion?.direct ? discountPromotion : null;
+    const giftPromotion = promotion?.kind === "gift" ? promotion : null;
+    const imageBadge = directDiscount ?? giftPromotion;
 
     return (
         <Link
@@ -50,17 +49,25 @@ export function RetailProductCard({ product }: { product: Product }) {
                         <Package aria-hidden="true" className="size-12" />
                     </div>
                 )}
-                {promotion && (
+                {imageBadge && (
                     <span
-                        className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold tracking-wide ${badgeClasses(promotion)}`}
+                        className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold tracking-wide ${badgeClasses(imageBadge)}`}
                     >
-                        {promotion.kind === "gift" && (
+                        {imageBadge.kind === "gift" && (
                             <Gift aria-hidden="true" className="size-3.5" />
                         )}
-                        {promotion.kind === "discount" && (
+                        {imageBadge.kind === "discount" && (
                             <Tag aria-hidden="true" className="size-3.5" />
                         )}
-                        {promotion.badge}
+                        {imageBadge.badge}
+                    </span>
+                )}
+                {directDiscount && giftPromotion && (
+                    <span
+                        className={`absolute left-3 top-14 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold ${badgeClasses(giftPromotion)}`}
+                    >
+                        <Gift aria-hidden="true" className="size-3.5" />
+                        {giftPromotion.badge}
                     </span>
                 )}
             </div>
@@ -119,27 +126,15 @@ export function RetailProductCard({ product }: { product: Product }) {
                         </div>
                     </div>
                 )}
-                {promotion?.kind === "discount" && (
-                    <div
-                        className={`mt-3 overflow-hidden rounded-xl p-3 ${
-                            promotion.promotion.discount_type === "percentage"
-                                ? "bg-gradient-to-r from-red-50 via-rose-50 to-pink-50 ring-1 ring-red-200"
-                                : "bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 ring-1 ring-orange-200"
-                        }`}
-                    >
-                        <p
-                            className={`text-xs font-bold uppercase tracking-wide ${promotion.promotion.discount_type === "percentage" ? "text-red-600" : "text-orange-600"}`}
-                        >
+                {discountPromotion && (
+                    <div className="mt-3 overflow-hidden rounded-xl bg-gradient-to-r from-red-50 via-rose-50 to-pink-50 p-3 ring-1 ring-red-200">
+                        <p className="text-xs font-bold uppercase tracking-wide text-red-600">
                             Ưu đãi
                         </p>
-                        <p
-                            className={`mt-1.5 text-sm font-medium ${promotion.promotion.discount_type === "percentage" ? "text-red-700" : "text-orange-700"}`}
-                        >
-                            {promotion.direct
-                                ? promotion.promotion.discount_type === "percentage"
-                                    ? `Tiết kiệm ${money(promotion.savings)}`
-                                    : `Giảm trực tiếp ${money(promotion.savings)}`
-                                : promotion.condition}
+                        <p className="mt-1.5 text-sm font-medium text-red-700">
+                            {discountPromotion.direct
+                                ? `Tiết kiệm ${money(discountPromotion.savings)}`
+                                : discountPromotion.condition}
                         </p>
                     </div>
                 )}

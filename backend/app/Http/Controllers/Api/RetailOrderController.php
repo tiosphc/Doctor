@@ -21,7 +21,7 @@ class RetailOrderController extends Controller
         $query = $summaries->withSettledSum(SalesOrder::query())->where('sales_channel', 'retail')
             ->where('buyer_user_id', $request->user()->id)
             ->where('order_status', '!=', 'draft')
-            ->with(['items', 'refunds' => fn ($query) => $query->where('status', 'completed')]);
+            ->with(['items', 'promotionRedemptions.promotion:id,name', 'refunds' => fn ($query) => $query->where('status', 'completed')]);
         if (isset($data['order_status'])) {
             $query->where('order_status', $data['order_status']);
         }
@@ -34,7 +34,7 @@ class RetailOrderController extends Controller
         $record = $summaries->withSettledSum(SalesOrder::query())->whereKey($order)->where('sales_channel', 'retail')
             ->where('buyer_user_id', $request->user()->id)
             ->where('order_status', '!=', 'draft')
-            ->with(['items', 'histories.actor:id,name', 'refunds' => fn ($query) => $query->where('status', 'completed'),
+            ->with(['items', 'promotionRedemptions.promotion:id,name', 'histories.actor:id,name', 'refunds' => fn ($query) => $query->where('status', 'completed'),
                 'salesReturns.items'])->firstOrFail();
 
         return new RetailSalesOrderResource($record);

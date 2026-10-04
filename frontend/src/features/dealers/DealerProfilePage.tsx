@@ -23,7 +23,7 @@ export function DealerProfilePage() {
         );
     if (!query.data.data.length) {
         return (
-            <div className="mx-auto max-w-4xl space-y-5 px-4 py-8 sm:px-6">
+            <div className="dealer-page-form space-y-5">
                 <EmptyState message="Bạn chưa có tài khoản đại lý đang hoạt động." />
                 <Link
                     to="/dealer/apply"
@@ -35,25 +35,25 @@ export function DealerProfilePage() {
         );
     }
     return (
-        <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+        <div className="dealer-page-form space-y-6">
             <header>
                 <p className="label-luxury">Hồ sơ B2B</p>
-                <h1 className="mt-2 text-3xl text-primary">Đại lý của tôi</h1>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <h1 className="dealer-page-title mt-2 text-primary">Đại lý của tôi</h1>
+                <p className="mt-1.5 text-[15px] leading-6 text-muted-foreground">
                     Thông tin cơ sở và quyền thành viên đã được duyệt.
                 </p>
             </header>
-            <div className="max-w-3xl">
+            <div className="max-w-4xl">
                 {query.data.data.slice(0, 1).map((dealer) => (
                     <section key={dealer.id} className="rounded-xl border bg-card p-5 sm:p-6">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                                <p className="dealer-meta uppercase tracking-widest text-muted-foreground">
                                     {dealer.code}
                                 </p>
                                 <h2 className="mt-1 text-xl text-primary">{dealer.legal_name}</h2>
                             </div>
-                            <span className="rounded-full bg-green-50 px-3 py-1 text-xs text-green-800">
+                            <span className="rounded-full bg-green-50 px-3 py-1 text-[13px] font-medium text-green-800">
                                 Đang hoạt động
                             </span>
                         </div>
@@ -79,7 +79,7 @@ export function DealerProfilePage() {
                                 Đơn hàng đại lý
                             </Link>
                         </div>
-                        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+                        <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
                             <div>
                                 <dt className="text-muted-foreground">Vai trò thành viên</dt>
                                 <dd className="font-medium">

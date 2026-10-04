@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import { Navigate } from "@tanstack/react-router";
 import { Button } from "@/components/common/Button";
 import { OperationNotice } from "@/components/common/Feedback";
@@ -64,7 +65,7 @@ export function AdminBlogCategoriesPage() {
             </div>
             <form
                 onSubmit={submit}
-                className="card-surface mt-7 grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+                className={`${adminFormLayout.compact} card-surface mt-7 grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end`}
             >
                 <Field label="Tên danh mục *" error={errors["name"]}>
                     <Input

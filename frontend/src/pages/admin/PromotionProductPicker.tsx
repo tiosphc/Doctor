@@ -10,6 +10,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { productApi } from "@/services/productApi";
+import { formatPercentage } from "@/lib/formatPercentage";
 import type { ProductFilters } from "@/services/productApi";
 import type { Product } from "@/types/product";
 
@@ -23,6 +24,12 @@ type Props = {
     giftFilter?: ProductFilters["gift_filter"];
     activeOnly?: boolean;
     multiple?: boolean;
+    checkDiscountAvailability?: boolean;
+    excludePromotionId?: number;
+    promotionScope?: "retail" | "dealer" | "both";
+    promotionTierIds?: number[];
+    promotionStartsAt?: string | null;
+    promotionEndsAt?: string | null;
     emptyMessage?: string;
 };
 
@@ -30,6 +37,14 @@ function productImage(product: Product): string | null {
     return (
         product.images?.find((image) => image.is_primary)?.url ?? product.images?.[0]?.url ?? null
     );
+}
+
+function activeDiscountLabel(product: Product): string | null {
+    const promotion = product.active_discount_promotion;
+    if (!promotion) return null;
+    return promotion.discount_type === "percentage"
+        ? `Đang giảm ${formatPercentage(promotion.discount_value)}`
+        : `Đang giảm ${Number(promotion.discount_value).toLocaleString("vi-VN")} đ`;
 }
 
 function ProductRow({ product, term = "" }: { product: Product; term?: string }) {
@@ -60,6 +75,11 @@ function ProductRow({ product, term = "" }: { product: Product; term?: string })
                     {product.product_code}
                     {variantSummary ? ` · ${variantSummary}` : ""}
                 </span>
+                {product.active_discount_promotion && (
+                    <span className="block truncate text-xs text-amber-800">
+                        {product.active_discount_promotion.name}
+                    </span>
+                )}
             </span>
         </span>
     );
@@ -75,6 +95,12 @@ export function PromotionProductPicker({
     giftFilter,
     activeOnly = false,
     multiple = false,
+    checkDiscountAvailability = false,
+    excludePromotionId,
+    promotionScope,
+    promotionTierIds = [],
+    promotionStartsAt,
+    promotionEndsAt,
     emptyMessage = "Không tìm thấy sản phẩm phù hợp.",
 }: Props) {
     const listboxId = useId();
@@ -108,6 +134,14 @@ export function PromotionProductPicker({
     const filters: ProductFilters = {
         ...(activeOnly ? { status: "active" } : {}),
         ...(giftFilter ? { gift_filter: giftFilter } : {}),
+        ...(checkDiscountAvailability ? { discount_availability: true } : {}),
+        ...(excludePromotionId ? { exclude_promotion_id: excludePromotionId } : {}),
+        ...(checkDiscountAvailability ? { promotion_scope: promotionScope ?? "retail" } : {}),
+        ...(promotionTierIds.length
+            ? { promotion_tier_ids: [...promotionTierIds].sort((a, b) => a - b).join(",") }
+            : {}),
+        ...(promotionStartsAt ? { promotion_starts_at: promotionStartsAt } : {}),
+        ...(promotionEndsAt ? { promotion_ends_at: promotionEndsAt } : {}),
     };
     const inline = useQuery({
         queryKey: ["promotion-product-picker", filters, debouncedSearch, 1],
@@ -132,6 +166,7 @@ export function PromotionProductPicker({
     const stagedProducts = Object.values(staged);
 
     const choose = (product: Product) => {
+        if (product.active_discount_promotion) return;
         if (!selectedIds.includes(product.id)) onChoose(product);
         setSearch("");
         setSuggestionsOpen(false);
@@ -159,11 +194,12 @@ export function PromotionProductPicker({
                     : (current - 1 + suggestions.length) % suggestions.length,
             );
         } else if (event.key === "Enter") {
-            choose(suggestions[activeIndex] ?? suggestions[0]!);
+            const suggestion = suggestions[activeIndex] ?? suggestions[0];
+            if (suggestion && !suggestion.active_discount_promotion) choose(suggestion);
         }
     };
     const selectModalProduct = (product: Product) => {
-        if (selectedIds.includes(product.id)) return;
+        if (selectedIds.includes(product.id) || product.active_discount_promotion) return;
         if (multiple) {
             setStaged((current) => {
                 const next = { ...current };
@@ -243,15 +279,22 @@ export function PromotionProductPicker({
                                     type="button"
                                     role="option"
                                     aria-selected={index === activeIndex}
-                                    className={`flex w-full items-center justify-between gap-2 rounded-md p-2 text-left hover:bg-accent ${index === activeIndex ? "bg-accent" : ""}`}
+                                    disabled={Boolean(product.active_discount_promotion)}
+                                    className={`flex w-full items-center justify-between gap-2 rounded-md p-2 text-left hover:bg-accent disabled:cursor-not-allowed disabled:opacity-75 ${index === activeIndex ? "bg-accent" : ""}`}
                                     onMouseEnter={() => setActiveIndex(index)}
                                     onClick={() => choose(product)}
                                 >
                                     <ProductRow product={product} term={debouncedSearch} />
-                                    {selectedIds.includes(product.id) && (
-                                        <span className="shrink-0 text-xs text-muted-foreground">
-                                            Đã chọn
+                                    {activeDiscountLabel(product) ? (
+                                        <span className="shrink-0 rounded-full bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">
+                                            {activeDiscountLabel(product)}
                                         </span>
+                                    ) : (
+                                        selectedIds.includes(product.id) && (
+                                            <span className="shrink-0 text-xs text-muted-foreground">
+                                                Đã chọn
+                                            </span>
+                                        )
                                     )}
                                 </button>
                             ))
@@ -285,7 +328,7 @@ export function PromotionProductPicker({
                             Tìm theo tên, mã, SKU hoặc biến thể rồi chọn sản phẩm phù hợp.
                         </DialogDescription>
                     </DialogHeader>
-                    <label className="grid gap-1 text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Tìm sản phẩm
                         <input
                             className="rounded-md border bg-background px-3 py-2"
@@ -324,13 +367,20 @@ export function PromotionProductPicker({
                                     <button
                                         key={product.id}
                                         type="button"
-                                        disabled={selected}
+                                        disabled={
+                                            selected || Boolean(product.active_discount_promotion)
+                                        }
                                         onClick={() => selectModalProduct(product)}
-                                        className="flex w-full flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-left text-sm hover:bg-accent disabled:cursor-default disabled:opacity-60"
+                                        className="flex w-full flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-75"
                                     >
                                         <ProductRow product={product} term={debouncedModalSearch} />
                                         <span className="shrink-0 rounded-md border px-3 py-2 text-primary">
-                                            {selected ? "Đã chọn" : stagedHere ? "Bỏ chọn" : "Chọn"}
+                                            {activeDiscountLabel(product) ??
+                                                (selected
+                                                    ? "Đã chọn"
+                                                    : stagedHere
+                                                      ? "Bỏ chọn"
+                                                      : "Chọn")}
                                         </span>
                                     </button>
                                 );

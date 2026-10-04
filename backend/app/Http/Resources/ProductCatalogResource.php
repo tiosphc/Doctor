@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Services\RetailPricingService;
+use App\Services\SalesPromotionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,8 @@ class ProductCatalogResource extends JsonResource
     public function toArray(Request $request): array
     {
         $pricing = app(RetailPricingService::class);
+        $promotions = app(SalesPromotionService::class);
+        $discount = $this->retail_discount_model;
         $variants = $this->variants->map(fn ($variant): array => [
             'id' => $variant->id,
             'sku' => $variant->sku,
@@ -30,7 +33,14 @@ class ProductCatalogResource extends JsonResource
                     && is_string($value)
                     && ! preg_match('/cost|price|dealer|tier|stock|inventory|margin|warehouse/i', $key))
                 ->all(),
-            'retail_price' => array_intersect_key($pricing->resolve($variant), array_flip(['unit_price', 'currency', 'pricing_context'])),
+            'retail_price' => (function () use ($variant, $pricing, $promotions, $discount): array {
+                $price = array_intersect_key($pricing->resolve($variant), array_flip(['unit_price', 'currency', 'pricing_context']));
+                $price['discounted_unit_price'] = $discount !== null
+                    && bccomp($price['unit_price'], $discount->minimum_order_amount, 2) >= 0
+                    ? $promotions->discountedUnitPrice($price['unit_price'], $discount) : null;
+
+                return $price;
+            })(),
         ]);
 
         return [
@@ -41,6 +51,7 @@ class ProductCatalogResource extends JsonResource
             'description' => $this->description,
             'gift_promotions' => $this->gift_promotions ?? [],
             'retail_promotions' => $this->retail_promotions ?? [],
+            'retail_discount_promotion' => $this->retail_discount_promotion ?? null,
             'youtube_videos' => $this->youtube_videos ?? [],
             'usage_instructions' => $this->usage_instructions,
             'category' => $this->category?->only(['id', 'code', 'name']),

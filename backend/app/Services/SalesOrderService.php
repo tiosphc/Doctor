@@ -263,10 +263,13 @@ class SalesOrderService
             });
     }
 
-    public function submitRetail(SalesOrder $order, string $key, int $actorId, ?string $promotionCode = null, ?string $voucherCode = null): SalesOrder
+    public function submitRetail(SalesOrder $order, string $key, int $actorId, ?string $promotionCode = null,
+        ?string $voucherCode = null, ?string $giftPromotionCode = null, array $additionalPromotionCodes = []): SalesOrder
     {
-        return $this->transition($order, $key, 'submit_retail', ['actor_id' => $actorId, 'promotion_code' => $promotionCode, 'voucher_code' => $voucherCode],
-            function (SalesOrder $locked) use ($actorId, $promotionCode, $voucherCode): void {
+        return $this->transition($order, $key, 'submit_retail', ['actor_id' => $actorId, 'promotion_code' => $promotionCode,
+            'additional_promotion_codes' => $additionalPromotionCodes,
+            'gift_promotion_code' => $giftPromotionCode, 'voucher_code' => $voucherCode],
+            function (SalesOrder $locked) use ($actorId, $promotionCode, $voucherCode, $giftPromotionCode, $additionalPromotionCodes): void {
                 if ($locked->sales_channel !== 'retail' || $locked->order_source !== 'cart') {
                     $this->conflict('UNSUPPORTED_CHANNEL');
                 }
@@ -275,6 +278,12 @@ class SalesOrderService
                 $locked->update($changes);
                 if ($promotionCode !== null) {
                     $this->promotions->redeem($locked, $promotionCode);
+                }
+                foreach ($additionalPromotionCodes as $additionalPromotionCode) {
+                    $this->promotions->redeem($locked, $additionalPromotionCode);
+                }
+                if ($giftPromotionCode !== null) {
+                    $this->promotions->redeem($locked, $giftPromotionCode);
                 }
                 if ($voucherCode !== null) {
                     $this->salesVouchers->redeem($locked, $voucherCode);

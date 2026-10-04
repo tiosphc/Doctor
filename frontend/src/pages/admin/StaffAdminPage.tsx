@@ -161,7 +161,7 @@ export function AdminStaffPage() {
                             <div className="mb-2 grid size-11 place-items-center rounded-full bg-primary text-primary-foreground">
                                 <UserPlus className="size-5" />
                             </div>
-                            <DialogTitle className="font-serif text-2xl text-primary sm:text-3xl">
+                            <DialogTitle className="font-sans text-xl font-bold leading-snug text-primary sm:text-2xl">
                                 {editing ? "Chỉnh sửa nhân viên" : "Thêm nhân viên mới"}
                             </DialogTitle>
                             <DialogDescription className="max-w-xl leading-6">

@@ -32,11 +32,8 @@ class GiftPromotionCatalogController extends Controller
         $eligibleIds = $products->pluck('id')->all();
         $pricedVariantIds = array_keys($prices);
         $gifts = $this->listing($visibility, 'dealer', $context['tier']->id, $eligibleIds, $pricedVariantIds);
-        $now = now();
-        $promotions = SalesPromotion::query()->with(['targets', 'dealerTiers'])->where('status', 'active')
-            ->where('discount_type', '<>', 'buy_a_get_b')->whereIn('sales_scope', ['dealer', 'both'])
-            ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now))
-            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now))
+        $promotions = SalesPromotion::query()->with(['targets', 'dealerTiers'])
+            ->effectiveAt()->forChannel('dealer')->whereIn('discount_type', ['percentage', 'fixed_amount'])
             ->orderBy('id')->get();
         $offers = [];
         foreach ($promotions as $promotion) {

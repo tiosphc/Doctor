@@ -13,17 +13,16 @@ use Throwable;
 
 class DealerOrderImportWorkbook
 {
-    public const HEADERS = ['SKU', 'Customer Name', 'Phone', 'Email', 'Street', 'City',
-        'State', 'Country', 'Zip Code', 'Quantity'];
+    public const HEADERS = ['SKU', 'Customer Name', 'Phone', 'Email', 'Province / City',
+        'District', 'Ward', 'Street', 'Quantity'];
 
-    public const OPTIONAL_HEADERS = ['Order Code', 'Province Code', 'Ward Code'];
+    private const REQUIRED_HEADERS = ['SKU', 'Customer Name', 'Phone', 'Province / City',
+        'Ward', 'Street', 'Quantity'];
 
-    private const REQUIRED_HEADERS = ['SKU', 'Customer Name', 'Phone', 'Street', 'Quantity'];
+    public const TEMPLATE_HEADERS = self::HEADERS;
 
-    public const TEMPLATE_HEADERS = ['Order Code', 'SKU', 'Customer Name', 'Phone', 'Email',
-        'Street', 'Province Code', 'Ward Code', 'Zip Code', 'Quantity'];
-
-    private const FORBIDDEN = ['external order ref', 'order_id', 'group_id', 'dealer_id', 'size', 'style',
+    private const FORBIDDEN = ['order code', 'order ref', 'province code', 'district code', 'ward code',
+        'zip code', 'external order ref', 'order_id', 'group_id', 'dealer_id', 'size', 'style',
         'dealer code', 'dealer account id', 'tier', 'tier id', 'unit price',
         'dealer price', 'retail price', 'moq', 'warehouse', 'warehouse id', 'subtotal',
         'grand total', 'currency', 'sales channel', 'order source', 'order status',
@@ -125,7 +124,7 @@ class DealerOrderImportWorkbook
             $values = [];
             foreach ($headers as $index => $header) {
                 $cell = $cells[$index] ?? ['value' => '', 'type' => 'inlineStr'];
-                if (in_array($header, ['SKU', 'Phone', 'Zip Code', 'Voucher Code', 'Order Code', 'Province Code', 'Ward Code'], true)
+                if (in_array($header, ['SKU', 'Phone'], true)
                     && ! in_array($cell['type'], ['s', 'inlineStr', 'str'], true) && $cell['value'] !== '') {
                     $this->fail('TEXT_CELL_REQUIRED', ['row' => $number, 'field' => $header]);
                 }
@@ -175,13 +174,10 @@ class DealerOrderImportWorkbook
             .'</styleSheet>');
         $zip->addFromString('xl/worksheets/sheet1.xml', $this->worksheet([self::TEMPLATE_HEADERS], true));
         $zip->addFromString('xl/worksheets/sheet2.xml', $this->worksheet([
-            ['One row is one SKU. Rows with the same Order Code form one order.'],
-            ['Use official Province Code and Ward Code from the location dropdown.'],
-            ['SKU uniquely identifies the variant; do not add Size, Style or order IDs.'],
-            ['Do not add Discount Amount, Discount %, Final Price or Final Total columns.'],
-            ['Điền một dòng cho mỗi SKU. Cùng Mã đơn (Order Code) tạo một đơn.'],
-            ['Giữ số điện thoại, SKU và mã bưu chính ở dạng Text.'],
-            ['Không thêm Dealer Code, Tier, Price, MOQ, Warehouse hay tổng tiền.'],
+            ['Điền một dòng cho mỗi SKU. Cùng số điện thoại và địa chỉ được gộp thành một đơn.'],
+            ['Nhập tên tỉnh/thành phố và phường/xã như trong địa chỉ giao hàng. Quận/huyện có thể để trống.'],
+            ['Giữ số điện thoại và SKU ở dạng Text để không mất số 0 đầu.'],
+            ['Không thêm mã đơn, mã địa chỉ, giá, kho hay tổng tiền. Mã đơn được hệ thống tạo.'],
             ['Sửa file rồi tải lại nếu báo lỗi. Xem trước không giữ tồn kho.'],
         ]));
     }
@@ -193,8 +189,7 @@ class DealerOrderImportWorkbook
             .'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
         if ($orders) {
             $xml .= '<cols><col min="1" max="1" style="1" width="22" customWidth="1"/>'
-                .'<col min="3" max="3" style="1" width="20" customWidth="1"/>'
-                .'<col min="9" max="9" style="1" width="20" customWidth="1"/></cols>';
+                .'<col min="3" max="3" style="1" width="20" customWidth="1"/></cols>';
         }
         $xml .= '<sheetData>';
         foreach ($rows as $rowIndex => $values) {
@@ -220,7 +215,7 @@ class DealerOrderImportWorkbook
             if (in_array(strtolower(preg_replace('/\s+/', ' ', $value)), self::FORBIDDEN, true)) {
                 $this->fail('FORBIDDEN_IMPORT_COLUMN', ['field' => $value]);
             }
-            if (! in_array($value, [...self::HEADERS, ...self::OPTIONAL_HEADERS], true)) {
+            if (! in_array($value, self::HEADERS, true)) {
                 $this->fail('UNKNOWN_COLUMN', ['field' => $value]);
             }
             if (in_array($value, $headers, true)) {

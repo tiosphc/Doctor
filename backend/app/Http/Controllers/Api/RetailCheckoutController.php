@@ -20,6 +20,6 @@ class RetailCheckoutController extends Controller
     {
         $order = $checkout->checkout($request->user()->id, $request->validated());
 
-        return new RetailSalesOrderResource($order->load('items'));
+        return new RetailSalesOrderResource($order->load(['items', 'promotionRedemptions.promotion:id,name']));
     }
 }

@@ -23,7 +23,7 @@ export function SalesOrderStatusBadge({
                   : "Trả hàng";
     return (
         <span
-            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold leading-5 ${entry?.className ?? "border-slate-200 bg-slate-50 text-slate-700"}`}
+            className={`sales-order-status-badge inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold leading-5 ${entry?.className ?? "border-slate-200 bg-slate-50 text-slate-700"}`}
         >
             {labeled ? `${prefix}: ` : ""}
             {entry?.label ?? status}

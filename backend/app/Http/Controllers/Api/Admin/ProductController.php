@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveProductRequest;
 use App\Models\Product;
+use App\Services\SalesPromotionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +14,7 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, SalesPromotionService $promotions): JsonResponse
     {
         $data = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
@@ -22,6 +23,12 @@ class ProductController extends Controller
             'brand' => ['nullable', 'integer', 'exists:brands,id'],
             'gift_filter' => ['nullable', 'in:all,gift_capable,gift_only,normal'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'discount_availability' => ['nullable', 'boolean'],
+            'exclude_promotion_id' => ['nullable', 'integer', 'exists:sales_promotions,id'],
+            'promotion_scope' => ['nullable', 'in:retail,dealer,both'],
+            'promotion_tier_ids' => ['nullable', 'string', 'regex:/^\d+(,\d+)*$/'],
+            'promotion_starts_at' => ['nullable', 'date'],
+            'promotion_ends_at' => ['nullable', 'date'],
         ]);
         $query = Product::query()->with(['category:id,code,name', 'brand:id,code,name', 'variants:id,product_id,unit_id,sku,variant_name,status,sellable_retail,track_inventory', 'variants.unit:id,name,symbol', 'images:id,product_id,path,is_primary,sort_order']);
         if (isset($data['search'])) {
@@ -49,7 +56,37 @@ class ProductController extends Controller
             }
         }
 
-        return response()->json($query->latest('id')->paginate($data['per_page'] ?? 20));
+        $page = $query->latest('id')->paginate($data['per_page'] ?? 20);
+        if ($data['discount_availability'] ?? false) {
+            $productIds = $page->getCollection()->pluck('id')->all();
+            $scope = $data['promotion_scope'] ?? 'retail';
+            $tierIds = isset($data['promotion_tier_ids'])
+                ? array_map('intval', explode(',', $data['promotion_tier_ids'])) : [];
+            $occupied = [];
+            if ($scope !== 'dealer') {
+                $occupied = $promotions->discountOccupancy($productIds, 'retail', null,
+                    $data['exclude_promotion_id'] ?? null, $data['promotion_starts_at'] ?? null,
+                    $data['promotion_ends_at'] ?? null);
+            }
+            if ($scope !== 'retail') {
+                foreach ($tierIds === [] ? [null] : $tierIds as $tierId) {
+                    $occupied += $promotions->discountOccupancy($productIds, 'dealer', $tierId,
+                        $data['exclude_promotion_id'] ?? null, $data['promotion_starts_at'] ?? null,
+                        $data['promotion_ends_at'] ?? null);
+                }
+            }
+            foreach ($page->getCollection() as $product) {
+                $promotion = $occupied[$product->id] ?? null;
+                $product->setAttribute('active_discount_promotion', $promotion === null ? null : [
+                    'id' => $promotion->id,
+                    'name' => $promotion->name,
+                    'discount_type' => $promotion->discount_type,
+                    'discount_value' => $promotion->discount_value,
+                ]);
+            }
+        }
+
+        return response()->json($page);
     }
 
     public function store(SaveProductRequest $request): JsonResponse

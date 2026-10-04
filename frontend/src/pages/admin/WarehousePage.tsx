@@ -118,7 +118,7 @@ export function WarehousePage() {
                         <h2 className="text-xl text-primary">Danh sách kho</h2>
                         <div className="mt-4 flex flex-wrap gap-3">
                             <input
-                                className={fieldClass}
+                                className={`${fieldClass} sm:max-w-sm`}
                                 aria-label="Tìm kho"
                                 placeholder="Mã hoặc tên kho"
                                 value={search}
@@ -128,7 +128,7 @@ export function WarehousePage() {
                                 }}
                             />
                             <select
-                                className={fieldClass}
+                                className={`${fieldClass} sm:max-w-52`}
                                 aria-label="Lọc trạng thái kho"
                                 value={status}
                                 onChange={(event) => {
@@ -262,7 +262,7 @@ export function WarehousePage() {
                             ).map((key) => (
                                 <label
                                     key={key}
-                                    className={`text-sm ${key.startsWith("address") ? "sm:col-span-2" : ""}`}
+                                    className={`admin-form-field admin-form-label ${key.startsWith("address") ? "sm:col-span-2" : ""}`}
                                 >
                                     {
                                         (
@@ -292,10 +292,10 @@ export function WarehousePage() {
                                 </label>
                             ))}
                         </div>
-                        <label className="block text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Trạng thái
                             <select
-                                className={fieldClass}
+                                className={`${fieldClass} admin-field-medium`}
                                 value={form.status}
                                 onChange={(event) =>
                                     update("status", event.target.value as Warehouse["status"])
@@ -328,9 +328,11 @@ export function WarehousePage() {
                         <p className="text-xs text-muted-foreground">
                             Mỗi mục đích chỉ có tối đa một kho hoạt động được đánh dấu mặc định.
                         </p>
-                        <button className={buttonClass} disabled={save.isPending}>
-                            {save.isPending ? "Đang lưu..." : "Lưu kho"}
-                        </button>
+                        <div className="flex justify-end border-t pt-4">
+                            <button className={buttonClass} disabled={save.isPending}>
+                                {save.isPending ? "Đang lưu..." : "Lưu kho"}
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>

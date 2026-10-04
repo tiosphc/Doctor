@@ -60,7 +60,7 @@ export function DealerDashboardPage() {
     ];
 
     return (
-        <div className="mx-auto max-w-6xl space-y-7">
+        <div className="dealer-page-wide space-y-7">
             <header className="rounded-2xl bg-[#092b5c] px-6 py-8 text-white sm:px-8 sm:py-10">
                 <p className="text-xs font-semibold tracking-[.16em] text-[#e5c28c]">
                     JUNIE DEALER PORTAL
@@ -87,12 +87,12 @@ export function DealerDashboardPage() {
                                 key={item.to}
                                 to={item.to}
                                 {...("search" in item ? { search: item.search } : {})}
-                                className="group rounded-2xl border border-[#d8e0eb] bg-white p-5 transition-shadow hover:shadow-md"
+                                className="group rounded-2xl border border-[#d8e0eb] bg-white p-5 transition-shadow hover:shadow-md sm:p-6"
                             >
                                 <span className="grid size-11 place-items-center rounded-xl bg-[#eaf0fa] text-[#092b5c]">
                                     <Icon size={20} />
                                 </span>
-                                <h3 className="mt-4 font-semibold text-[#092b5c] group-hover:text-[#bc9151]">
+                                <h3 className="mt-4 text-lg font-semibold text-[#092b5c] group-hover:text-[#bc9151]">
                                     {item.label}
                                 </h3>
                                 <p className="mt-1 text-sm leading-6 text-[#68758a]">

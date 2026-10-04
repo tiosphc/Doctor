@@ -21,20 +21,20 @@ class DealerOrderImportService
 {
     private const RECIPIENT_MAP = [
         'Customer Name' => 'recipient_name', 'Phone' => 'recipient_phone',
-        'Email' => 'recipient_email', 'Street' => 'shipping_address_line1',
-        'City' => 'shipping_city', 'State' => 'shipping_province',
-        'Country' => 'shipping_country', 'Zip Code' => 'shipping_postal_code',
+        'Email' => 'recipient_email', 'Province / City' => 'shipping_province',
+        'District' => 'shipping_district', 'Ward' => 'shipping_ward',
+        'Street' => 'shipping_address_line1',
     ];
 
-    private const REQUIRED = ['SKU', 'Customer Name', 'Phone', 'Street', 'Quantity'];
+    private const REQUIRED = ['SKU', 'Customer Name', 'Phone', 'Province / City', 'Ward', 'Street', 'Quantity'];
 
     public function __construct(
         private readonly DealerOrderImportWorkbook $workbook,
         private readonly DealerQuickOrderService $orders,
+        private readonly WarehouseAllocationService $allocation,
         private readonly DealerContextService $context,
         private readonly AuditLogger $audit,
         private readonly DealerWalletService $wallets,
-        private readonly SalesPromotionService $promotions,
     ) {}
 
     public function upload(User $user, DealerAccount $account, UploadedFile $file): DealerOrderImport
@@ -72,17 +72,16 @@ class DealerOrderImportService
                 'row_count' => count($parsed),
             ]);
             $groups = [];
+            $resolvedLocations = [];
             foreach ($parsed as $source) {
                 $values = $source['values'];
                 $sku = Sku::normalize($values['SKU']);
-                $promotionCode = $this->promotions->normalize((string) ($values['Voucher Code'] ?? ''));
                 $recipient = [];
                 foreach (self::RECIPIENT_MAP as $column => $field) {
                     $recipient[$field] = $this->normalizeWhitespace($values[$column] ?? '');
                 }
-                $recipient['shipping_province_code'] = trim($values['Province Code'] ?? '');
-                $recipient['shipping_ward_code'] = trim($values['Ward Code'] ?? '');
-                $recipient['shipping_ward'] = trim($values['City'] ?? '');
+                $recipient['shipping_province_code'] = '';
+                $recipient['shipping_ward_code'] = '';
                 $recipient['recipient_phone'] = preg_replace('/[^0-9]+/', '', $recipient['recipient_phone']);
                 $recipient['recipient_email'] = mb_strtolower($recipient['recipient_email']);
                 $recipient['delivery_note'] = null;
@@ -92,17 +91,8 @@ class DealerOrderImportService
                         $errors[] = ['field' => $column, 'code' => 'REQUIRED_FIELD'];
                     }
                 }
-                if (($recipient['shipping_province_code'] ?: $recipient['shipping_province']) === '') {
-                    $errors[] = ['field' => 'Province Code', 'code' => 'REQUIRED_FIELD'];
-                }
-                if (($recipient['shipping_ward_code'] ?: $recipient['shipping_ward']) === '') {
-                    $errors[] = ['field' => 'Ward Code', 'code' => 'REQUIRED_FIELD'];
-                }
-                if (trim($values['Phone']) !== '' && $recipient['recipient_phone'] === '') {
+                if (trim($values['Phone']) !== '' && preg_match('/^(?=.*[0-9])[+0-9().\-\s]+$/', $values['Phone']) !== 1) {
                     $errors[] = ['field' => 'Phone', 'code' => 'INVALID_PHONE', 'value' => $values['Phone']];
-                }
-                if (mb_strlen($promotionCode) > 80) {
-                    $errors[] = ['field' => 'Voucher Code', 'code' => 'INVALID_PROMOTION_CODE'];
                 }
                 if ($recipient['recipient_email'] !== '' && filter_var($recipient['recipient_email'], FILTER_VALIDATE_EMAIL) === false) {
                     $errors[] = ['field' => 'Email', 'code' => 'INVALID_EMAIL', 'value' => $values['Email']];
@@ -111,29 +101,41 @@ class DealerOrderImportService
                 if (preg_match('/^[1-9][0-9]{0,14}$/', $quantity) !== 1) {
                     $errors[] = ['field' => 'Quantity', 'code' => 'INVALID_QUANTITY', 'value' => $values['Quantity']];
                 }
-                $externalReference = $this->normalizeWhitespace($values['Order Code'] ?? '');
-                if ($externalReference !== '' && (mb_strlen($externalReference) > 80
-                    || preg_match('/^[\pL\pN_-]+$/u', $externalReference) !== 1)) {
-                    $errors[] = ['field' => 'Order Code', 'code' => 'INVALID_ORDER_CODE'];
+                if ($recipient['shipping_province'] !== '' && $recipient['shipping_ward'] !== '') {
+                    try {
+                        $locationKey = $this->comparisonText($recipient['shipping_province']).'|'
+                            .$this->comparisonText($recipient['shipping_ward']);
+                        if (! isset($resolvedLocations[$locationKey])) {
+                            $resolved = $this->allocation->normalizeRecipient($recipient);
+                            $resolvedLocations[$locationKey] = array_intersect_key($resolved, array_flip([
+                                'shipping_city', 'shipping_province', 'shipping_country',
+                                'shipping_province_code', 'shipping_ward_code', 'shipping_ward',
+                            ]));
+                        }
+                        $recipient = [...$recipient, ...$resolvedLocations[$locationKey]];
+                    } catch (HttpResponseException $exception) {
+                        $code = $exception->getResponse()->getData(true)['code'] ?? 'ADDRESS_NOT_FOUND';
+                        $errors[] = ['field' => $code === 'PROVINCE_NOT_FOUND' ? 'Province / City' : 'Ward',
+                            'code' => $code, 'value' => $code === 'PROVINCE_NOT_FOUND'
+                                ? $values['Province / City'] : $values['Ward']];
+                    }
                 }
                 $groupIdentity = $this->recipientGroupKey($recipient);
-                if ($recipient['recipient_phone'] === '' || $recipient['shipping_address_line1'] === ''
-                    || ($recipient['shipping_province_code'] === '' && $recipient['shipping_province'] === '')) {
+                if ($errors !== [] || $recipient['shipping_province_code'] === '') {
                     $groupIdentity = 'INVALID-ROW-'.$source['row'];
                 }
                 if (! isset($groups[$groupIdentity])) {
                     $groups[$groupIdentity] = [
-                        'reference' => $externalReference !== '' ? $externalReference
-                            : 'GROUP-'.str_pad((string) (count($groups) + 1), 3, '0', STR_PAD_LEFT),
+                        'reference' => 'GROUP-'.str_pad((string) (count($groups) + 1), 3, '0', STR_PAD_LEFT),
                         'normalized_reference' => 'AUTO-'.strtoupper(substr(hash('sha256',
                             $account->id.'|'.$hash.'|'.$groupIdentity), 0, 40)),
                     ];
                 }
                 $groupKey = $groups[$groupIdentity]['normalized_reference'];
                 $import->rows()->create([
-                    'sheet_row_number' => $source['row'], 'external_reference' => $externalReference ?: null,
+                    'sheet_row_number' => $source['row'], 'external_reference' => null,
                     'external_reference_normalized' => $groupKey, 'sku_input' => $sku,
-                    'quantity' => $quantity, 'promotion_code' => $promotionCode ?: null,
+                    'quantity' => $quantity, 'promotion_code' => null,
                     'recipient' => $recipient, 'validation_errors' => $errors,
                 ]);
             }
@@ -185,12 +187,19 @@ class DealerOrderImportService
                 }
                 $currentRecipient = $row->recipient;
                 $note = (string) ($currentRecipient['delivery_note'] ?? '');
-                unset($currentRecipient['delivery_note']);
-                $baseRecipient = $recipient;
-                unset($baseRecipient['delivery_note']);
-                if ($this->recipientComparisonKey($currentRecipient) !== $this->recipientComparisonKey($baseRecipient)) {
-                    $errors[] = ['row' => $row->sheet_row_number, 'field' => 'Recipient',
-                        'code' => 'ORDER_GROUP_RECIPIENT_MISMATCH'];
+                if ($this->comparisonText($currentRecipient['recipient_name'] ?? '')
+                    !== $this->comparisonText($recipient['recipient_name'] ?? '')) {
+                    $errors[] = ['row' => $row->sheet_row_number, 'field' => 'Customer Name',
+                        'code' => 'ORDER_GROUP_NAME_MISMATCH'];
+                }
+                $email = $currentRecipient['recipient_email'] ?? '';
+                if ($email !== '') {
+                    if (($recipient['recipient_email'] ?? '') !== '' && $email !== $recipient['recipient_email']) {
+                        $errors[] = ['row' => $row->sheet_row_number, 'field' => 'Email',
+                            'code' => 'ORDER_GROUP_EMAIL_MISMATCH'];
+                    } else {
+                        $recipient['recipient_email'] = $email;
+                    }
                 }
                 if ($row->promotion_code !== $promotionCode) {
                     $errors[] = ['row' => $row->sheet_row_number, 'field' => 'Voucher Code',
@@ -304,8 +313,19 @@ class DealerOrderImportService
         }
         $valid = 0;
         $fingerprintParts = [];
+        $invalidRows = [];
         foreach ($import->groups as $group) {
             $preview = $groupPreviews[$group->id];
+            $groupRows = $import->rows->where('external_reference_normalized', $group->external_reference_normalized);
+            foreach ($preview['errors'] ?? [] as $error) {
+                if ($error['row'] !== null) {
+                    $invalidRows[$error['row']] = true;
+                } else {
+                    foreach ($groupRows as $row) {
+                        $invalidRows[$row->sheet_row_number] = true;
+                    }
+                }
+            }
             if ($group->sales_order_id === null) {
                 $ready = $preview['errors'] === [];
                 $import->groups()->whereKey($group->id)->whereNull('sales_order_id')->update([
@@ -323,6 +343,9 @@ class DealerOrderImportService
         $import->update(['valid_order_count' => $valid, 'invalid_order_count' => $import->order_count - $valid,
             'preview_fingerprint' => $fingerprint, 'preview_summary' => [
                 'estimated_total' => $total, 'warehouse_id' => null,
+                'valid_row_count' => $import->row_count - count($invalidRows),
+                'invalid_row_count' => count($invalidRows),
+                'sku_count' => $import->rows->pluck('sku_input')->filter()->unique()->count(),
                 'wallet_balance' => $walletSummary['available_balance'], 'wallet_sufficient' => $walletSufficient,
             ], 'status' => $import->groups->contains(fn ($group): bool => $group->sales_order_id !== null)
                 ? $import->status : ($valid === $import->order_count ? 'preview_ready' : 'invalid')]);
@@ -421,30 +444,18 @@ class DealerOrderImportService
     /** @param array<string, mixed> $recipient */
     private function recipientGroupKey(array $recipient): string
     {
-        $address = array_map(fn (string $field): string => mb_strtoupper($this->normalizeWhitespace(
-            (string) ($recipient[$field] ?? ''),
-        )), ['shipping_address_line1', 'shipping_address_line2', 'shipping_city', 'shipping_district',
-            'shipping_province', 'shipping_country', 'shipping_postal_code',
-            'shipping_province_code', 'shipping_ward_code']);
-
         return hash('sha256', json_encode([
-            mb_strtoupper($this->normalizeWhitespace((string) ($recipient['recipient_name'] ?? ''))),
             preg_replace('/[^0-9]+/', '', (string) ($recipient['recipient_phone'] ?? '')),
-            ...$address,
+            (string) ($recipient['shipping_province_code'] ?? ''),
+            $this->comparisonText((string) ($recipient['shipping_district'] ?? '')),
+            (string) ($recipient['shipping_ward_code'] ?? ''),
+            $this->comparisonText((string) ($recipient['shipping_address_line1'] ?? '')),
         ], JSON_THROW_ON_ERROR));
     }
 
-    /** @param array<string, mixed> $recipient */
-    private function recipientComparisonKey(array $recipient): string
+    private function comparisonText(string $value): string
     {
-        return hash('sha256', json_encode([
-            $this->recipientGroupKey($recipient),
-            mb_strtoupper($this->normalizeWhitespace((string) ($recipient['recipient_name'] ?? ''))),
-            mb_strtolower($this->normalizeWhitespace((string) ($recipient['recipient_email'] ?? ''))),
-            mb_strtoupper($this->normalizeWhitespace((string) ($recipient['shipping_address_line2'] ?? ''))),
-            (string) ($recipient['shipping_province_code'] ?? ''),
-            (string) ($recipient['shipping_ward_code'] ?? ''),
-        ], JSON_THROW_ON_ERROR));
+        return mb_strtolower(Str::ascii($this->normalizeWhitespace($value)));
     }
 
     private function groupKey(int $importId, string $reference): string

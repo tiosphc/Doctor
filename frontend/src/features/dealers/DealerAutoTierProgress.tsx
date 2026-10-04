@@ -25,7 +25,13 @@ export function DealerAutoTierProgress({
     if (query.isError) return <p className="text-sm text-red-700">{errorMessage(query.error)}</p>;
     const progress = query.data.data;
     return (
-        <div className="space-y-2 rounded-lg border bg-card p-4 text-sm">
+        <div
+            className={
+                admin
+                    ? "space-y-2 rounded-lg border bg-card p-4 text-sm"
+                    : "space-y-3 rounded-xl border bg-card p-5 text-[15px] leading-6 sm:p-6"
+            }
+        >
             {progress.active_override && (
                 <p>Tier hiệu lực theo ngoại lệ: {progress.effective_tier?.name ?? "Chưa có"}.</p>
             )}
@@ -45,7 +51,13 @@ export function DealerAutoTierProgress({
                     Lịch sử Tier cần kiểm tra: {progress.history_status}.
                 </p>
             )}
-            <p className="font-medium text-primary">Tiến độ Tier theo doanh thu 3 tháng gần nhất</p>
+            <p
+                className={
+                    admin ? "font-medium text-primary" : "text-lg font-semibold text-primary"
+                }
+            >
+                Tiến độ Tier theo doanh thu 3 tháng gần nhất
+            </p>
             <p>
                 Doanh thu ròng kỳ {progress.revenue_period_start} – {progress.revenue_period_end}:{" "}
                 <strong>{money(progress.net_revenue)}</strong>

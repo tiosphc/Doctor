@@ -199,7 +199,7 @@ export function ProductMasterPage() {
                                 {notice}
                             </p>
                         )}
-                        <label className="block text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Mã
                             <input
                                 className={fieldClass}
@@ -211,7 +211,7 @@ export function ProductMasterPage() {
                                 <span className="text-red-700">{errors["code"]}</span>
                             )}
                         </label>
-                        <label className="block text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Tên
                             <input
                                 className={fieldClass}
@@ -224,7 +224,7 @@ export function ProductMasterPage() {
                             )}
                         </label>
                         {kind !== "units" && (
-                            <label className="block text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Mô tả
                                 <textarea
                                     className={fieldClass}
@@ -237,10 +237,10 @@ export function ProductMasterPage() {
                         )}
                         {kind === "categories" && (
                             <>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Danh mục cha
                                     <select
-                                        className={fieldClass}
+                                        className={`${fieldClass} admin-field-medium`}
                                         value={form.parent_id}
                                         onChange={(event) =>
                                             setForm({ ...form, parent_id: event.target.value })
@@ -259,12 +259,12 @@ export function ProductMasterPage() {
                                         <span className="text-red-700">{errors["parent_id"]}</span>
                                     )}
                                 </label>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Thứ tự
                                     <input
                                         type="number"
                                         min="0"
-                                        className={fieldClass}
+                                        className={`${fieldClass} admin-field-compact`}
                                         value={form.sort_order}
                                         onChange={(event) =>
                                             setForm({ ...form, sort_order: event.target.value })
@@ -275,10 +275,10 @@ export function ProductMasterPage() {
                         )}
                         {kind === "units" && (
                             <>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Ký hiệu
                                     <input
-                                        className={fieldClass}
+                                        className={`${fieldClass} admin-field-compact`}
                                         value={form.symbol}
                                         onChange={(event) =>
                                             setForm({ ...form, symbol: event.target.value })
@@ -286,13 +286,13 @@ export function ProductMasterPage() {
                                         required
                                     />
                                 </label>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Số chữ số thập phân
                                     <input
                                         type="number"
                                         min="0"
                                         max="3"
-                                        className={fieldClass}
+                                        className={`${fieldClass} admin-field-compact`}
                                         value={form.decimal_precision}
                                         onChange={(event) =>
                                             setForm({
@@ -304,10 +304,10 @@ export function ProductMasterPage() {
                                 </label>
                             </>
                         )}
-                        <label className="block text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Trạng thái
                             <select
-                                className={fieldClass}
+                                className={`${fieldClass} admin-field-medium`}
                                 value={form.status}
                                 onChange={(event) =>
                                     setForm({ ...form, status: event.target.value })
@@ -317,10 +317,7 @@ export function ProductMasterPage() {
                                 <option value="inactive">Ngừng hoạt động</option>
                             </select>
                         </label>
-                        <div className="flex gap-2">
-                            <button disabled={save.isPending} className={buttonClass}>
-                                {save.isPending ? "Đang lưu..." : "Lưu"}
-                            </button>
+                        <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
                             {selected && (
                                 <button
                                     type="button"
@@ -333,6 +330,9 @@ export function ProductMasterPage() {
                                     Thêm mới
                                 </button>
                             )}
+                            <button disabled={save.isPending} className={buttonClass}>
+                                {save.isPending ? "Đang lưu..." : "Lưu"}
+                            </button>
                         </div>
                     </form>
                 </div>

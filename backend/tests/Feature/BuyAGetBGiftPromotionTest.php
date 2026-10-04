@@ -318,7 +318,7 @@ class BuyAGetBGiftPromotionTest extends TestCase
             ->assertJsonPath('data.can_checkout', true);
     }
 
-    public function test_retail_cart_prefers_available_gift_over_competing_discount_and_falls_back_when_gift_runs_out(): void
+    public function test_retail_cart_applies_discount_with_gift_and_keeps_discount_when_gift_runs_out(): void
     {
         $buyer = User::factory()->customer()->create();
         $admin = User::factory()->admin()->create();
@@ -334,16 +334,17 @@ class BuyAGetBGiftPromotionTest extends TestCase
                 'operation_key' => (string) Str::uuid()], $admin->id);
         }
         $discount = SalesPromotion::factory()->create(['sales_scope' => 'retail',
-            'discount_type' => 'fixed_amount', 'discount_value' => '50.00',
+            'discount_type' => 'percentage', 'discount_value' => '5.00',
             'minimum_order_amount' => '0.00']);
         $discount->targets()->create(['product_id' => $buy->product_id]);
         $giftPromotion = $this->promotion($buy, $gift, false);
         Sanctum::actingAs($buyer);
 
         $this->postJson('/api/retail/cart/items', ['product_variant_id' => $buy->id, 'quantity' => '10'])
-            ->assertOk()->assertJsonPath('data.promotion.code', $giftPromotion->code)
+            ->assertOk()->assertJsonPath('data.promotion.code', $discount->code)
+            ->assertJsonPath('data.gift_promotion.code', $giftPromotion->code)
             ->assertJsonPath('data.gift_item.sku', $gift->sku)
-            ->assertJsonPath('data.grand_total', '1000.00');
+            ->assertJsonPath('data.grand_total', '950.00');
 
         app(InventoryService::class)->adjust(['warehouse_id' => $warehouse->id,
             'product_variant_id' => $gift->id, 'quantity' => '-1',
@@ -353,6 +354,55 @@ class BuyAGetBGiftPromotionTest extends TestCase
             ->assertJsonPath('data.promotion.code', $discount->code)
             ->assertJsonPath('data.gift_item', null)
             ->assertJsonPath('data.grand_total', '950.00');
+    }
+
+    public function test_retail_checkout_redeems_percentage_discount_and_qualified_gift_together(): void
+    {
+        $buyer = User::factory()->customer()->create();
+        $admin = User::factory()->admin()->create();
+        $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
+        $buy = ProductVariant::factory()->create(['track_inventory' => true]);
+        $gift = ProductVariant::factory()->create(['track_inventory' => true]);
+        $gift->product->update(['can_be_gift' => true, 'gift_only' => true]);
+        PriceListItem::factory()->create(['price_list_id' => PriceList::factory()->create()->id,
+            'product_variant_id' => $buy->id, 'unit_price' => '100.00']);
+        foreach ([$buy->id => '5', $gift->id => '2'] as $variantId => $quantity) {
+            app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
+                'product_variant_id' => $variantId, 'quantity' => $quantity,
+                'operation_key' => (string) Str::uuid()], $admin->id);
+        }
+        $discount = SalesPromotion::factory()->create(['sales_scope' => 'retail',
+            'discount_type' => 'percentage', 'discount_value' => '20.00', 'minimum_order_amount' => '0.00']);
+        $discount->targets()->create(['product_id' => $buy->product_id]);
+        $giftPromotion = $this->promotion($buy, $gift, false);
+        $giftPromotion->giftRule->update(['minimum_buy_quantity' => '2.000']);
+        Sanctum::actingAs($buyer);
+
+        $one = $this->postJson('/api/retail/cart/items', ['product_variant_id' => $buy->id, 'quantity' => '1'])
+            ->assertOk()->assertJsonPath('data.grand_total', '80.00')
+            ->assertJsonPath('data.gift_item', null)->json('data');
+        $two = $this->patchJson('/api/retail/cart/items/'.$one['items'][0]['id'], ['quantity' => '2'])
+            ->assertOk()->assertJsonPath('data.grand_total', '160.00')
+            ->assertJsonPath('data.gift_item.sku', $gift->sku)
+            ->assertJsonPath('data.promotion.code', $discount->code)
+            ->assertJsonPath('data.gift_promotion.code', $giftPromotion->code)->json('data');
+        $order = $this->postJson('/api/retail/checkout', [
+            'checkout_operation_key' => (string) Str::uuid(),
+            'checkout_review_fingerprint' => $two['review_fingerprint'],
+            'recipient_name' => 'Buyer', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => 'Street', 'shipping_city' => 'HCM',
+            'shipping_district' => '1', 'shipping_province' => 'HCM',
+            'shipping_country' => 'VN', 'payment_method' => 'cod',
+        ])->assertOk()->assertJsonPath('data.grand_total', '160.00')->json('data');
+
+        $this->assertDatabaseHas('sales_order_items', ['sales_order_id' => $order['id'],
+            'product_variant_id' => $buy->id, 'discount_amount' => '40.00']);
+        $this->assertDatabaseHas('sales_order_items', ['sales_order_id' => $order['id'],
+            'product_variant_id' => $gift->id, 'source_promotion_id' => $giftPromotion->id, 'is_gift' => true]);
+        $this->assertDatabaseHas('sales_promotion_redemptions', ['sales_order_id' => $order['id'],
+            'sales_promotion_id' => $discount->id]);
+        $this->assertDatabaseHas('sales_promotion_redemptions', ['sales_order_id' => $order['id'],
+            'sales_promotion_id' => $giftPromotion->id]);
     }
 
     public function test_same_sku_paid_and_gift_reserve_cumulative_stock_once(): void

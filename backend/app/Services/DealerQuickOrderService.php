@@ -116,8 +116,11 @@ class DealerQuickOrderService
             }
             $draft = $this->orders->createDraft($orderData, $user->id, $source);
 
-            if ($review['promotion'] !== null) {
-                $this->promotions->redeem($draft, $review['promotion']['code']);
+            foreach ($review['promotions'] as $discountPromotion) {
+                $this->promotions->redeem($draft, $discountPromotion['code']);
+            }
+            if ($review['gift_promotion'] !== null && $review['gift_promotion']['qualified']) {
+                $this->promotions->redeem($draft, $review['gift_promotion']['code']);
             }
 
             $confirmed = $this->orders->confirm($draft, $this->confirmationKey($data['operation_key']), $user->id);
@@ -224,13 +227,31 @@ class DealerQuickOrderService
         $resolution = $context['resolution'];
         $account = $context['account'];
         $giftUnavailableReason = null;
-        $promotion = $this->promotions->bestQuote('dealer', $context['membership']->user_id,
+        $quotes = $this->promotions->bestQuotes('dealer', $context['membership']->user_id,
             $account->id, $subtotal, array_values(array_map(static fn (array $line): array => [
                 'product_variant_id' => $line['product_variant_id'], 'product_id' => $line['product_id'],
                 'amount' => $line['line_total'] ?? '0.00', 'quantity' => $line['quantity'],
             ], array_filter($lines, static fn (array $line): bool => $line['product_id'] !== null))),
             $warehouse->id, $context['tier']->id, $giftUnavailableReason);
-        $discount = $promotion['discount_amount'] ?? '0.00';
+        $discountPromotions = $quotes['discounts'];
+        $discountPromotion = $discountPromotions[0] ?? null;
+        $giftPromotion = $quotes['gift'];
+        $promotion = $discountPromotion ?? $giftPromotion;
+        $discount = '0.00';
+        $allocations = [];
+        foreach ($discountPromotions as $discountQuote) {
+            $discount = bcadd($discount, $discountQuote['discount_amount'], 2);
+            $allocations += $discountQuote['allocations'];
+        }
+        foreach ($lines as &$line) {
+            $lineDiscount = $allocations[$line['product_variant_id']] ?? '0.00';
+            $line['promotion_discount_amount'] = $lineDiscount;
+            $line['discounted_line_total'] = $line['line_total'] === null
+                ? null : bcsub($line['line_total'], $lineDiscount, 2);
+            $line['discounted_unit_price'] = $line['line_total'] === null || $line['unit_price'] === null
+                ? null : bcsub($line['unit_price'], bcdiv($lineDiscount, $line['quantity'], 2), 2);
+        }
+        unset($line);
         $grandTotal = bcsub($subtotal, $discount, 2);
         $wallet = $this->wallets->summary($account);
         $walletSufficient = bccomp((string) $wallet['available_balance'], $grandTotal, 2) >= 0;
@@ -251,11 +272,13 @@ class DealerQuickOrderService
                 : bcsub($grandTotal, (string) $wallet['available_balance'], 2),
             'items' => $lines, 'subtotal' => $subtotal, 'discount_total' => $discount,
             'promotion' => $promotion === null ? null : array_diff_key($promotion, array_flip(['allocations'])),
+            'promotions' => array_map(static fn (array $quote): array => array_diff_key($quote, array_flip(['allocations'])), $discountPromotions),
+            'gift_promotion' => $giftPromotion === null ? null : array_diff_key($giftPromotion, array_flip(['allocations'])),
             'gift_unavailable_reason' => $giftUnavailableReason,
-            'gift_item' => ($promotion['qualified'] ?? false) ? [
-                'is_gift' => true, 'product_variant_id' => $promotion['gift_variant_id'],
-                'product_name' => $promotion['gift_product_name'], 'variant_name' => $promotion['gift_variant_name'],
-                'sku' => $promotion['gift_sku'], 'quantity' => $promotion['gift_quantity'],
+            'gift_item' => ($giftPromotion['qualified'] ?? false) ? [
+                'is_gift' => true, 'product_variant_id' => $giftPromotion['gift_variant_id'],
+                'product_name' => $giftPromotion['gift_product_name'], 'variant_name' => $giftPromotion['gift_variant_name'],
+                'sku' => $giftPromotion['gift_sku'], 'quantity' => $giftPromotion['gift_quantity'],
                 'unit_price' => '0.00', 'line_total' => '0.00',
             ] : null,
             'tax_total' => '0.00', 'shipping_total' => '0.00', 'grand_total' => $grandTotal,
@@ -268,7 +291,7 @@ class DealerQuickOrderService
                 $warehouse->id, $warehouse->status,
                 $allocation['preferred']->id, $allocation['sufficient'],
                 array_diff_key($recipient, ['delivery_note' => true]), $fingerprintLines,
-                $promotion['fingerprint'] ?? null, $discount,
+                array_column($discountPromotions, 'fingerprint'), $giftPromotion['fingerprint'] ?? null, $discount,
             ], JSON_THROW_ON_ERROR)),
         ];
     }

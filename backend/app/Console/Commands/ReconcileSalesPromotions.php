@@ -22,10 +22,12 @@ class ReconcileSalesPromotions extends Command
             return self::FAILURE;
         }
         $anomalies = 0;
-        SalesOrder::query()->whereNotNull('sales_promotion_id')->with(['items', 'promotionRedemption'])
+        SalesOrder::query()->whereHas('promotionRedemptions')->with(['items', 'promotionRedemptions'])
             ->orderBy('id')->chunkById(200, function ($orders) use (&$anomalies): void {
                 foreach ($orders as $order) {
-                    $redemption = $order->promotionRedemption;
+                    $redemption = $order->promotionRedemptions->firstWhere('promotion_code_snapshot', $order->promotion_code_snapshot);
+                    $redemptionDiscount = $order->promotionRedemptions->reduce(
+                        fn (string $total, $usage): string => bcadd($total, $usage->discount_amount, 2), '0.00');
                     $discount = '0.00';
                     $base = '0.00';
                     $net = '0.00';
@@ -48,25 +50,31 @@ class ReconcileSalesPromotions extends Command
                         || bccomp($base, $order->subtotal, 2) !== 0
                         || bccomp($discount, $order->discount_total, 2) !== 0
                         || bccomp($net, $order->grand_total, 2) !== 0
-                        || ($redemption !== null && bccomp($redemption->discount_amount, $discount, 2) !== 0)) {
+                        || bccomp($redemptionDiscount, bcsub($order->discount_total,
+                            $order->sales_voucher_discount_snapshot ?? '0.00', 2), 2) !== 0) {
                         $anomalies++;
                         $this->warn("Order {$order->order_code}: promotion snapshot mismatch.");
                     }
-                    if ($redemption !== null && (($order->order_status === 'cancelled') !== ($redemption->status === 'released'))) {
-                        $anomalies++;
-                        $this->warn("Order {$order->order_code}: redemption lifecycle mismatch.");
+                    foreach ($order->promotionRedemptions as $usage) {
+                        if (($order->order_status === 'cancelled') !== ($usage->status === 'released')) {
+                            $anomalies++;
+                            $this->warn("Order {$order->order_code}: redemption lifecycle mismatch.");
+                        }
                     }
-                    if ($order->promotion_discount_type_snapshot === 'buy_a_get_b') {
-                        $snapshot = $order->promotion_gift_snapshot;
+                    $snapshot = $order->promotion_gift_snapshot;
+                    if (is_array($snapshot)) {
                         $gifts = $order->items->where('is_gift', true);
                         $gift = $gifts->first();
-                        if (! is_array($snapshot) || $gifts->count() !== 1 || $gift === null
-                            || $gift->source_promotion_id !== $order->sales_promotion_id
+                        $giftPromotionId = $snapshot['promotion_id'] ?? $order->sales_promotion_id;
+                        $giftRedemption = $order->promotionRedemptions->firstWhere('discount_type_snapshot', 'buy_a_get_b');
+                        if ($gifts->count() !== 1 || $gift === null || $giftRedemption === null
+                            || $gift->source_promotion_id !== $giftRedemption->sales_promotion_id
+                            || ($giftRedemption->sales_promotion_id !== null
+                                && $giftRedemption->sales_promotion_id !== $giftPromotionId)
                             || $gift->product_variant_id !== ($snapshot['gift_variant_id'] ?? null)
                             || bccomp($gift->quantity, (string) ($snapshot['actual_gift_quantity'] ?? '0'), 3) !== 0
                             || bccomp($gift->unit_price_snapshot, '0', 2) !== 0
-                            || bccomp($gift->line_total, '0', 2) !== 0
-                            || bccomp($order->discount_total, '0', 2) !== 0) {
+                            || bccomp($gift->line_total, '0', 2) !== 0) {
                             $anomalies++;
                             $this->warn("Order {$order->order_code}: Gift promotion snapshot mismatch.");
                         }
@@ -77,17 +85,17 @@ class ReconcileSalesPromotions extends Command
                 }
             });
         SalesOrderItem::query()->where('is_gift', true)
-            ->whereHas('order', fn ($orders) => $orders->whereNull('sales_promotion_id'))
+            ->whereHas('order', fn ($orders) => $orders->whereDoesntHave('promotionRedemptions'))
             ->orderBy('id')->chunkById(200, function ($items) use (&$anomalies): void {
                 foreach ($items as $item) {
                     $anomalies++;
-                    $this->warn("Gift item {$item->id}: Order has no linked promotion.");
+                    $this->warn("Gift item {$item->id}: Order has no promotion redemption.");
                 }
             });
         SalesPromotionRedemption::query()->where(function ($query): void {
             $query->whereDoesntHave('salesOrder')
-                ->orWhereDoesntHave('promotion')
-                ->orWhereHas('salesOrder', fn ($orders) => $orders->whereNull('sales_promotion_id'));
+                ->orWhere(fn ($redemptions) => $redemptions->whereNotNull('sales_promotion_id')
+                    ->whereDoesntHave('promotion'));
         })
             ->orderBy('id')->chunkById(200, function ($redemptions) use (&$anomalies): void {
                 foreach ($redemptions as $redemption) {

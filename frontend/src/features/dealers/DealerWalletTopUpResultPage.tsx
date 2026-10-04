@@ -70,7 +70,7 @@ export function DealerWalletTopUpResultPage({
     return (
         <div className="mx-auto max-w-xl rounded-2xl border bg-card p-6 sm:p-8">
             <p className="text-xs font-semibold tracking-[.14em] text-[#bc9151]">VÍ ĐẠI LÝ</p>
-            <h1 className="mt-2 text-2xl font-semibold text-[#092b5c]">
+            <h1 className="dealer-page-title mt-2 text-[#092b5c]">
                 {paid
                     ? "Đã xác nhận nạp tiền"
                     : pending
@@ -98,7 +98,7 @@ export function DealerWalletTopUpResultPage({
             <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                     to="/dealer/top-up"
-                    className="rounded-xl bg-[#092b5c] px-4 py-2.5 text-sm font-semibold text-white"
+                    className="dealer-action rounded-xl bg-[#092b5c] px-4 py-2.5 text-white"
                 >
                     Về ví đại lý
                 </Link>
@@ -107,7 +107,7 @@ export function DealerWalletTopUpResultPage({
                         href={topUp.data.data.checkout_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-xl border px-4 py-2.5 text-sm font-semibold text-[#092b5c]"
+                        className="dealer-action rounded-xl border px-4 py-2.5 text-[#092b5c]"
                     >
                         Mở lại mã QR
                     </a>
@@ -117,7 +117,7 @@ export function DealerWalletTopUpResultPage({
                         type="button"
                         disabled={refresh.isPending}
                         onClick={() => refresh.mutate()}
-                        className="rounded-xl border px-4 py-2.5 text-sm font-semibold text-[#092b5c] disabled:opacity-50"
+                        className="dealer-action rounded-xl border px-4 py-2.5 text-[#092b5c] disabled:opacity-50"
                     >
                         {refresh.isPending ? "Đang kiểm tra..." : "Kiểm tra PayOS"}
                     </button>

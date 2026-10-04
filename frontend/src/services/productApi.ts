@@ -45,6 +45,12 @@ export type CatalogPriceRow = {
     retail_reference_price: string | null;
 };
 export type ProductFilters = {
+    discount_availability?: boolean;
+    exclude_promotion_id?: number;
+    promotion_scope?: "retail" | "dealer" | "both";
+    promotion_tier_ids?: string;
+    promotion_starts_at?: string;
+    promotion_ends_at?: string;
     promotions_only?: boolean;
     gift_filter?: "all" | "gift_capable" | "gift_only" | "normal";
     search?: string | undefined;

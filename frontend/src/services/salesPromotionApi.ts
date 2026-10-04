@@ -46,7 +46,14 @@ export type SalesPromotionGiftRule = {
 
 export type SalesPromotionInput = Omit<
     SalesPromotion,
-    "id" | "redeemed_count" | "targets" | "gift_rule" | "dealer_tiers" | "gift_units_granted"
+    | "id"
+    | "redeemed_count"
+    | "targets"
+    | "gift_rule"
+    | "dealer_tiers"
+    | "gift_units_granted"
+    | "max_discount_amount"
+    | "minimum_order_amount"
 > & {
     product_ids: number[];
     category_ids: number[];

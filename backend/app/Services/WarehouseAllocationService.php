@@ -21,7 +21,13 @@ class WarehouseAllocationService
         }
         $province = AdministrativeProvince::query()->find($provinceInput);
         if ($province === null) {
-            $province = AdministrativeProvince::query()->get()->first(fn (AdministrativeProvince $entry): bool => $this->normalizedName($entry->name) === $this->normalizedName($provinceInput));
+            $matches = AdministrativeProvince::query()->get()->filter(
+                fn (AdministrativeProvince $entry): bool => $this->normalizedName($entry->name) === $this->normalizedName($provinceInput)
+            );
+            if ($matches->count() > 1) {
+                $this->fail('ADDRESS_AMBIGUOUS');
+            }
+            $province = $matches->first();
         }
         if ($province === null) {
             $this->fail('PROVINCE_NOT_FOUND');
@@ -29,8 +35,12 @@ class WarehouseAllocationService
         $wardInput = (string) (($recipient['shipping_ward_code'] ?? '') ?: ($recipient['shipping_ward'] ?? ''));
         $ward = AdministrativeWard::query()->find($wardInput);
         if ($ward === null && $wardInput !== '') {
-            $ward = AdministrativeWard::query()->where('province_code', $province->code)->get()
-                ->first(fn (AdministrativeWard $entry): bool => $this->normalizedName($entry->name) === $this->normalizedName($wardInput));
+            $matches = AdministrativeWard::query()->where('province_code', $province->code)->get()
+                ->filter(fn (AdministrativeWard $entry): bool => $this->normalizedName($entry->name) === $this->normalizedName($wardInput));
+            if ($matches->count() > 1) {
+                $this->fail('ADDRESS_AMBIGUOUS');
+            }
+            $ward = $matches->first();
         }
         if ($ward === null || $ward->province_code !== $province->code) {
             $this->fail('WARD_PROVINCE_MISMATCH');
@@ -100,7 +110,9 @@ class WarehouseAllocationService
 
     private function normalizedName(string $name): string
     {
-        return preg_replace('/^(thanh pho|tinh|phuong|xa|dac khu)\s+/u', '', Str::lower(Str::ascii(trim($name)))) ?? '';
+        $normalized = Str::lower(Str::ascii(trim(preg_replace('/\s+/u', ' ', $name) ?? $name)));
+
+        return preg_replace('/^(?:thanh pho|tp\.?|tinh|phuong|xa|dac khu)\s*/u', '', $normalized) ?? '';
     }
 
     private function fail(string $code): never

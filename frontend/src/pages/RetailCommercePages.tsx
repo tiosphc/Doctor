@@ -8,6 +8,7 @@ import { Button, ButtonLink } from "@/components/common/Button";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatProductQuantity, isPositiveProductQuantity } from "@/lib/productQuantity";
+import { formatPercentage } from "@/lib/formatPercentage";
 import { ApiError, firstFieldErrors } from "@/services/api";
 import { commerceCodeMessage } from "@/services/commerceErrors";
 import { retailCommerceApi, retailErrorMessage, retailKeys } from "@/services/retailCommerceApi";
@@ -104,8 +105,17 @@ function CartLine({
                     {line.variant_name} · {line.sku} · {line.unit_name}
                 </p>
                 <p className="mt-2 font-medium text-primary">
-                    {line.retail_price ? money(line.retail_price.unit_price) : "Chưa có giá"}
+                    {line.discounted_unit_price && Number(line.promotion_discount_amount) > 0
+                        ? money(line.discounted_unit_price)
+                        : line.retail_price
+                          ? money(line.retail_price.unit_price)
+                          : "Chưa có giá"}
                 </p>
+                {line.retail_price && Number(line.promotion_discount_amount) > 0 && (
+                    <p className="text-sm text-muted-foreground line-through">
+                        {money(line.retail_price.unit_price)}
+                    </p>
+                )}
                 <div className="mt-3 flex flex-wrap items-end gap-2">
                     <label className="grid gap-1 text-sm">
                         <span>Số lượng</span>
@@ -163,7 +173,12 @@ function CartLine({
                     {line.unit_symbol || line.unit_name}
                 </p>
                 <p className="mt-2 font-semibold text-primary">
-                    Thành tiền: {line.line_total ? money(line.line_total) : "—"}
+                    Thành tiền:{" "}
+                    {line.discounted_line_total
+                        ? money(line.discounted_line_total)
+                        : line.line_total
+                          ? money(line.line_total)
+                          : "—"}
                 </p>
             </div>
         </article>
@@ -293,7 +308,9 @@ export function CartPage() {
                             {cart.voucher_code && (
                                 <p className="mt-2 text-sm">
                                     Voucher {cart.voucher_code}
-                                    {cart.voucher_percent ? ` (${cart.voucher_percent}%)` : ""}{" "}
+                                    {cart.voucher_percent
+                                        ? ` (${formatPercentage(cart.voucher_percent)})`
+                                        : ""}{" "}
                                     <button
                                         type="button"
                                         className="underline"
@@ -311,12 +328,12 @@ export function CartPage() {
                                     {commerceCodeMessage(cart.voucher_error)}
                                 </p>
                             )}
-                            {cart.promotion?.discount_type === "buy_a_get_b" &&
-                                !cart.promotion.qualified && (
+                            {cart.gift_promotion?.discount_type === "buy_a_get_b" &&
+                                !cart.gift_promotion.qualified && (
                                     <p className="mt-2 text-sm text-amber-800">
                                         Mua thêm{" "}
                                         {formatProductQuantity(
-                                            cart.promotion.remaining_buy_quantity,
+                                            cart.gift_promotion.remaining_buy_quantity,
                                         )}{" "}
                                         sản phẩm để nhận quà.
                                     </p>
@@ -575,16 +592,15 @@ export function CheckoutPage() {
                                     </div>
                                 )}
                             </div>
-                            {cart.promotion && (
-                                <p className="mt-3 flex justify-between gap-3 text-sm">
-                                    <span>Ưu đãi {cart.promotion.name}</span>
-                                    <span>
-                                        {cart.promotion.discount_type === "buy_a_get_b"
-                                            ? "Quà tặng"
-                                            : `−${money(cart.promotion.discount_amount)}`}
-                                    </span>
+                            {cart.promotions?.map((promotion) => (
+                                <p
+                                    key={promotion.code}
+                                    className="mt-3 flex justify-between gap-3 text-sm"
+                                >
+                                    <span>Ưu đãi {promotion.name}</span>
+                                    <span>−{money(promotion.discount_amount)}</span>
                                 </p>
-                            )}
+                            ))}
                             {cart.voucher && (
                                 <p className="mt-2 flex justify-between gap-3 text-sm">
                                     <span>Voucher {cart.voucher.code}</span>
@@ -847,16 +863,26 @@ export function OrderDetailPage({ orderId }: { orderId: number }) {
                                         <span>Tạm tính</span>
                                         <span>{money(order.subtotal)}</span>
                                     </p>
-                                    <p className="mt-2 flex justify-between text-sm">
-                                        <span>
-                                            {order.promotion
-                                                ? `Ưu đãi ${order.promotion.name}`
-                                                : order.voucher_code
-                                                  ? `Voucher ${order.voucher_code}`
-                                                  : "Giảm giá"}
-                                        </span>
-                                        <span>−{money(order.discount_total)}</span>
-                                    </p>
+                                    {order.promotions?.map((promotion) => (
+                                        <p
+                                            key={promotion.code}
+                                            className="mt-2 flex justify-between text-sm"
+                                        >
+                                            <span>Ưu đãi {promotion.name}</span>
+                                            <span>−{money(promotion.discount_amount)}</span>
+                                        </p>
+                                    ))}
+                                    {order.gift_promotion && (
+                                        <p className="mt-2 text-sm">
+                                            Quà tặng: {order.gift_promotion.name}
+                                        </p>
+                                    )}
+                                    {order.voucher && (
+                                        <p className="mt-2 flex justify-between text-sm">
+                                            <span>Voucher {order.voucher.code}</span>
+                                            <span>−{money(order.voucher.discount_amount)}</span>
+                                        </p>
+                                    )}
                                     <p className="mt-4 flex justify-between border-t pt-4 font-semibold">
                                         <span>Tổng cộng</span>
                                         <span>{money(order.grand_total)}</span>

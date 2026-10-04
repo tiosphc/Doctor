@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { Link, Navigate } from "@tanstack/react-router";
 import { ArrowRight, Plus } from "lucide-react";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import { Button } from "@/components/common/Button";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
 import { OperationNotice } from "@/components/common/Feedback";
@@ -145,7 +146,7 @@ export function AdminServiceCreatePage() {
                 <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-6xl gap-0 overflow-y-auto rounded-2xl p-0 shadow-2xl">
                     <div className="sticky top-0 z-10 border-b bg-background px-5 py-5 sm:px-7">
                         <DialogHeader className="pr-8">
-                            <DialogTitle className="font-serif text-2xl text-primary sm:text-3xl">
+                            <DialogTitle className="font-sans text-xl font-bold leading-snug text-primary sm:text-2xl">
                                 Thêm dịch vụ
                             </DialogTitle>
                             <DialogDescription className="leading-6">
@@ -208,35 +209,37 @@ export function AdminServiceEditPage({ id }: { id: number }) {
     }
     return (
         <AdminGuard>
-            <AdminTitle
-                title={
-                    service.data?.data.name
-                        ? `Chỉnh sửa: ${service.data.data.name}`
-                        : "Chỉnh sửa dịch vụ"
-                }
-                description="Cập nhật thông tin cơ bản, nội dung biên tập, hình ảnh và SEO của dịch vụ."
-            />
-            <div className="mt-7">
-                {service.isPending ? (
-                    <LoadingState label="Đang tải dịch vụ..." />
-                ) : service.isError ? (
-                    <ErrorState
-                        message={errorMessage(service.error)}
-                        retry={() => service.refetch()}
-                    />
-                ) : (
-                    <ServiceForm
-                        service={service.data.data}
-                        categories={categories.data?.data ?? []}
-                        categoriesLoading={categories.isPending}
-                        categoriesError={categories.isError}
-                        isSubmitting={update.isPending}
-                        serverErrors={errors}
-                        notice={notice}
-                        onDismissNotice={() => setNotice("")}
-                        onSubmit={submit}
-                    />
-                )}
+            <div className={adminFormLayout.complex}>
+                <AdminTitle
+                    title={
+                        service.data?.data.name
+                            ? `Chỉnh sửa: ${service.data.data.name}`
+                            : "Chỉnh sửa dịch vụ"
+                    }
+                    description="Cập nhật thông tin cơ bản, nội dung biên tập, hình ảnh và SEO của dịch vụ."
+                />
+                <div className="mt-7">
+                    {service.isPending ? (
+                        <LoadingState label="Đang tải dịch vụ..." />
+                    ) : service.isError ? (
+                        <ErrorState
+                            message={errorMessage(service.error)}
+                            retry={() => service.refetch()}
+                        />
+                    ) : (
+                        <ServiceForm
+                            service={service.data.data}
+                            categories={categories.data?.data ?? []}
+                            categoriesLoading={categories.isPending}
+                            categoriesError={categories.isError}
+                            isSubmitting={update.isPending}
+                            serverErrors={errors}
+                            notice={notice}
+                            onDismissNotice={() => setNotice("")}
+                            onSubmit={submit}
+                        />
+                    )}
+                </div>
             </div>
         </AdminGuard>
     );

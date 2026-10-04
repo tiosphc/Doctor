@@ -22,14 +22,15 @@ class SaveSalesPromotionRequest extends FormRequest
     public function rules(): array
     {
         $isGift = $this->input('discount_type') === 'buy_a_get_b';
+        $retailDiscount = ! $isGift && in_array($this->input('sales_scope'), ['retail', 'both'], true);
 
         return [
             'code' => ['required', 'string', 'max:80', 'regex:/^[A-Za-z0-9._-]+$/'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'discount_type' => ['required', Rule::in(['percentage', 'fixed_amount', 'buy_a_get_b'])],
-            'discount_value' => $isGift ? ['nullable', 'numeric', 'in:0'] : ['required', 'numeric', 'gt:0', 'decimal:0,2', 'max:9999999999999999.99',
-                Rule::when($this->input('discount_type') === 'percentage', ['lte:100'])],
+            'discount_value' => $isGift ? ['nullable', 'numeric', 'in:0'] : ['required', 'numeric', 'gt:0', 'max:9999999999999999.99',
+                Rule::when($this->input('discount_type') === 'percentage', ['decimal:0,2', 'lte:100'], ['regex:/^\d+(?:\.0{1,2})?$/'])],
             'max_discount_amount' => $isGift ? ['prohibited'] : ['nullable', 'numeric', 'gt:0', 'decimal:0,2'],
             'minimum_order_amount' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
             'sales_scope' => ['required', Rule::in(['retail', 'dealer', 'both'])],
@@ -38,9 +39,10 @@ class SaveSalesPromotionRequest extends FormRequest
             'total_usage_limit' => ['nullable', 'integer', 'min:1'],
             'per_buyer_usage_limit' => ['nullable', 'integer', 'min:1'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            'product_ids' => [$isGift ? 'prohibited' : 'sometimes', 'array'],
+            'product_ids' => [$isGift ? 'prohibited' : ($retailDiscount ? 'required' : 'sometimes'), 'array',
+                ...($retailDiscount ? ['min:1'] : [])],
             'product_ids.*' => ['integer', 'distinct', 'exists:products,id'],
-            'category_ids' => [$isGift ? 'prohibited' : 'sometimes', 'array'],
+            'category_ids' => [$isGift || $retailDiscount ? 'prohibited' : 'sometimes', 'array'],
             'category_ids.*' => ['integer', 'distinct', 'exists:product_categories,id'],
             'dealer_tier_ids' => ['sometimes', 'array'],
             'dealer_tier_ids.*' => ['integer', 'distinct', Rule::exists('dealer_tiers', 'id')->where('status', 'active')],

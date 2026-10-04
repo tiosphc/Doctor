@@ -48,6 +48,7 @@ export function CustomerReturnSection({
     orderId: number;
 }) {
     const client = useQueryClient();
+    const isDealer = channel.kind === "dealer";
     const channelKey = channel.kind === "dealer" ? `dealer-${channel.accountId}` : "retail";
     const queryKey = ["customer-returns", channelKey, orderId];
     const eligibilityKey = ["return-eligibility", channelKey, orderId];
@@ -120,7 +121,15 @@ export function CustomerReturnSection({
         <section className="rounded-xl border bg-card p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <h2 className="text-lg font-semibold text-primary">Trả hàng & hoàn tiền</h2>
+                    <h2
+                        className={
+                            isDealer
+                                ? "dealer-section-title text-primary"
+                                : "text-lg font-semibold text-primary"
+                        }
+                    >
+                        Trả hàng & hoàn tiền
+                    </h2>
                     {eligibility.isError ? (
                         <p role="alert" className="mt-2 text-sm text-red-700">
                             {errorMessage(eligibility.error)}
@@ -150,7 +159,7 @@ export function CustomerReturnSection({
                         <button
                             type="button"
                             onClick={() => setViewing(activeReturn)}
-                            className="rounded-md border px-4 py-2 text-sm font-medium"
+                            className={`${isDealer ? "dealer-action " : "text-sm font-medium "}rounded-md border px-4 py-2`}
                         >
                             Xem yêu cầu trả hàng
                         </button>
@@ -162,7 +171,7 @@ export function CustomerReturnSection({
                                 setError("");
                                 setOpen(true);
                             }}
-                            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                            className={`${isDealer ? "dealer-action " : "text-sm font-medium "}rounded-md bg-primary px-4 py-2 text-primary-foreground`}
                         >
                             {activeReturn ? "Yêu cầu trả thêm" : "Yêu cầu trả hàng"}
                         </button>
@@ -182,7 +191,7 @@ export function CustomerReturnSection({
                             type="button"
                             key={entry.id}
                             onClick={() => setViewing(entry)}
-                            className="block w-full rounded-lg border p-3 text-left text-sm hover:border-primary"
+                            className={`block w-full rounded-lg border text-left text-sm hover:border-primary ${isDealer ? "p-4" : "p-3"}`}
                         >
                             <div className="flex flex-wrap justify-between gap-2">
                                 <strong>{entry.return_code}</strong>
@@ -218,9 +227,13 @@ export function CustomerReturnSection({
                     if (!busy) setOpen(value);
                 }}
             >
-                <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+                <DialogContent
+                    className={`max-h-[90vh] max-w-3xl overflow-y-auto ${isDealer ? "w-[calc(100%-2rem)] p-5 sm:p-6" : ""}`}
+                >
                     <DialogHeader>
-                        <DialogTitle>Yêu cầu trả hàng · Đơn #{orderId}</DialogTitle>
+                        <DialogTitle className={isDealer ? "dealer-modal-title" : undefined}>
+                            Yêu cầu trả hàng · Đơn #{orderId}
+                        </DialogTitle>
                         <DialogDescription>
                             Chọn sản phẩm và số lượng cần trả. Nhân viên sẽ xem xét yêu cầu trước
                             khi nhận hàng.
@@ -230,7 +243,7 @@ export function CustomerReturnSection({
                         {lines.map((item) => (
                             <label
                                 key={item.item_id}
-                                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-sm"
+                                className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border text-sm ${isDealer ? "p-4" : "p-3"}`}
                             >
                                 <span>
                                     <strong>{item.product_name}</strong>
@@ -246,7 +259,7 @@ export function CustomerReturnSection({
                                     min={0}
                                     max={Number(item.returnable_quantity)}
                                     step={1}
-                                    className="w-24 rounded-md border px-3 py-2"
+                                    className={`w-24 rounded-md border px-3 py-2 ${isDealer ? "dealer-control" : ""}`}
                                     aria-label={`Số lượng trả ${item.sku}`}
                                     value={quantities[item.item_id] ?? ""}
                                     onChange={(event) => {
@@ -262,7 +275,7 @@ export function CustomerReturnSection({
                         <label className="grid gap-1 text-sm">
                             Lý do *
                             <select
-                                className="rounded-md border px-3 py-2"
+                                className={`rounded-md border px-3 py-2 ${isDealer ? "dealer-control" : ""}`}
                                 value={reason}
                                 onChange={(event) => {
                                     setReason(event.target.value);
@@ -297,7 +310,7 @@ export function CustomerReturnSection({
                     <DialogFooter>
                         <button
                             type="button"
-                            className="rounded-md border px-4 py-2 text-sm"
+                            className={`rounded-md border px-4 py-2 text-sm ${isDealer ? "dealer-action" : ""}`}
                             onClick={() => setOpen(false)}
                             disabled={busy}
                         >
@@ -305,7 +318,7 @@ export function CustomerReturnSection({
                         </button>
                         <button
                             type="button"
-                            className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50"
+                            className={`rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50 ${isDealer ? "dealer-action" : ""}`}
                             onClick={() => void submit()}
                             disabled={!valid || busy}
                         >
@@ -320,9 +333,13 @@ export function CustomerReturnSection({
                     if (!value) setViewing(null);
                 }}
             >
-                <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+                <DialogContent
+                    className={`max-h-[90vh] max-w-xl overflow-y-auto ${isDealer ? "w-[calc(100%-2rem)] p-5 sm:p-6" : ""}`}
+                >
                     <DialogHeader>
-                        <DialogTitle>Yêu cầu {viewing?.return_code}</DialogTitle>
+                        <DialogTitle className={isDealer ? "dealer-modal-title" : undefined}>
+                            Yêu cầu {viewing?.return_code}
+                        </DialogTitle>
                         <DialogDescription>{statusLabels[viewing?.status ?? ""]}</DialogDescription>
                     </DialogHeader>
                     {viewing && (

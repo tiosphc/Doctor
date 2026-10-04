@@ -214,19 +214,38 @@ class RetailCartService
             'amount' => $line['line_total'], 'quantity' => $line['quantity'],
         ], $lines)));
         $giftUnavailableReason = null;
-        $promotion = $this->promotions->bestQuote('retail', $cart->user_id, null,
+        $quotes = $this->promotions->bestQuotes('retail', $cart->user_id, null,
             $subtotal, $promotionLines, $warehouse?->id, null, $giftUnavailableReason);
+        $discountPromotions = $quotes['discounts'];
+        $discountPromotion = $discountPromotions[0] ?? null;
+        $giftPromotion = $quotes['gift'];
+        $promotion = $discountPromotion ?? $giftPromotion;
+        $promotionDiscountTotal = '0.00';
+        $allocations = [];
+        foreach ($discountPromotions as $discountQuote) {
+            $promotionDiscountTotal = bcadd($promotionDiscountTotal, $discountQuote['discount_amount'], 2);
+            $allocations += $discountQuote['allocations'];
+        }
+        foreach ($lines as &$line) {
+            $lineDiscount = $allocations[$line['product_variant_id']] ?? '0.00';
+            $line['promotion_discount_amount'] = $lineDiscount;
+            $line['discounted_line_total'] = $line['line_total'] === null
+                ? null : bcsub($line['line_total'], $lineDiscount, 2);
+            $line['discounted_unit_price'] = $line['retail_price'] === null
+                ? null : bcsub($line['retail_price']['unit_price'], bcdiv($lineDiscount, $line['quantity'], 2), 2);
+        }
+        unset($line);
         $voucher = null;
         $voucherError = null;
         if ($cart->voucher_code !== null) {
             try {
                 $voucher = $this->vouchers->quote($cart->voucher_code, 'retail', $cart->user_id,
-                    bcsub($subtotal, $promotion['discount_amount'] ?? '0.00', 2));
+                    bcsub($subtotal, $promotionDiscountTotal, 2));
             } catch (HttpResponseException $exception) {
                 $voucherError = $exception->getResponse()->getData(true)['code'] ?? 'VOUCHER_NOT_FOUND';
             }
         }
-        $discount = bcadd($promotion['discount_amount'] ?? '0.00', $voucher['discount_amount'] ?? '0.00', 2);
+        $discount = bcadd($promotionDiscountTotal, $voucher['discount_amount'] ?? '0.00', 2);
         $total = bcsub($subtotal, $discount, 2);
 
         return [
@@ -238,17 +257,21 @@ class RetailCartService
             'voucher_percent' => ($voucher['discount_type'] ?? null) === 'percentage' ? $voucher['discount_value'] : null,
             'voucher' => $voucher,
             'promotion' => $promotion === null ? null : array_diff_key($promotion, array_flip(['allocations'])),
+            'promotions' => array_map(static fn (array $quote): array => array_diff_key($quote, array_flip(['allocations'])), $discountPromotions),
+            'gift_promotion' => $giftPromotion === null ? null : array_diff_key($giftPromotion, array_flip(['allocations'])),
             'gift_unavailable_reason' => $giftUnavailableReason,
-            'gift_item' => ($promotion['qualified'] ?? false) ? [
-                'is_gift' => true, 'product_variant_id' => $promotion['gift_variant_id'],
-                'product_name' => $promotion['gift_product_name'], 'variant_name' => $promotion['gift_variant_name'],
-                'sku' => $promotion['gift_sku'], 'quantity' => $promotion['gift_quantity'],
+            'gift_item' => ($giftPromotion['qualified'] ?? false) ? [
+                'is_gift' => true, 'product_variant_id' => $giftPromotion['gift_variant_id'],
+                'product_name' => $giftPromotion['gift_product_name'], 'variant_name' => $giftPromotion['gift_variant_name'],
+                'sku' => $giftPromotion['gift_sku'], 'quantity' => $giftPromotion['gift_quantity'],
                 'unit_price' => '0.00', 'line_total' => '0.00',
             ] : null,
             'can_checkout' => $warehouse !== null && count($lines) > 0
                 && $voucherError === null && collect($lines)->every(fn (array $line): bool => $line['errors'] === []),
             'review_fingerprint' => hash('sha256', json_encode([$cart->id, $cart->user_id, $warehouse?->id,
-                'VND', $fingerprintLines, $cart->voucher_code, $promotion['fingerprint'] ?? null,
+                'VND', $fingerprintLines, $cart->voucher_code,
+                array_column($discountPromotions, 'fingerprint'),
+                $giftPromotion['fingerprint'] ?? null,
                 $voucher['fingerprint'] ?? null, $discount], JSON_THROW_ON_ERROR)),
         ];
     }

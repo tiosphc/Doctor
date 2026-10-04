@@ -17,6 +17,9 @@ export type RetailCartLine = {
         pricing_context: "retail";
     } | null;
     line_total: string | null;
+    promotion_discount_amount?: string;
+    discounted_line_total?: string | null;
+    discounted_unit_price?: string | null;
     available_quantity: string | null;
     errors: string[];
 };
@@ -64,6 +67,8 @@ export type RetailCart = {
         gift_product_name?: string;
         gift_variant_name?: string;
     } | null;
+    gift_promotion?: RetailCart["promotion"];
+    promotions?: NonNullable<RetailCart["promotion"]>[];
     currency: "VND";
     can_checkout: boolean;
     review_fingerprint: string;
@@ -152,6 +157,14 @@ export type RetailOrder = {
         discount_amount: string;
         gift?: Record<string, unknown> | null;
     } | null;
+    promotions?: {
+        code: string;
+        name: string;
+        discount_type: string;
+        discount_value: string;
+        discount_amount: string;
+    }[];
+    gift_promotion?: { code: string; name: string; gift: Record<string, unknown> } | null;
     fulfillment_status: string;
     recipient_name: string;
     recipient_phone: string;

@@ -140,7 +140,7 @@ export function InventoryPage() {
                         </button>
                     ))}
                 </div>
-                <label className="block max-w-sm text-sm">
+                <label className="admin-form-field admin-form-label max-w-sm">
                     Kho
                     <select
                         className={fieldClass}
@@ -304,10 +304,10 @@ export function InventoryPage() {
                     <section className="rounded-xl border bg-card p-4 sm:p-5">
                         <h2 className="text-xl text-primary">Lịch sử biến động kho</h2>
                         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 ID biến thể
                                 <input
-                                    className={fieldClass}
+                                    className={`${fieldClass} admin-field-compact`}
                                     type="number"
                                     min="1"
                                     value={movementVariantId}
@@ -317,7 +317,7 @@ export function InventoryPage() {
                                     }}
                                 />
                             </label>
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Loại biến động
                                 <select
                                     className={fieldClass}
@@ -335,7 +335,7 @@ export function InventoryPage() {
                                     ))}
                                 </select>
                             </label>
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Từ ngày
                                 <input
                                     className={fieldClass}
@@ -347,7 +347,7 @@ export function InventoryPage() {
                                     }}
                                 />
                             </label>
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Đến ngày
                                 <input
                                     className={fieldClass}
@@ -359,7 +359,7 @@ export function InventoryPage() {
                                     }}
                                 />
                             </label>
-                            <label className="text-sm">
+                            <label className="admin-form-field admin-form-label">
                                 Tham chiếu
                                 <input
                                     className={fieldClass}

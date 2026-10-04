@@ -68,7 +68,7 @@ export function PromotionDateRangePicker({
                         type="button"
                         aria-label="Chọn thời gian áp dụng"
                         aria-invalid={errors.length > 0}
-                        className={`${fieldClass} flex min-h-11 items-center gap-3 text-left ${errors.length ? "border-red-600" : ""}`}
+                        className={`${fieldClass} flex min-h-11 items-center gap-3 text-left text-sm font-normal ${errors.length ? "border-red-600" : ""}`}
                     >
                         <CalendarDays
                             className="size-4 shrink-0 text-muted-foreground"
@@ -89,7 +89,7 @@ export function PromotionDateRangePicker({
                     </button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-[min(92vw,24rem)] p-3 sm:w-auto">
-                    <p className="px-1 text-sm font-semibold text-primary">
+                    <p className="admin-subsection-title px-1 text-primary">
                         Chọn ngày bắt đầu → kết thúc
                     </p>
                     <Calendar
@@ -105,19 +105,19 @@ export function PromotionDateRangePicker({
                         className="mx-auto"
                     />
                     <div className="grid gap-3 border-t pt-3 sm:grid-cols-2">
-                        <label className="grid gap-1 text-xs font-medium">
+                        <label className="admin-form-label grid gap-1.5">
                             Giờ bắt đầu
                             <input
-                                className={fieldClass}
+                                className={`${fieldClass} text-sm`}
                                 type="time"
                                 value={startTime}
                                 onChange={(event) => setStartTime(event.target.value)}
                             />
                         </label>
-                        <label className="grid gap-1 text-xs font-medium">
+                        <label className="admin-form-label grid gap-1.5">
                             Giờ kết thúc
                             <input
-                                className={fieldClass}
+                                className={`${fieldClass} text-sm`}
                                 type="time"
                                 value={endTime}
                                 onChange={(event) => setEndTime(event.target.value)}

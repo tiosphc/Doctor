@@ -21,16 +21,19 @@ class RetailPromotionCatalogTest extends TestCase
     {
         $list = PriceList::factory()->create();
         $percent = ProductVariant::factory()->create();
+        $larger = ProductVariant::factory()->create(['product_id' => $percent->product_id]);
         $fixed = ProductVariant::factory()->create();
         $plain = ProductVariant::factory()->create();
         foreach ([$percent, $fixed, $plain] as $variant) {
             $list->items()->create(['product_variant_id' => $variant->id, 'unit_price' => '400000', 'minimum_quantity' => 1]);
         }
+        $list->items()->create(['product_variant_id' => $larger->id,
+            'unit_price' => '500000', 'minimum_quantity' => 1]);
         $percentageOffer = SalesPromotion::factory()->create(['sales_scope' => 'retail',
             'discount_type' => 'percentage', 'discount_value' => '15', 'minimum_order_amount' => '0']);
         $percentageOffer->targets()->create(['product_id' => $percent->product_id]);
         $fixedOffer = SalesPromotion::factory()->create(['sales_scope' => 'both',
-            'discount_type' => 'fixed_amount', 'discount_value' => '100000', 'minimum_order_amount' => '800000']);
+            'discount_type' => 'fixed_amount', 'discount_value' => '50000', 'minimum_order_amount' => '0']);
         $fixedOffer->targets()->create(['product_category_id' => $fixed->product->product_category_id]);
         $inactive = SalesPromotion::factory()->create(['sales_scope' => 'retail', 'status' => 'inactive']);
         $inactive->targets()->create(['product_id' => $plain->product_id]);
@@ -42,10 +45,21 @@ class RetailPromotionCatalogTest extends TestCase
         $dealer->targets()->create(['product_id' => $plain->product_id]);
 
         $catalog = collect($this->getJson('/api/products')->assertOk()->json('data'))->keyBy('id');
-        $this->assertSame($percentageOffer->code, $catalog[$percent->product_id]['retail_promotions'][0]['code']);
-        $this->assertSame('15.00', $catalog[$percent->product_id]['retail_promotions'][0]['discount_value']);
-        $this->assertSame($fixedOffer->code, $catalog[$fixed->product_id]['retail_promotions'][0]['code']);
-        $this->assertSame('800000.00', $catalog[$fixed->product_id]['retail_promotions'][0]['minimum_order_amount']);
+        $this->assertSame($percentageOffer->code, $catalog[$percent->product_id]['retail_discount_promotion']['code']);
+        $this->assertSame('15.00', $catalog[$percent->product_id]['retail_discount_promotion']['discount_value']);
+        $listPrices = collect($catalog[$percent->product_id]['variants'])->keyBy('id');
+        $this->assertSame('340000.00', $listPrices[$percent->id]['retail_price']['discounted_unit_price']);
+        $this->assertSame('425000.00', $listPrices[$larger->id]['retail_price']['discounted_unit_price']);
+        $detail = $this->getJson('/api/products/'.$percent->product->slug)->assertOk()->json('data');
+        $detailPrices = collect($detail['variants'])->keyBy('id');
+        $this->assertSame($catalog[$percent->product_id]['retail_discount_promotion'], $detail['retail_discount_promotion']);
+        $this->assertSame($listPrices[$percent->id]['retail_price'], $detailPrices[$percent->id]['retail_price']);
+        $this->assertSame($listPrices[$larger->id]['retail_price'], $detailPrices[$larger->id]['retail_price']);
+        $this->assertSame($fixedOffer->code, $catalog[$fixed->product_id]['retail_discount_promotion']['code']);
+        $this->assertSame('fixed_amount', $catalog[$fixed->product_id]['retail_discount_promotion']['discount_type']);
+        $this->assertSame('350000.00', $catalog[$fixed->product_id]['retail_price']['discounted_unit_price']);
+        $fixedDetail = $this->getJson('/api/products/'.$fixed->product->slug)->assertOk()->json('data');
+        $this->assertSame($catalog[$fixed->product_id]['retail_price'], $fixedDetail['retail_price']);
         $this->assertSame([], $catalog[$plain->product_id]['retail_promotions']);
 
         $offers = $this->getJson('/api/products?promotions_only=1')->assertOk();

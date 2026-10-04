@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SalesOrder;
 use App\Models\SalesPromotion;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -20,6 +21,157 @@ class SalesPromotionService
     public function normalize(string $code): string
     {
         return Str::upper(trim($code));
+    }
+
+    /**
+     * @param  list<int>  $productIds
+     * @return array<int, SalesPromotion>
+     */
+    public function discountOccupancy(array $productIds, string $channel, ?int $effectiveTierId = null,
+        ?int $excludePromotionId = null, ?string $startsAt = null, ?string $endsAt = null,
+        bool $effectiveNow = false): array
+    {
+        if ($productIds === []) {
+            return [];
+        }
+
+        $products = Product::query()->whereKey($productIds)->get(['id', 'product_category_id']);
+        $categoryIds = $products->pluck('product_category_id')->unique()->all();
+        $query = SalesPromotion::query()->with(['targets', 'dealerTiers'])
+            ->withCount(['redemptions as redeemed_count' => fn (Builder $query) => $query->where('status', 'redeemed')])
+            ->forChannel($channel)
+            ->whereIn('discount_type', ['percentage', 'fixed_amount'])
+            ->when($excludePromotionId !== null, fn (Builder $query) => $query->whereKeyNot($excludePromotionId))
+            ->where(fn (Builder $query) => $query->whereDoesntHave('targets')
+                ->orWhereHas('targets', fn (Builder $targets) => $targets
+                    ->whereIn('product_id', $productIds)
+                    ->orWhereIn('product_category_id', $categoryIds)));
+
+        if ($effectiveNow) {
+            $query->effectiveAt();
+        } else {
+            $query->where('status', 'active')
+                ->where(fn (Builder $query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()));
+            if ($endsAt !== null) {
+                $query->where(fn (Builder $query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', $endsAt));
+            }
+            if ($startsAt !== null) {
+                $query->where(fn (Builder $query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', $startsAt));
+            }
+        }
+
+        $occupancy = [];
+        foreach ($query->orderBy('id')->get() as $promotion) {
+            if ($effectiveNow && $promotion->total_usage_limit !== null
+                && $promotion->redeemed_count >= $promotion->total_usage_limit) {
+                continue;
+            }
+            if ($channel === 'dealer' && $effectiveTierId !== null
+                && $promotion->dealerTiers->isNotEmpty()
+                && ! $promotion->dealerTiers->contains('id', $effectiveTierId)) {
+                continue;
+            }
+            foreach ($products as $product) {
+                if (! isset($occupancy[$product->id])
+                    && $this->targetsProduct($promotion, $product->id, $product->product_category_id)) {
+                    $occupancy[$product->id] = $promotion;
+                }
+            }
+        }
+
+        return $occupancy;
+    }
+
+    public function discountedUnitPrice(string $unitPrice, SalesPromotion $promotion): string
+    {
+        $discount = $promotion->discount_type === 'fixed_amount'
+            ? $promotion->discount_value
+            : bcadd(bcdiv(bcmul($unitPrice, $promotion->discount_value, 4), '100', 4), '0.005', 2);
+        if ($promotion->max_discount_amount !== null
+            && bccomp($discount, $promotion->max_discount_amount, 2) > 0) {
+            $discount = $promotion->max_discount_amount;
+        }
+        if (bccomp($discount, $unitPrice, 2) > 0) {
+            $discount = $unitPrice;
+        }
+
+        return bcsub($unitPrice, $discount, 2);
+    }
+
+    /**
+     * @param  list<int>  $productIds
+     * @return array<int, SalesPromotion>
+     */
+    public function retailDiscountOccupancy(array $productIds, ?int $excludePromotionId = null,
+        ?string $startsAt = null, ?string $endsAt = null, bool $effectiveNow = false): array
+    {
+        return $this->discountOccupancy($productIds, 'retail', null, $excludePromotionId,
+            $startsAt, $endsAt, $effectiveNow);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function assertDiscountAvailability(array $data, ?int $excludePromotionId = null): void
+    {
+        if ($data['discount_type'] === 'buy_a_get_b' || $data['status'] !== 'active') {
+            return;
+        }
+        $products = Product::query()->where('status', 'active');
+        if (($data['product_ids'] ?? []) !== [] || ($data['category_ids'] ?? []) !== []) {
+            $products->where(fn (Builder $query) => $query
+                ->whereIn('id', $data['product_ids'] ?? [])
+                ->orWhereIn('product_category_id', $data['category_ids'] ?? []));
+        }
+        $selected = $products->orderBy('id')->lockForUpdate()->get(['id', 'name', 'product_category_id']);
+        $channels = $data['sales_scope'] === 'both' ? ['retail', 'dealer'] : [$data['sales_scope']];
+        foreach ($channels as $channel) {
+            $candidates = SalesPromotion::query()->with(['targets', 'dealerTiers'])
+                ->forChannel($channel)->where('status', 'active')
+                ->whereIn('discount_type', ['percentage', 'fixed_amount'])
+                ->where(fn (Builder $query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
+                ->when($excludePromotionId !== null, fn (Builder $query) => $query->whereKeyNot($excludePromotionId))
+                ->when(isset($data['ends_at']), fn (Builder $query) => $query
+                    ->where(fn (Builder $query) => $query->whereNull('starts_at')
+                        ->orWhere('starts_at', '<=', $data['ends_at'])))
+                ->when(isset($data['starts_at']), fn (Builder $query) => $query
+                    ->where(fn (Builder $query) => $query->whereNull('ends_at')
+                        ->orWhere('ends_at', '>=', $data['starts_at'])))
+                ->orderBy('id')->get();
+            foreach ($candidates as $existing) {
+                if ($channel === 'dealer' && ($data['dealer_tier_ids'] ?? []) !== []
+                    && $existing->dealerTiers->isNotEmpty()
+                    && $existing->dealerTiers->pluck('id')->intersect($data['dealer_tier_ids'])->isEmpty()) {
+                    continue;
+                }
+                foreach ($selected as $product) {
+                    if (! $this->targetsProduct($existing, $product->id, $product->product_category_id)) {
+                        continue;
+                    }
+                    throw new HttpResponseException(response()->json([
+                        'code' => 'PRODUCT_ALREADY_HAS_ACTIVE_PROMOTION',
+                        'message' => 'Sản phẩm đã có ưu đãi giảm giá đang hoạt động.',
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'existing_promotion_id' => $existing->id,
+                        'existing_promotion_name' => $existing->name,
+                        'discount_value' => $existing->discount_value,
+                        'sales_channel' => $channel,
+                    ], 409));
+                }
+            }
+        }
+    }
+
+    /** @param array<string, mixed> $data */
+    public function assertRetailDiscountAvailability(array $data, ?int $excludePromotionId = null): void
+    {
+        $this->assertDiscountAvailability($data, $excludePromotionId);
+    }
+
+    private function targetsProduct(SalesPromotion $promotion, int $productId, int $categoryId): bool
+    {
+        return $promotion->targets->isEmpty() || $promotion->targets->contains(
+            fn ($target): bool => $target->product_id === $productId || $target->product_category_id === $categoryId
+        );
     }
 
     /** @param list<array{product_variant_id: int, product_id: int, amount: string, quantity?: string}> $lines
@@ -74,6 +226,7 @@ class SalesPromotionService
         $productTargets = $promotion->targets->pluck('product_id')->filter()->all();
         $categoryTargets = $promotion->targets->pluck('product_category_id')->filter()->all();
         $eligible = [];
+        $fixedEligible = [];
         $eligibleSubtotal = '0.00';
         foreach ($lines as $line) {
             if ($promotion->targets->isNotEmpty()
@@ -82,6 +235,13 @@ class SalesPromotionService
                 continue;
             }
             $eligible[] = ['product_variant_id' => $line['product_variant_id'], 'amount' => $line['amount']];
+            if ($promotion->discount_type === 'fixed_amount') {
+                $lineDiscount = bcadd(bcmul($promotion->discount_value, $line['quantity'] ?? '1', 3), '0.005', 2);
+                if (bccomp($lineDiscount, $line['amount'], 2) > 0) {
+                    $lineDiscount = $line['amount'];
+                }
+                $fixedEligible[] = ['product_variant_id' => $line['product_variant_id'], 'amount' => $lineDiscount];
+            }
             $eligibleSubtotal = bcadd($eligibleSubtotal, $line['amount'], 2);
         }
         if (bccomp($eligibleSubtotal, '0', 2) <= 0) {
@@ -89,7 +249,7 @@ class SalesPromotionService
         }
         $discount = $promotion->discount_type === 'percentage'
             ? bcadd(bcdiv(bcmul($eligibleSubtotal, $promotion->discount_value, 4), '100', 4), '0.005', 2)
-            : $promotion->discount_value;
+            : array_reduce($fixedEligible, fn (string $total, array $line): string => bcadd($total, $line['amount'], 2), '0.00');
         if ($promotion->max_discount_amount !== null && bccomp($discount, $promotion->max_discount_amount, 2) > 0) {
             $discount = $promotion->max_discount_amount;
         }
@@ -99,7 +259,7 @@ class SalesPromotionService
         if (bccomp($discount, '0', 2) <= 0) {
             $this->conflict('PROMOTION_DISCOUNT_TOO_SMALL');
         }
-        $allocations = $this->allocator->allocate($eligible, $discount);
+        $allocations = $this->allocator->allocate($promotion->discount_type === 'fixed_amount' ? $fixedEligible : $eligible, $discount);
         $ruleState = [$promotion->id, $promotion->updated_at?->toJSON(), $promotion->code,
             $promotion->name, $promotion->discount_type, $promotion->discount_value,
             $promotion->max_discount_amount, $promotion->minimum_order_amount, $promotion->sales_scope,
@@ -116,35 +276,41 @@ class SalesPromotionService
     }
 
     /**
-     * Qualified gifts take precedence over cash discounts; discounts remain the fallback.
-     *
      * @param  list<array{product_variant_id: int, product_id: int, amount: string, quantity?: string}>  $lines
-     * @return array<string, mixed>|null
+     * @return array{discount: ?array, discounts: array, gift: ?array}
      */
-    public function bestQuote(string $channel, int $buyerId, ?int $dealerAccountId, string $subtotal,
+    public function bestQuotes(string $channel, int $buyerId, ?int $dealerAccountId, string $subtotal,
         array $lines, ?int $warehouseId = null, ?int $effectiveTierId = null,
-        ?string &$giftUnavailableReason = null): ?array
+        ?string &$giftUnavailableReason = null): array
     {
         if ($lines === [] || bccomp($subtotal, '0', 2) <= 0) {
-            return null;
+            return ['discount' => null, 'discounts' => [], 'gift' => null];
         }
-        $candidates = SalesPromotion::query()->where('status', 'active')
-            ->whereIn('sales_scope', [$channel, 'both'])->orderBy('id')->pluck('code');
-        $best = null;
+        $candidates = SalesPromotion::query()->effectiveAt()->forChannel($channel)
+            ->whereIn('discount_type', ['percentage', 'fixed_amount', 'buy_a_get_b'])
+            ->orderBy('id')->pluck('code');
+        $bestDiscount = null;
+        $discounts = [];
+        $discountedVariants = [];
+        $bestGift = null;
         foreach ($candidates as $code) {
             try {
                 $quote = $this->quote($code, $channel, $buyerId, $dealerAccountId,
                     $subtotal, $lines, false, $warehouseId, $effectiveTierId);
                 if ($quote['discount_type'] === 'buy_a_get_b') {
-                    if ($quote['qualified'] && ($best === null || $best['discount_type'] !== 'buy_a_get_b')) {
-                        $best = $quote;
+                    if ($bestGift === null || ($quote['qualified'] && ! $bestGift['qualified'])) {
+                        $bestGift = $quote;
                     }
 
                     continue;
                 }
-                if ($best === null || ($best['discount_type'] !== 'buy_a_get_b'
-                    && bccomp($quote['discount_amount'], $best['discount_amount'], 2) > 0)) {
-                    $best = $quote;
+                if (array_intersect(array_keys($quote['allocations']), $discountedVariants) === []) {
+                    $discounts[] = $quote;
+                    $discountedVariants = array_merge($discountedVariants, array_keys($quote['allocations']));
+                    if ($bestDiscount === null
+                        || bccomp($quote['discount_amount'], $bestDiscount['discount_amount'], 2) > 0) {
+                        $bestDiscount = $quote;
+                    }
                 }
             } catch (HttpResponseException $exception) {
                 if (($exception->getResponse()->getData(true)['code'] ?? null) === 'PROMOTION_GIFT_OUT_OF_STOCK') {
@@ -155,37 +321,61 @@ class SalesPromotionService
             }
         }
 
-        return $best;
+        return ['discount' => $bestDiscount, 'discounts' => $discounts, 'gift' => $bestGift];
     }
 
     public function redeem(SalesOrder $order, string $code): void
     {
-        if ($order->sales_promotion_id !== null || $order->sales_voucher_id !== null) {
-            $this->conflict('PROMOTION_STACKING_NOT_SUPPORTED');
-        }
         $lines = $order->items()->where('is_gift', false)->orderBy('product_variant_id')->get()->map(fn ($item): array => [
             'product_variant_id' => $item->product_variant_id, 'product_id' => $item->product_id,
             'amount' => $item->base_amount, 'quantity' => $item->quantity])->all();
         $quote = $this->quote($code, $order->sales_channel, $order->buyer_user_id,
             $order->dealer_account_id, $order->subtotal, $lines, true, $order->warehouse_id, $order->effective_tier_id_snapshot);
+        if ($order->sales_voucher_id !== null
+            || $order->promotionRedemptions()->where('sales_promotion_id', $quote['promotion_id'])->exists()
+            || ($order->sales_promotion_id !== null
+                && $order->promotion_gift_snapshot !== null)) {
+            $this->conflict('PROMOTION_STACKING_NOT_SUPPORTED');
+        }
         if ($quote['discount_type'] === 'buy_a_get_b' && ! $quote['qualified']) {
             return;
         }
-        foreach ($order->items()->where('is_gift', false)->get() as $item) {
-            $discount = $quote['allocations'][$item->product_variant_id] ?? '0.00';
-            $item->update(['discount_amount' => $discount,
-                'line_total' => bcsub($item->base_amount, $discount, 2)]);
+        if ($order->sales_promotion_id === null) {
+            foreach ($order->items()->where('is_gift', false)->get() as $item) {
+                $discount = $quote['allocations'][$item->product_variant_id] ?? '0.00';
+                $item->update(['discount_amount' => $discount,
+                    'line_total' => bcsub($item->base_amount, $discount, 2)]);
+            }
+            $order->update(['sales_promotion_id' => $quote['promotion_id'],
+                'promotion_code_snapshot' => $quote['code'], 'promotion_name_snapshot' => $quote['name'],
+                'promotion_discount_type_snapshot' => $quote['discount_type'],
+                'promotion_discount_value_snapshot' => $quote['discount_value'],
+                'discount_total' => $quote['discount_amount'], 'grand_total' => $quote['grand_total_after_discount'],
+                'promotion_gift_snapshot' => isset($quote['gift_snapshot'])
+                    ? ['promotion_id' => $quote['promotion_id'], ...$quote['gift_snapshot']] : null]);
+        } elseif ($quote['discount_type'] === 'buy_a_get_b') {
+            $order->update(['promotion_gift_snapshot' => [
+                'promotion_id' => $quote['promotion_id'], ...$quote['gift_snapshot'],
+            ]]);
+        } else {
+            foreach ($order->items()->where('is_gift', false)->get() as $item) {
+                $discount = $quote['allocations'][$item->product_variant_id] ?? null;
+                if ($discount === null) {
+                    continue;
+                }
+                if (bccomp($item->discount_amount, '0', 2) > 0) {
+                    $this->conflict('PRODUCT_ALREADY_HAS_ACTIVE_PROMOTION');
+                }
+                $item->update(['discount_amount' => $discount,
+                    'line_total' => bcsub($item->line_total, $discount, 2)]);
+            }
+            $order->update(['discount_total' => bcadd($order->discount_total, $quote['discount_amount'], 2),
+                'grand_total' => bcsub($order->grand_total, $quote['discount_amount'], 2)]);
         }
-        $order->update(['sales_promotion_id' => $quote['promotion_id'],
-            'promotion_code_snapshot' => $quote['code'], 'promotion_name_snapshot' => $quote['name'],
-            'promotion_discount_type_snapshot' => $quote['discount_type'],
-            'promotion_discount_value_snapshot' => $quote['discount_value'],
-            'discount_total' => $quote['discount_amount'], 'grand_total' => $quote['grand_total_after_discount'],
-            'promotion_gift_snapshot' => $quote['gift_snapshot'] ?? null]);
         if ($quote['discount_type'] === 'buy_a_get_b') {
             $this->createGiftItem($order, $quote);
         }
-        $redemption = $order->promotionRedemption()->create([
+        $redemption = $order->promotionRedemptions()->create([
             'sales_promotion_id' => $quote['promotion_id'], 'sales_channel' => $order->sales_channel,
             'buyer_user_id' => $order->buyer_user_id,
             'dealer_account_id' => $order->dealer_account_id,
@@ -296,21 +486,21 @@ class SalesPromotionService
 
     public function release(SalesOrder $order, ?int $actorId = null): void
     {
-        if ($order->sales_promotion_id === null) {
+        if (! $order->promotionRedemptions()->where('status', 'redeemed')->exists()) {
             return;
         }
-        SalesPromotion::query()->whereKey($order->sales_promotion_id)->lockForUpdate()->firstOrFail();
-        $redemption = $order->promotionRedemption()->where('status', 'redeemed')->lockForUpdate()->first();
-        if ($redemption === null) {
-            return;
+        foreach ($order->promotionRedemptions()->where('status', 'redeemed')->orderBy('sales_promotion_id')->lockForUpdate()->get() as $redemption) {
+            if ($redemption->sales_promotion_id !== null) {
+                SalesPromotion::query()->whereKey($redemption->sales_promotion_id)->lockForUpdate()->firstOrFail();
+            }
+            $redemption->update(['status' => 'released', 'released_at' => now()]);
+            $this->audit->log(AuditLogger::ACTION_RELEASE, AuditLogger::MODULE_SALES_PROMOTION,
+                $redemption, 'Sales promotion usage released after cancellation', metadata: [
+                    'sales_order_id' => $order->id, 'sales_order_code' => $order->order_code,
+                    'promotion_id' => $redemption->sales_promotion_id,
+                    'promotion_code' => $redemption->promotion_code_snapshot, 'actor_id' => $actorId,
+                ]);
         }
-        $redemption->update(['status' => 'released', 'released_at' => now()]);
-        $this->audit->log(AuditLogger::ACTION_RELEASE, AuditLogger::MODULE_SALES_PROMOTION,
-            $redemption, 'Sales promotion usage released after cancellation', metadata: [
-                'sales_order_id' => $order->id, 'sales_order_code' => $order->order_code,
-                'promotion_id' => $order->sales_promotion_id,
-                'promotion_code' => $order->promotion_code_snapshot, 'actor_id' => $actorId,
-            ]);
     }
 
     private function conflict(string $code): never

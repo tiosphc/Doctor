@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdministrativeWard;
 use App\Models\DealerAccount;
 use App\Models\DealerAccountUser;
 use App\Models\DealerTier;
@@ -43,33 +44,88 @@ class SalesPromotionTest extends TestCase
         $this->getJson('/api/admin/sales-promotions?status=expired')->assertOk()->assertJsonPath('data.0.code', 'OLD-GOLD');
     }
 
-    public function test_admin_saves_percentage_and_fixed_amount_forms_with_optional_discount_cap(): void
+    public function test_admin_saves_percentage_and_fixed_amount_for_product_promotions(): void
     {
         Sanctum::actingAs(User::factory()->admin()->create());
+        $productId = ProductVariant::factory()->create()->product_id;
         $base = ['name' => 'Sales offer', 'description' => null, 'max_discount_amount' => null,
             'minimum_order_amount' => '1', 'sales_scope' => 'both', 'starts_at' => null,
             'ends_at' => null, 'total_usage_limit' => 10, 'per_buyer_usage_limit' => 1,
-            'status' => 'active', 'product_ids' => [], 'category_ids' => []];
+            'status' => 'active', 'product_ids' => [$productId], 'category_ids' => []];
 
-        foreach ([['PERCENT-FORM', 'percentage', '15.5'],
-            ['FIXED-FORM', 'fixed_amount', '100000']] as [$code, $type, $value]) {
-            $created = $this->postJson('/api/admin/sales-promotions', [...$base,
-                'code' => $code, 'discount_type' => $type, 'discount_value' => $value])
-                ->assertCreated()->assertJsonPath('data.max_discount_amount', null)
-                ->assertJsonPath('data.discount_type', $type)->json('data');
-            $this->assertDatabaseHas('sales_promotions', ['id' => $created['id'],
-                'discount_type' => $type, 'max_discount_amount' => null]);
-        }
-
+        $created = $this->postJson('/api/admin/sales-promotions', [...$base,
+            'code' => 'PERCENT-FORM', 'discount_type' => 'percentage', 'discount_value' => '15.5'])
+            ->assertCreated()->assertJsonPath('data.max_discount_amount', null)
+            ->assertJsonPath('data.discount_type', 'percentage')->json('data');
+        $fixedProductId = ProductVariant::factory()->create()->product_id;
+        $fixed = $this->postJson('/api/admin/sales-promotions', [...$base,
+            'code' => 'FIXED-FORM', 'discount_type' => 'fixed_amount', 'discount_value' => '50000',
+            'product_ids' => [$fixedProductId]])
+            ->assertCreated()->assertJsonPath('data.discount_type', 'fixed_amount')
+            ->assertJsonPath('data.discount_value', '50000.00')->json('data');
+        $this->patchJson("/api/admin/sales-promotions/{$fixed['id']}", [...$base,
+            'code' => 'FIXED-FORM', 'discount_type' => 'fixed_amount', 'discount_value' => '50000.00',
+            'product_ids' => [$fixedProductId]])
+            ->assertOk()->assertJsonPath('data.discount_value', '50000.00');
+        $this->patchJson("/api/admin/sales-promotions/{$fixed['id']}", [...$base,
+            'code' => 'FIXED-FORM', 'discount_type' => 'fixed_amount', 'discount_value' => '60000',
+            'product_ids' => [$fixedProductId]])
+            ->assertOk()->assertJsonPath('data.discount_value', '60000.00');
+        $this->assertDatabaseHas('sales_promotions', ['id' => $created['id'],
+            'discount_type' => 'percentage', 'max_discount_amount' => null]);
+        $this->assertDatabaseHas('sales_promotions', ['id' => $fixed['id'],
+            'discount_type' => 'fixed_amount', 'discount_value' => '60000.00']);
         $this->assertDatabaseCount('sales_promotions', 2);
+    }
+
+    public function test_admin_create_without_order_limit_fields_uses_unlimited_defaults(): void
+    {
+        Sanctum::actingAs(User::factory()->admin()->create());
+        $productId = ProductVariant::factory()->create()->product_id;
+
+        $response = $this->postJson('/api/admin/sales-promotions', [
+            'code' => 'PRODUCT-OFFER', 'name' => 'Product offer', 'discount_type' => 'percentage',
+            'discount_value' => '15', 'sales_scope' => 'retail', 'status' => 'active',
+            'product_ids' => [$productId], 'category_ids' => [],
+        ])->assertCreated()->assertJsonPath('data.max_discount_amount', null)
+            ->assertJsonPath('data.minimum_order_amount', '0.00');
+
+        $this->assertDatabaseHas('sales_promotions', [
+            'id' => $response->json('data.id'), 'max_discount_amount' => null,
+            'minimum_order_amount' => '0.00',
+        ]);
+    }
+
+    public function test_admin_edit_without_order_limit_fields_clears_previous_limits(): void
+    {
+        Sanctum::actingAs(User::factory()->admin()->create());
+        $productId = ProductVariant::factory()->create()->product_id;
+        $promotion = SalesPromotion::factory()->create([
+            'code' => 'LEGACY-LIMIT', 'normalized_code' => 'LEGACY-LIMIT',
+            'max_discount_amount' => '50000.00', 'minimum_order_amount' => '100000.00',
+        ]);
+
+        $this->patchJson("/api/admin/sales-promotions/{$promotion->id}", [
+            'code' => 'LEGACY-LIMIT', 'name' => 'Updated product offer',
+            'discount_type' => 'percentage', 'discount_value' => '15',
+            'sales_scope' => 'retail', 'status' => 'active',
+            'product_ids' => [$productId], 'category_ids' => [],
+        ])->assertOk()->assertJsonPath('data.max_discount_amount', null)
+            ->assertJsonPath('data.minimum_order_amount', '0.00');
+
+        $this->assertDatabaseHas('sales_promotions', [
+            'id' => $promotion->id, 'max_discount_amount' => null,
+            'minimum_order_amount' => '0.00',
+        ]);
     }
 
     public function test_admin_promotion_creation_normalizes_code_and_keeps_clinic_vouchers_separate(): void
     {
         Sanctum::actingAs(User::factory()->admin()->create());
+        $productId = ProductVariant::factory()->create()->product_id;
         $data = ['code' => ' Welcome-10 ', 'name' => 'Welcome', 'discount_type' => 'percentage',
             'discount_value' => '10', 'sales_scope' => 'retail', 'status' => 'active',
-            'minimum_order_amount' => '100.00', 'product_ids' => [], 'category_ids' => []];
+            'minimum_order_amount' => '100.00', 'product_ids' => [$productId], 'category_ids' => []];
         $created = $this->postJson('/api/admin/sales-promotions', $data)->assertCreated()
             ->assertJsonPath('data.normalized_code', 'WELCOME-10')->json('data');
         $this->postJson('/api/admin/sales-promotions', [...$data, 'code' => 'welcome-10'])
@@ -90,8 +146,8 @@ class SalesPromotionTest extends TestCase
         $one = ProductVariant::factory()->create();
         $two = ProductVariant::factory()->create();
         $three = ProductVariant::factory()->create();
-        $promotion = SalesPromotion::factory()->create(['discount_type' => 'fixed_amount',
-            'discount_value' => '0.02', 'sales_scope' => 'retail']);
+        $promotion = SalesPromotion::factory()->create(['discount_type' => 'percentage',
+            'discount_value' => '1.00', 'sales_scope' => 'retail']);
         $promotion->targets()->create(['product_id' => $one->product_id]);
         $promotion->targets()->create(['product_id' => $two->product_id]);
         $lines = [
@@ -114,6 +170,65 @@ class SalesPromotionTest extends TestCase
             ['product_variant_id' => 1, 'amount' => '1.00'],
             ['product_variant_id' => 2, 'amount' => '2.00'],
         ], '0.03'));
+    }
+
+    public function test_fixed_amount_discount_applies_per_eligible_unit_and_never_exceeds_line_price(): void
+    {
+        $buyer = User::factory()->customer()->create();
+        $regular = ProductVariant::factory()->create();
+        $cheap = ProductVariant::factory()->create();
+        $promotion = SalesPromotion::factory()->create(['discount_type' => 'fixed_amount',
+            'discount_value' => '50000', 'sales_scope' => 'retail']);
+        $promotion->targets()->create(['product_id' => $regular->product_id]);
+        $promotion->targets()->create(['product_id' => $cheap->product_id]);
+
+        $quote = app(SalesPromotionService::class)->quote($promotion->code, 'retail', $buyer->id,
+            null, '440000.00', [
+                ['product_variant_id' => $regular->id, 'product_id' => $regular->product_id,
+                    'quantity' => '2', 'amount' => '400000.00'],
+                ['product_variant_id' => $cheap->id, 'product_id' => $cheap->product_id,
+                    'quantity' => '1', 'amount' => '40000.00'],
+            ]);
+
+        $this->assertSame('140000.00', $quote['discount_amount']);
+        $this->assertSame('100000.00', $quote['allocations'][$regular->id]);
+        $this->assertSame('40000.00', $quote['allocations'][$cheap->id]);
+        $this->assertSame('300000.00', $quote['grand_total_after_discount']);
+        $this->assertSame('150000.00', app(SalesPromotionService::class)->discountedUnitPrice('200000.00', $promotion));
+        $this->assertSame('0.00', app(SalesPromotionService::class)->discountedUnitPrice('40000.00', $promotion));
+    }
+
+    public function test_fixed_amount_discount_is_applied_to_retail_cart_and_checkout(): void
+    {
+        $buyer = User::factory()->customer()->create();
+        $admin = User::factory()->admin()->create();
+        $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
+        $variant = ProductVariant::factory()->create(['track_inventory' => true]);
+        PriceListItem::factory()->create(['price_list_id' => PriceList::factory()->create()->id,
+            'product_variant_id' => $variant->id, 'unit_price' => '200000.00']);
+        app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
+            'product_variant_id' => $variant->id, 'quantity' => '2', 'operation_key' => (string) Str::uuid()], $admin->id);
+        $promotion = SalesPromotion::factory()->create(['discount_type' => 'fixed_amount',
+            'discount_value' => '50000', 'sales_scope' => 'retail']);
+        $promotion->targets()->create(['product_id' => $variant->product_id]);
+        Sanctum::actingAs($buyer);
+        $this->postJson('/api/retail/cart/items', ['product_variant_id' => $variant->id, 'quantity' => '2'])->assertOk();
+
+        $this->getJson('/api/retail/cart')->assertOk()
+            ->assertJsonPath('data.discount_total', '100000.00')
+            ->assertJsonPath('data.grand_total', '300000.00');
+        $fingerprint = $this->getJson('/api/retail/checkout/review')->json('data.review_fingerprint');
+        $order = $this->postJson('/api/retail/checkout', [
+            'checkout_operation_key' => (string) Str::uuid(), 'checkout_review_fingerprint' => $fingerprint,
+            'recipient_name' => 'Buyer', 'recipient_phone' => '0900000000', 'shipping_address_line1' => '1 Street',
+            'shipping_city' => 'HCM', 'shipping_district' => '1', 'shipping_province' => 'HCM',
+            'shipping_country' => 'VN', 'payment_method' => 'cod',
+        ])->assertOk()->assertJsonPath('data.discount_total', '100000.00')
+            ->assertJsonPath('data.grand_total', '300000.00')
+            ->assertJsonPath('data.items.0.discount_amount', '100000.00');
+        $this->assertDatabaseHas('sales_promotion_redemptions', [
+            'sales_order_id' => $order->json('data.id'), 'sales_promotion_id' => $promotion->id,
+        ]);
     }
 
     public function test_category_scope_minimum_dates_and_discount_cap_are_server_enforced(): void
@@ -169,6 +284,8 @@ class SalesPromotionTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('discount_value');
         $this->postJson('/api/admin/sales-promotions', [...$base, 'discount_type' => 'fixed_amount', 'discount_value' => '0'])
             ->assertUnprocessable()->assertJsonValidationErrors('discount_value');
+        $this->postJson('/api/admin/sales-promotions', [...$base, 'discount_type' => 'fixed_amount', 'discount_value' => '50000.50'])
+            ->assertUnprocessable()->assertJsonValidationErrors('discount_value');
         $this->postJson('/api/admin/sales-promotions', [...$base,
             'starts_at' => '2026-10-02 12:00:00', 'ends_at' => '2026-10-01 12:00:00'])
             ->assertUnprocessable()->assertJsonValidationErrors('ends_at');
@@ -184,15 +301,15 @@ class SalesPromotionTest extends TestCase
         $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
         $variant = ProductVariant::factory()->create(['track_inventory' => true]);
         PriceListItem::factory()->create(['price_list_id' => PriceList::factory()->create()->id,
-            'product_variant_id' => $variant->id, 'unit_price' => '120.00']);
+            'product_variant_id' => $variant->id, 'unit_price' => '100.00']);
         app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
             'product_variant_id' => $variant->id, 'quantity' => '5', 'operation_key' => (string) Str::uuid()], $admin->id);
-        $promotion = SalesPromotion::factory()->create(['discount_type' => 'fixed_amount',
+        $promotion = SalesPromotion::factory()->create(['discount_type' => 'percentage',
             'discount_value' => '20.00', 'total_usage_limit' => 1, 'per_buyer_usage_limit' => 1]);
         Sanctum::actingAs($buyer);
         $this->postJson('/api/retail/cart/items', ['product_variant_id' => $variant->id, 'quantity' => '1'])->assertOk();
         $this->getJson('/api/retail/cart')
-            ->assertOk()->assertJsonPath('data.grand_total', '100.00');
+            ->assertOk()->assertJsonPath('data.grand_total', '80.00');
         $fingerprint = $this->getJson('/api/retail/checkout/review')->json('data.review_fingerprint');
         $this->assertDatabaseCount('sales_promotion_redemptions', 0);
         $order = $this->postJson('/api/retail/checkout', [
@@ -200,23 +317,23 @@ class SalesPromotionTest extends TestCase
             'recipient_name' => 'Buyer', 'recipient_phone' => '0900000000', 'shipping_address_line1' => '1 Street',
             'shipping_city' => 'HCM', 'shipping_district' => '1', 'shipping_province' => 'HCM',
             'shipping_country' => 'VN', 'payment_method' => 'cod',
-        ])->assertOk()->assertJsonPath('data.grand_total', '100.00')
+        ])->assertOk()->assertJsonPath('data.grand_total', '80.00')
             ->assertJsonPath('data.items.0.discount_amount', '20.00')->json('data');
         $this->assertDatabaseHas('sales_promotion_redemptions', ['sales_order_id' => $order['id'], 'status' => 'redeemed']);
         Sanctum::actingAs($admin);
         $this->putJson("/api/admin/sales-promotions/{$promotion->id}", [
             'code' => 'CHANGED-CODE', 'name' => $promotion->name,
-            'discount_type' => 'fixed_amount', 'discount_value' => '20.00',
-            'sales_scope' => 'both', 'status' => 'active',
+            'discount_type' => 'percentage', 'discount_value' => '20.00',
+            'sales_scope' => 'retail', 'status' => 'active', 'product_ids' => [$variant->product_id],
         ])->assertConflict()->assertJsonPath('code', 'PROMOTION_CODE_IMMUTABLE');
         $this->putJson("/api/admin/sales-promotions/{$promotion->id}", [
             'code' => $promotion->code, 'name' => 'Updated for future orders',
-            'discount_type' => 'fixed_amount', 'discount_value' => '50.00',
-            'sales_scope' => 'both', 'status' => 'active',
+            'discount_type' => 'percentage', 'discount_value' => '50.00',
+            'sales_scope' => 'retail', 'status' => 'active', 'product_ids' => [$variant->product_id],
         ])->assertOk();
         Sanctum::actingAs($buyer);
         $this->getJson("/api/retail/orders/{$order['id']}")->assertOk()
-            ->assertJsonPath('data.grand_total', '100.00')
+            ->assertJsonPath('data.grand_total', '80.00')
             ->assertJsonPath('data.promotion.name', 'Test promotion')
             ->assertJsonPath('data.promotion.discount_value', '20.00');
         Sanctum::actingAs($admin);
@@ -228,7 +345,89 @@ class SalesPromotionTest extends TestCase
         Sanctum::actingAs($buyer);
         $this->postJson('/api/retail/cart/items', ['product_variant_id' => $variant->id, 'quantity' => '1'])->assertOk();
         $this->getJson('/api/retail/cart')
-            ->assertOk()->assertJsonPath('data.grand_total', '70.00');
+            ->assertOk()->assertJsonPath('data.grand_total', '50.00');
+    }
+
+    public function test_retail_checkout_recalculates_when_a_promotion_is_disabled_after_review(): void
+    {
+        $buyer = User::factory()->customer()->create();
+        $admin = User::factory()->admin()->create();
+        $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
+        $variant = ProductVariant::factory()->create(['track_inventory' => true]);
+        PriceListItem::factory()->create(['price_list_id' => PriceList::factory()->create()->id,
+            'product_variant_id' => $variant->id, 'unit_price' => '100.00']);
+        app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
+            'product_variant_id' => $variant->id, 'quantity' => '2',
+            'operation_key' => (string) Str::uuid()], $admin->id);
+        $promotion = SalesPromotion::factory()->create(['sales_scope' => 'retail',
+            'discount_type' => 'percentage', 'discount_value' => '20.00']);
+        $promotion->targets()->create(['product_id' => $variant->product_id]);
+        Sanctum::actingAs($buyer);
+        $this->postJson('/api/retail/cart/items', ['product_variant_id' => $variant->id,
+            'quantity' => '1'])->assertOk();
+        $oldReview = $this->getJson('/api/retail/checkout/review')->assertOk()
+            ->assertJsonPath('data.grand_total', '80.00')->json('data');
+        $promotion->update(['status' => 'inactive']);
+        $body = [
+            'checkout_operation_key' => (string) Str::uuid(),
+            'checkout_review_fingerprint' => $oldReview['review_fingerprint'],
+            'recipient_name' => 'Buyer', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => '1 Street', 'shipping_city' => 'HCM',
+            'shipping_district' => '1', 'shipping_province' => 'HCM',
+            'shipping_country' => 'VN', 'payment_method' => 'cod',
+        ];
+        $this->postJson('/api/retail/checkout', $body)
+            ->assertConflict()->assertJsonPath('code', 'CHECKOUT_CHANGED')
+            ->assertJsonPath('review.grand_total', '100.00');
+        $updatedReview = $this->getJson('/api/retail/checkout/review')->assertOk()->json('data');
+        $this->postJson('/api/retail/checkout', [
+            ...$body, 'checkout_review_fingerprint' => $updatedReview['review_fingerprint'],
+        ])->assertOk()->assertJsonPath('data.grand_total', '100.00')
+            ->assertJsonPath('data.promotion', null);
+        $this->assertDatabaseCount('sales_promotion_redemptions', 0);
+    }
+
+    public function test_retail_checkout_records_two_disjoint_product_discounts_on_one_order(): void
+    {
+        $buyer = User::factory()->customer()->create();
+        $admin = User::factory()->admin()->create();
+        $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
+        $first = ProductVariant::factory()->create(['track_inventory' => true]);
+        $second = ProductVariant::factory()->create(['track_inventory' => true]);
+        $priceList = PriceList::factory()->create();
+        foreach ([[$first, '100.00'], [$second, '200.00']] as [$variant, $price]) {
+            PriceListItem::factory()->create(['price_list_id' => $priceList->id,
+                'product_variant_id' => $variant->id, 'unit_price' => $price]);
+            app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
+                'product_variant_id' => $variant->id, 'quantity' => '2',
+                'operation_key' => (string) Str::uuid()], $admin->id);
+        }
+        foreach ([[$first, '20.00'], [$second, '10.00']] as [$variant, $percent]) {
+            $promotion = SalesPromotion::factory()->create(['sales_scope' => 'retail',
+                'discount_type' => 'percentage', 'discount_value' => $percent]);
+            $promotion->targets()->create(['product_id' => $variant->product_id]);
+        }
+        Sanctum::actingAs($buyer);
+        foreach ([$first, $second] as $variant) {
+            $this->postJson('/api/retail/cart/items', ['product_variant_id' => $variant->id,
+                'quantity' => '1'])->assertOk();
+        }
+        $review = $this->getJson('/api/retail/checkout/review')->assertOk()
+            ->assertJsonPath('data.discount_total', '40.00')
+            ->assertJsonPath('data.grand_total', '260.00')->json('data');
+        $order = $this->postJson('/api/retail/checkout', [
+            'checkout_operation_key' => (string) Str::uuid(),
+            'checkout_review_fingerprint' => $review['review_fingerprint'],
+            'recipient_name' => 'Buyer', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => '1 Street', 'shipping_city' => 'HCM',
+            'shipping_district' => '1', 'shipping_province' => 'HCM',
+            'shipping_country' => 'VN', 'payment_method' => 'cod',
+        ])->assertOk()->assertJsonPath('data.grand_total', '260.00')->json('data');
+        $this->assertCount(2, $order['promotions']);
+        $this->assertSame('20.00', $order['promotions'][0]['discount_amount']);
+        $this->assertSame('20.00', $order['promotions'][1]['discount_amount']);
+        $this->assertDatabaseCount('sales_promotion_redemptions', 2);
+        $this->artisan('sales-promotions:reconcile', ['--dry-run' => true])->assertExitCode(0);
     }
 
     public function test_sales_promotion_requires_authenticated_admin_for_management(): void
@@ -256,24 +455,23 @@ class SalesPromotionTest extends TestCase
             'product_variant_id' => $variant->id, 'quantity' => '5', 'operation_key' => (string) Str::uuid()], $admin->id);
         app(DealerWalletService::class)->recordDeposit($account, ['operation_key' => (string) Str::uuid(),
             'amount' => '200.00', 'method' => 'other_manual'], $admin);
-        $promotion = SalesPromotion::factory()->create(['discount_type' => 'fixed_amount',
-            'discount_value' => '50.00', 'sales_scope' => 'dealer', 'per_buyer_usage_limit' => 1]);
+        $promotion = SalesPromotion::factory()->create(['discount_type' => 'percentage',
+            'discount_value' => '25.00', 'sales_scope' => 'dealer', 'per_buyer_usage_limit' => 1]);
         $retailOnly = SalesPromotion::factory()->create(['sales_scope' => 'retail']);
         Sanctum::actingAs($user);
         $url = "/api/dealer/accounts/{$account->id}/quick-order";
         $items = [['product_variant_id' => $variant->id, 'quantity' => '2']];
-        $this->postJson("$url/review", ['items' => $items, 'voucher_code' => $retailOnly->code])
+        $this->postJson("$url/review", ['items' => $items, 'voucher_code' => $retailOnly->code,
+            ...$this->shipping()])
             ->assertConflict()->assertJsonPath('code', 'VOUCHER_NOT_AVAILABLE_FOR_DEALER');
-        $review = $this->postJson("$url/review", ['items' => $items])
+        $review = $this->postJson("$url/review", ['items' => $items, ...$this->shipping()])
             ->assertOk()->assertJsonPath('data.grand_total', '150.00')
             ->assertJsonPath('data.discount_total', '50.00')->json('data');
         $this->assertDatabaseCount('sales_promotion_redemptions', 0);
         $operationKey = (string) Str::uuid();
         $body = ['operation_key' => $operationKey,
             'review_fingerprint' => $review['review_fingerprint'], 'items' => $items,
-            'recipient_name' => 'Recipient',
-            'recipient_phone' => '0900000000', 'shipping_address_line1' => 'Street',
-            'shipping_city' => 'HCM', 'shipping_province' => 'HCM', 'shipping_country' => 'VN'];
+            ...$this->shipping()];
         $order = $this->postJson($url, $body)
             ->assertCreated()->assertJsonPath('data.grand_total', '150.00')
             ->assertJsonPath('data.items.0.discount_amount', '50.00')->json('data');
@@ -284,7 +482,7 @@ class SalesPromotionTest extends TestCase
         $colleague = User::factory()->customer()->create();
         DealerAccountUser::factory()->create(['dealer_account_id' => $account->id, 'user_id' => $colleague->id]);
         Sanctum::actingAs($colleague);
-        $this->postJson("$url/review", ['items' => $items])
+        $this->postJson("$url/review", ['items' => $items, ...$this->shipping()])
             ->assertOk()->assertJsonPath('data.promotion', null);
         Sanctum::actingAs($admin);
         $this->postJson("/api/admin/sales-orders/{$order['id']}/cancel", [
@@ -303,7 +501,7 @@ class SalesPromotionTest extends TestCase
             'product_variant_id' => $variant->id, 'unit_price' => '100.00']);
         app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
             'product_variant_id' => $variant->id, 'quantity' => '5', 'operation_key' => (string) Str::uuid()], $admin->id);
-        $promotion = SalesPromotion::factory()->create(['discount_type' => 'fixed_amount', 'discount_value' => '1.00']);
+        $promotion = SalesPromotion::factory()->create(['discount_type' => 'percentage', 'discount_value' => '1.00']);
         Sanctum::actingAs($buyer);
         $this->postJson('/api/retail/cart/items', ['product_variant_id' => $variant->id, 'quantity' => '3'])->assertOk();
         $this->getJson('/api/retail/cart')->assertOk();
@@ -313,13 +511,13 @@ class SalesPromotionTest extends TestCase
             'recipient_name' => 'Buyer', 'recipient_phone' => '0900000000', 'shipping_address_line1' => 'Street',
             'shipping_city' => 'HCM', 'shipping_district' => '1', 'shipping_province' => 'HCM',
             'shipping_country' => 'VN', 'payment_method' => 'cod',
-        ])->assertOk()->assertJsonPath('data.grand_total', '299.00')->json('data');
+        ])->assertOk()->assertJsonPath('data.grand_total', '297.00')->json('data');
         $orderId = $order['id'];
         $itemId = $order['items'][0]['id'];
         Sanctum::actingAs($admin);
         $this->postJson("/api/admin/sales-orders/{$orderId}/confirm", ['operation_key' => (string) Str::uuid()])->assertOk();
         $this->postJson("/api/admin/sales-orders/{$orderId}/payments", [
-            'operation_key' => (string) Str::uuid(), 'amount' => '299.00', 'payment_method' => 'cash',
+            'operation_key' => (string) Str::uuid(), 'amount' => '297.00', 'payment_method' => 'cash',
         ])->assertCreated();
         $this->postJson("/api/admin/sales-orders/{$orderId}/advance", [
             'operation_key' => (string) Str::uuid(), 'target' => 'preparing',
@@ -329,14 +527,15 @@ class SalesPromotionTest extends TestCase
         ])->assertOk();
         $firstReturn = $this->postJson("/api/admin/sales-orders/{$orderId}/returns", [
             'operation_key' => (string) Str::uuid(), 'reason' => 'Damaged',
-            'items' => [['item_id' => $itemId, 'quantity' => '1', 'restock_quantity' => '0']],
-        ])->assertCreated()->assertJsonPath('data.items.0.return_value_snapshot', '99.67')->json('data');
+            'items' => [['item_id' => $itemId, 'quantity' => '1', 'restock_quantity' => '0',
+                'non_restock_reason_code' => 'damaged']],
+        ])->assertCreated()->assertJsonPath('data.items.0.return_value_snapshot', '99.00')->json('data');
         $this->postJson("/api/admin/sales-orders/{$orderId}/refunds", [
             'operation_key' => (string) Str::uuid(), 'amount' => '100.00', 'refund_method' => 'bank_transfer',
             'reason' => 'order_cancel', 'return_id' => $firstReturn['id'],
         ])->assertConflict()->assertJsonPath('code', 'REFUND_EXCEEDS_RETURN_VALUE');
         $this->postJson("/api/admin/sales-orders/{$orderId}/refunds", [
-            'operation_key' => (string) Str::uuid(), 'amount' => '99.67', 'refund_method' => 'bank_transfer',
+            'operation_key' => (string) Str::uuid(), 'amount' => '99.00', 'refund_method' => 'bank_transfer',
             'reason' => 'order_cancel', 'return_id' => $firstReturn['id'],
         ])->assertCreated();
         $this->assertDatabaseHas('sales_promotion_redemptions', ['sales_order_id' => $orderId, 'status' => 'redeemed']);
@@ -346,9 +545,11 @@ class SalesPromotionTest extends TestCase
         ])->assertConflict()->assertJsonPath('code', 'REFUND_EXCEEDS_REFUNDABLE_AMOUNT');
         $this->postJson("/api/admin/sales-orders/{$orderId}/returns", [
             'operation_key' => (string) Str::uuid(), 'reason' => 'Damaged',
-            'items' => [['item_id' => $itemId, 'quantity' => '2', 'restock_quantity' => '0']],
-        ])->assertCreated()->assertJsonPath('data.items.0.return_value_snapshot', '199.33');
+            'items' => [['item_id' => $itemId, 'quantity' => '2', 'restock_quantity' => '0',
+                'non_restock_reason_code' => 'damaged']],
+        ])->assertCreated()->assertJsonPath('data.items.0.return_value_snapshot', '198.00');
 
+        $promotion->update(['status' => 'inactive']);
         $percentage = SalesPromotion::factory()->create(['discount_type' => 'percentage', 'discount_value' => '10.00']);
         Sanctum::actingAs($buyer);
         $this->postJson('/api/retail/cart/items', ['product_variant_id' => $variant->id, 'quantity' => '1'])->assertOk();
@@ -371,7 +572,8 @@ class SalesPromotionTest extends TestCase
         ])->assertOk();
         $this->postJson("/api/admin/sales-orders/{$nextOrderId}/returns", [
             'operation_key' => (string) Str::uuid(), 'reason' => 'Damaged',
-            'items' => [['item_id' => $next['items'][0]['id'], 'quantity' => '1', 'restock_quantity' => '0']],
+            'items' => [['item_id' => $next['items'][0]['id'], 'quantity' => '1', 'restock_quantity' => '0',
+                'non_restock_reason_code' => 'damaged']],
         ])->assertCreated()->assertJsonPath('data.items.0.return_value_snapshot', '90.00');
     }
 
@@ -390,18 +592,16 @@ class SalesPromotionTest extends TestCase
             'product_variant_id' => $variant->id, 'unit_price' => '100.00', 'minimum_quantity' => '1']);
         app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
             'product_variant_id' => $variant->id, 'quantity' => '1', 'operation_key' => (string) Str::uuid()], $admin->id);
-        $promotion = SalesPromotion::factory()->create(['discount_type' => 'fixed_amount',
-            'discount_value' => '200.00', 'sales_scope' => 'dealer']);
+        $promotion = SalesPromotion::factory()->create(['discount_type' => 'percentage',
+            'discount_value' => '100.00', 'sales_scope' => 'dealer']);
         Sanctum::actingAs($user);
         $url = "/api/dealer/accounts/{$account->id}/quick-order";
         $items = [['product_variant_id' => $variant->id, 'quantity' => '1']];
-        $review = $this->postJson("$url/review", ['items' => $items])
+        $review = $this->postJson("$url/review", ['items' => $items, ...$this->shipping()])
             ->assertOk()->assertJsonPath('data.grand_total', '0.00')->json('data');
         $order = $this->postJson($url, ['operation_key' => (string) Str::uuid(),
             'review_fingerprint' => $review['review_fingerprint'], 'items' => $items,
-            'recipient_name' => 'Recipient',
-            'recipient_phone' => '0900000000', 'shipping_address_line1' => 'Street',
-            'shipping_city' => 'HCM', 'shipping_province' => 'HCM', 'shipping_country' => 'VN'])
+            ...$this->shipping()])
             ->assertCreated()->assertJsonPath('data.grand_total', '0.00')
             ->assertJsonPath('data.order_status', 'confirmed')
             ->assertJsonPath('data.payment_status', 'unpaid')
@@ -474,5 +674,15 @@ class SalesPromotionTest extends TestCase
         ])->assertOk()->assertJsonPath('data.order_status', 'confirmed')
             ->assertJsonPath('data.payment_status', 'unpaid');
         $this->assertDatabaseCount('refunds', 0);
+    }
+
+    /** @return array<string, string> */
+    private function shipping(): array
+    {
+        $ward = AdministrativeWard::query()->where('province_code', '79')->firstOrFail();
+
+        return ['recipient_name' => 'Recipient', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => 'Street', 'shipping_province_code' => '79',
+            'shipping_ward_code' => $ward->code];
     }
 }

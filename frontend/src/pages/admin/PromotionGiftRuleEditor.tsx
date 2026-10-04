@@ -168,8 +168,8 @@ export function PromotionGiftRuleEditor({
     return (
         <section className="space-y-5" aria-label="Điều kiện mua và quà tặng">
             <div>
-                <h3 className="text-lg font-semibold text-primary">Điều kiện mua & quà tặng</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <h2 className="admin-section-title text-primary">Điều kiện mua & quà tặng</h2>
+                <p className="admin-helper-text mt-1">
                     Thiết lập sản phẩm khách cần mua và sản phẩm khách sẽ nhận.
                 </p>
                 {errors["gift_rule"] && (
@@ -179,10 +179,10 @@ export function PromotionGiftRuleEditor({
                 )}
             </div>
             <div className="grid items-start gap-4 xl:grid-cols-2">
-                <section className="min-w-0 space-y-4 rounded-xl border bg-background p-4 sm:p-5">
+                <section className="min-w-0 space-y-4 rounded-xl border bg-card p-4 sm:p-5">
                     <div>
-                        <h4 className="font-semibold text-primary">1. Điều kiện mua</h4>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <h3 className="admin-subsection-title text-primary">1. Điều kiện mua</h3>
+                        <p className="admin-helper-text mt-1">
                             Khách cần mua sản phẩm nào để nhận ưu đãi?
                         </p>
                     </div>
@@ -202,7 +202,7 @@ export function PromotionGiftRuleEditor({
                             {errors["gift_rule.buy_product_id"]}
                         </p>
                     )}
-                    <label className="grid gap-1 text-sm font-medium">
+                    <label className="admin-form-label grid gap-1.5">
                         Biến thể áp dụng
                         <select
                             className={fieldClass}
@@ -227,7 +227,7 @@ export function PromotionGiftRuleEditor({
                             {errors["gift_rule.buy_variant_id"]}
                         </p>
                     )}
-                    <label className="grid gap-1 text-sm font-medium">
+                    <label className="admin-form-label grid gap-1.5">
                         Số lượng tối thiểu
                         <input
                             className={`${fieldClass} max-w-36`}
@@ -248,15 +248,15 @@ export function PromotionGiftRuleEditor({
                     )}
                 </section>
 
-                <section className="min-w-0 space-y-4 rounded-xl border bg-background p-4 sm:p-5">
+                <section className="min-w-0 space-y-4 rounded-xl border bg-card p-4 sm:p-5">
                     <div>
-                        <h4 className="font-semibold text-primary">2. Quà tặng</h4>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <h3 className="admin-subsection-title text-primary">2. Quà tặng</h3>
+                        <p className="admin-helper-text mt-1">
                             Chọn sản phẩm khách sẽ nhận khi đủ điều kiện.
                         </p>
                     </div>
                     <fieldset className="grid gap-2 sm:grid-cols-2">
-                        <legend className="mb-2 text-sm font-medium">Loại quà tặng</legend>
+                        <legend className="admin-form-label mb-2">Loại quà tặng</legend>
                         {(
                             [
                                 ["other", "Tặng sản phẩm khác"],
@@ -305,7 +305,7 @@ export function PromotionGiftRuleEditor({
                             {errors["gift_rule.gift_product_id"]}
                         </p>
                     )}
-                    <label className="grid gap-1 text-sm font-medium">
+                    <label className="admin-form-label grid gap-1.5">
                         Biến thể quà tặng
                         <select
                             className={fieldClass}
@@ -335,7 +335,7 @@ export function PromotionGiftRuleEditor({
                             {errors["gift_rule.gift_variant_id"]}
                         </p>
                     )}
-                    <label className="grid gap-1 text-sm font-medium">
+                    <label className="admin-form-label grid gap-1.5">
                         Số lượng quà
                         <input
                             className={`${fieldClass} max-w-36`}
@@ -357,10 +357,10 @@ export function PromotionGiftRuleEditor({
                 </section>
             </div>
 
-            <section className="space-y-4 rounded-xl border bg-background p-4 sm:p-5">
-                <h4 className="font-semibold text-primary">3. Quy tắc áp dụng</h4>
+            <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+                <h3 className="admin-subsection-title text-primary">3. Quy tắc áp dụng</h3>
                 <div className="grid gap-4 md:grid-cols-2">
-                    <label className="grid gap-1 text-sm font-medium">
+                    <label className="admin-form-label grid gap-1.5">
                         Cách áp dụng
                         <select
                             className={fieldClass}
@@ -395,7 +395,7 @@ export function PromotionGiftRuleEditor({
                                     );
                                 })}
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="admin-helper-text">
                                 Không chọn hạng nào = áp dụng cho tất cả hạng đại lý.
                             </p>
                             {errors["dealer_tier_ids"] && (
@@ -412,12 +412,12 @@ export function PromotionGiftRuleEditor({
                 className="rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5"
                 aria-live="polite"
             >
-                <h4 className="flex items-center gap-2 font-semibold text-primary">
+                <h3 className="admin-subsection-title flex items-center gap-2 text-primary">
                     <Gift className="size-4" aria-hidden="true" />
                     Xem trước ưu đãi
-                </h4>
+                </h3>
                 {canPreview ? (
-                    <div className="mt-3 space-y-1 text-sm">
+                    <div className="mt-3 space-y-1 text-sm leading-[1.5]">
                         <p className="font-medium text-primary">
                             Mua {formatProductQuantity(rule.minimum_buy_quantity)} {buyProduct.name}
                             {buyVariant ? ` · ${buyVariant.sku}` : ""}
@@ -427,7 +427,7 @@ export function PromotionGiftRuleEditor({
                             {formatProductQuantity(rule.gift_quantity)} {giftProduct.name} ·{" "}
                             {giftVariant.sku}
                         </p>
-                        <p className="pt-1 text-xs text-muted-foreground">
+                        <p className="admin-helper-text pt-1">
                             {buyVariant ? buyVariant.variant_name : "Tất cả biến thể"} ·{" "}
                             {rule.repeat_per_multiple ? "Lặp theo bội số" : "1 lần / đơn"} ·{" "}
                             {salesScope === "retail"

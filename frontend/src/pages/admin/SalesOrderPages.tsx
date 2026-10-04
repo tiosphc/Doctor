@@ -1169,7 +1169,7 @@ export function SalesOrderDetailPage({ id }: { id: number }) {
                             Đơn {order.order_code} · Kho hiện tại: {order.warehouse.name}
                         </DialogDescription>
                     </DialogHeader>
-                    <label className="grid gap-1 text-sm">
+                    <label className="admin-form-field admin-form-label">
                         <span>Kho mới</span>
                         <select
                             className={fieldClass}
@@ -1542,7 +1542,7 @@ export function SalesOrderDetailPage({ id }: { id: number }) {
                             void recordPayment();
                         }}
                     >
-                        <label className="grid gap-1 text-sm">
+                        <label className="admin-form-field admin-form-label">
                             <span>Số tiền đã nhận *</span>
                             <input
                                 className={fieldClass}
@@ -1557,7 +1557,7 @@ export function SalesOrderDetailPage({ id }: { id: number }) {
                                 </span>
                             )}
                         </label>
-                        <label className="grid gap-1 text-sm">
+                        <label className="admin-form-field admin-form-label">
                             <span>Phương thức *</span>
                             <select
                                 className={fieldClass}
@@ -1571,7 +1571,7 @@ export function SalesOrderDetailPage({ id }: { id: number }) {
                                 <option value="other_manual">Thủ công khác</option>
                             </select>
                         </label>
-                        <label className="grid gap-1 text-sm">
+                        <label className="admin-form-field admin-form-label">
                             <span>Mã tham chiếu</span>
                             <input
                                 className={fieldClass}
@@ -1580,7 +1580,7 @@ export function SalesOrderDetailPage({ id }: { id: number }) {
                                 onChange={(event) => setPaymentReference(event.target.value)}
                             />
                         </label>
-                        <label className="grid gap-1 text-sm">
+                        <label className="admin-form-field admin-form-label">
                             <span>Ghi chú</span>
                             <textarea
                                 className={fieldClass}
@@ -1632,7 +1632,7 @@ export function SalesOrderDetailPage({ id }: { id: number }) {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     {dialog?.needsReason && (
-                        <label className="grid gap-1 text-sm">
+                        <label className="admin-form-field admin-form-label">
                             <span>Lý do hủy *</span>
                             <textarea
                                 className={fieldClass}

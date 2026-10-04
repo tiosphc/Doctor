@@ -27,7 +27,7 @@ class DealerQuickOrderController extends Controller
 
         $order = $service->submit($request->user(), $dealer, $request->validated());
 
-        return (new DealerSalesOrderResource($order->load(['buyer:id,name', 'warehouse:id,code,name', 'items'])))
+        return (new DealerSalesOrderResource($order->load(['buyer:id,name', 'warehouse:id,code,name', 'items', 'promotionRedemptions.promotion:id,name'])))
             ->response()->setStatusCode(201);
     }
 }

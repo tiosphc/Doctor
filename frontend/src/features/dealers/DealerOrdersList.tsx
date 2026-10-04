@@ -2,7 +2,7 @@ import { SalesOrderStatusBadge } from "@/components/common/SalesOrderStatusBadge
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "@tanstack/react-router";
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { ChevronRight, MoreHorizontal, Search } from "lucide-react";
 import { ErrorState, Pagination } from "@/components/common/AsyncState";
 import { salesOrderSourceLabel, salesOrderStatusLabel } from "@/components/common/salesOrderStatus";
 import {
@@ -46,7 +46,7 @@ function OrderActions({ order }: { order: DealerOrder }) {
                 <button
                     type="button"
                     aria-label={`Thao tác đơn ${order.order_code}`}
-                    className="rounded-md border p-1.5 text-muted-foreground hover:bg-accent hover:text-primary"
+                    className="grid size-9 place-items-center rounded-md border text-muted-foreground hover:bg-accent hover:text-primary"
                     onClick={(event) => event.stopPropagation()}
                     onKeyDown={(event) => event.stopPropagation()}
                 >
@@ -103,47 +103,47 @@ function OrderRow({ order, layout }: { order: DealerOrder; layout: "table" | "ca
             onClick={open}
             onKeyDown={keyboardOpen}
         >
-            <td className="px-3 py-3 align-top">
-                <strong className="text-primary">{order.order_code}</strong>
+            <td className="px-4 py-3.5 align-middle">
+                <strong className="text-sm font-semibold text-primary">{order.order_code}</strong>
                 {order.external_reference && (
                     <p
-                        className="max-w-40 truncate text-xs text-muted-foreground"
+                        className="dealer-meta max-w-44 truncate text-muted-foreground"
                         title={order.external_reference}
                     >
                         #{order.external_reference}
                     </p>
                 )}
-                <span className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                <span className="dealer-meta mt-1 inline-block rounded-full bg-muted px-2.5 py-0.5 text-muted-foreground">
                     {source}
                 </span>
             </td>
-            <td className="px-3 py-3 align-top">
-                <strong className="font-medium">{order.recipient_name}</strong>
-                <p className="text-xs text-muted-foreground">{order.recipient_phone}</p>
+            <td className="px-4 py-3.5 align-middle">
+                <strong className="text-sm font-semibold">{order.recipient_name}</strong>
+                <p className="dealer-meta text-muted-foreground">{order.recipient_phone}</p>
                 <p
-                    className="max-w-40 truncate text-xs text-muted-foreground"
+                    className="dealer-meta max-w-44 truncate text-muted-foreground"
                     title={shortLocation(order)}
                 >
                     {shortLocation(order)}
                 </p>
             </td>
-            <td className="px-3 py-3 align-top text-sm">
+            <td className="px-4 py-3.5 align-middle text-sm">
                 {new Date(order.created_at).toLocaleDateString("vi-VN")}
             </td>
-            <td className="px-3 py-3 align-top text-sm">{itemSummary(order)}</td>
-            <td className="px-3 py-3 align-top">
+            <td className="px-4 py-3.5 align-middle text-sm">{itemSummary(order)}</td>
+            <td className="px-4 py-3.5 align-middle">
                 <SalesOrderStatusBadge kind="payment" status={order.payment_status} />
             </td>
-            <td className="px-3 py-3 align-top">
+            <td className="px-4 py-3.5 align-middle">
                 <SalesOrderStatusBadge kind="order" status={order.order_status} />
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="dealer-meta mt-1 text-muted-foreground">
                     {salesOrderStatusLabel("fulfillment", order.fulfillment_status)}
                 </p>
             </td>
-            <td className="px-3 py-3 text-right align-top font-semibold whitespace-nowrap">
+            <td className="px-4 py-3.5 text-right align-middle text-[15px] font-bold whitespace-nowrap text-primary">
                 {money(order.grand_total)}
             </td>
-            <td className="px-2 py-3 align-top">
+            <td className="px-2 py-3.5 align-middle">
                 <OrderActions order={order} />
             </td>
         </tr>
@@ -152,7 +152,7 @@ function OrderRow({ order, layout }: { order: DealerOrder; layout: "table" | "ca
             role="link"
             tabIndex={0}
             aria-label={`Xem đơn ${order.order_code}`}
-            className="cursor-pointer rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-primary lg:hidden"
+            className="cursor-pointer rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-primary 2xl:hidden"
             onClick={open}
             onKeyDown={keyboardOpen}
         >
@@ -160,17 +160,17 @@ function OrderRow({ order, layout }: { order: DealerOrder; layout: "table" | "ca
                 <div className="min-w-0">
                     <strong className="text-primary">{order.order_code}</strong>
                     {order.external_reference && (
-                        <p className="truncate text-xs text-muted-foreground">
+                        <p className="dealer-meta truncate text-muted-foreground">
                             #{order.external_reference}
                         </p>
                     )}
-                    <span className="text-xs text-muted-foreground">{source}</span>
+                    <span className="dealer-meta text-muted-foreground">{source}</span>
                 </div>
                 <strong className="text-right text-primary whitespace-nowrap">
                     {money(order.grand_total)}
                 </strong>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="dealer-meta mt-2 text-muted-foreground">
                 {new Date(order.created_at).toLocaleString("vi-VN")}
             </p>
             <div className="mt-3 space-y-0.5 text-sm">
@@ -183,7 +183,7 @@ function OrderRow({ order, layout }: { order: DealerOrder; layout: "table" | "ca
                 <SalesOrderStatusBadge kind="payment" status={order.payment_status} />
                 <SalesOrderStatusBadge kind="order" status={order.order_status} />
             </div>
-            <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="dealer-meta mt-3 flex items-center justify-between gap-2 text-muted-foreground">
                 <span>{salesOrderStatusLabel("fulfillment", order.fulfillment_status)}</span>
                 <div className="flex items-center gap-2">
                     <OrderActions order={order} />
@@ -252,7 +252,7 @@ export function DealerOrdersList({
         setTab("all");
         setPage(1);
     };
-    const fieldClass = "min-w-0 rounded-md border bg-background px-3 py-2 text-sm";
+    const fieldClass = "dealer-control w-full min-w-0 rounded-md border bg-background px-3 py-2";
     return (
         <section className="space-y-4">
             <div
@@ -266,7 +266,7 @@ export function DealerOrdersList({
                         type="button"
                         role="tab"
                         aria-selected={tab === item.key}
-                        className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition-colors ${tab === item.key ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
+                        className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${tab === item.key ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
                         onClick={() => {
                             setTab(item.key);
                             setOrderStatus("");
@@ -274,22 +274,28 @@ export function DealerOrdersList({
                         }}
                     >
                         {item.label}{" "}
-                        <span className="ml-1 text-xs opacity-75">
+                        <span className="dealer-meta ml-1 opacity-75">
                             {orders.data?.status_counts[item.key] ?? 0}
                         </span>
                     </button>
                 ))}
             </div>
-            <div className="space-y-3 rounded-xl border bg-card p-4">
-                <input
-                    className={`${fieldClass} w-full`}
-                    aria-label="Tìm đơn đại lý"
-                    placeholder="Tìm mã đơn, tên hoặc SĐT người nhận..."
-                    value={searchInput}
-                    onChange={(event) => setSearchInput(event.target.value)}
-                />
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <label className="grid gap-1 text-xs text-muted-foreground">
+            <div className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+                <div className="relative">
+                    <Search
+                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                        aria-hidden="true"
+                    />
+                    <input
+                        className={`${fieldClass} pl-10`}
+                        aria-label="Tìm đơn đại lý"
+                        placeholder="Tìm mã đơn, tên hoặc SĐT người nhận..."
+                        value={searchInput}
+                        onChange={(event) => setSearchInput(event.target.value)}
+                    />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <label className="grid gap-1.5 text-sm font-medium text-foreground">
                         Từ ngày
                         <input
                             type="date"
@@ -302,7 +308,7 @@ export function DealerOrdersList({
                             }}
                         />
                     </label>
-                    <label className="grid gap-1 text-xs text-muted-foreground">
+                    <label className="grid gap-1.5 text-sm font-medium text-foreground">
                         Đến ngày
                         <input
                             type="date"
@@ -315,7 +321,7 @@ export function DealerOrdersList({
                             }}
                         />
                     </label>
-                    <label className="grid gap-1 text-xs text-muted-foreground">
+                    <label className="grid gap-1.5 text-sm font-medium text-foreground">
                         Thanh toán
                         <select
                             className={fieldClass}
@@ -340,7 +346,7 @@ export function DealerOrdersList({
                             ))}
                         </select>
                     </label>
-                    <label className="grid gap-1 text-xs text-muted-foreground">
+                    <label className="grid gap-1.5 text-sm font-medium text-foreground">
                         Trạng thái đơn
                         <select
                             className={fieldClass}
@@ -368,7 +374,7 @@ export function DealerOrdersList({
                             ))}
                         </select>
                     </label>
-                    <label className="grid gap-1 text-xs text-muted-foreground">
+                    <label className="grid gap-1.5 text-sm font-medium text-foreground">
                         Kho
                         <select
                             className={fieldClass}
@@ -442,9 +448,9 @@ export function DealerOrdersList({
                 )
             ) : (
                 <>
-                    <div className="hidden rounded-xl border bg-card lg:block">
-                        <table className="w-full table-fixed text-left text-sm">
-                            <thead className="border-b bg-muted/30 text-xs text-muted-foreground">
+                    <div className="hidden overflow-x-auto rounded-xl border bg-card 2xl:block">
+                        <table className="w-full min-w-[1120px] table-fixed text-left text-sm">
+                            <thead className="border-b bg-muted/30 text-[13px] font-semibold text-muted-foreground">
                                 <tr>
                                     <th className="w-[15%] px-3 py-3">Đơn hàng</th>
                                     <th className="w-[18%] px-3 py-3">Người nhận</th>
@@ -453,7 +459,7 @@ export function DealerOrdersList({
                                     <th className="w-[13%] px-3 py-3">Thanh toán</th>
                                     <th className="w-[15%] px-3 py-3">Trạng thái</th>
                                     <th className="w-[14%] px-3 py-3 text-right">Tổng tiền</th>
-                                    <th className="w-[3%] px-2 py-3">
+                                    <th className="w-14 px-2 py-3.5">
                                         <span className="sr-only">Thao tác</span>
                                     </th>
                                 </tr>
@@ -465,12 +471,12 @@ export function DealerOrdersList({
                             </tbody>
                         </table>
                     </div>
-                    <div className="grid gap-3 lg:hidden">
+                    <div className="grid gap-3 2xl:hidden">
                         {orders.data.data.map((order) => (
                             <OrderRow key={order.id} order={order} layout="card" />
                         ))}
                     </div>
-                    <p className="text-center text-xs text-muted-foreground">
+                    <p className="text-center text-sm text-muted-foreground">
                         Hiển thị {orders.data.meta.from}–{orders.data.meta.to} /{" "}
                         {orders.data.meta.total} đơn
                     </p>

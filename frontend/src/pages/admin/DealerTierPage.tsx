@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Crown } from "lucide-react";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/AsyncState";
 import { errorMessage, firstFieldErrors } from "@/services/api";
 import { productApi } from "@/services/productApi";
@@ -69,7 +70,7 @@ export function DealerTierPage() {
 
     return (
         <ProductAdminGuard>
-            <div className="space-y-6">
+            <div className={`${adminFormLayout.standard} space-y-6`}>
                 <header>
                     <p className="label-luxury">Sản phẩm & giá</p>
                     <h1 className="mt-2 text-3xl text-primary">Tier đại lý</h1>
@@ -233,10 +234,10 @@ function TierCard({
                     <span className="text-xs text-muted-foreground">Hạng ban đầu</span>
                 )}
             </div>
-            <label className="grid gap-1 text-sm">
+            <label className="admin-form-field admin-form-label">
                 Ngưỡng doanh thu VND
                 <input
-                    className={fieldClass}
+                    className={`${fieldClass} max-w-56`}
                     type="text"
                     inputMode="numeric"
                     disabled={isSilver}
@@ -259,7 +260,7 @@ function TierCard({
                     </span>
                 )}
             </label>
-            <label className="grid gap-1 text-sm">
+            <label className="admin-form-field admin-form-label">
                 Mô tả
                 <input
                     className={fieldClass}

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Ellipsis, Eye, Filter, Pencil, Power, Tag } from "lucide-react";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
@@ -668,7 +669,7 @@ function ProductEditor({ product }: { product: Product }) {
         }
     };
     return (
-        <div className="space-y-6">
+        <div className={`${adminFormLayout.complex} space-y-6`}>
             <Link to="/admin/products" className="text-sm text-primary underline">
                 ← Danh sách sản phẩm
             </Link>
@@ -728,7 +729,7 @@ function ProductEditor({ product }: { product: Product }) {
                         );
                     }}
                 >
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         SKU chính
                         <input
                             className={`${fieldClass} cursor-not-allowed opacity-70`}
@@ -736,7 +737,7 @@ function ProductEditor({ product }: { product: Product }) {
                             disabled
                         />
                     </label>
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Tên
                         <input
                             className={fieldClass}
@@ -745,7 +746,7 @@ function ProductEditor({ product }: { product: Product }) {
                             required
                         />
                     </label>
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Slug
                         <input
                             className={fieldClass}
@@ -754,10 +755,10 @@ function ProductEditor({ product }: { product: Product }) {
                             required
                         />
                     </label>
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Danh mục
                         <select
-                            className={fieldClass}
+                            className={`${fieldClass} admin-field-medium`}
                             value={form.product_category_id}
                             onChange={(event) =>
                                 setForm({ ...form, product_category_id: event.target.value })
@@ -770,10 +771,10 @@ function ProductEditor({ product }: { product: Product }) {
                             ))}
                         </select>
                     </label>
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Thương hiệu
                         <select
-                            className={fieldClass}
+                            className={`${fieldClass} admin-field-medium`}
                             value={form.brand_id}
                             onChange={(event) => setForm({ ...form, brand_id: event.target.value })}
                         >
@@ -785,10 +786,10 @@ function ProductEditor({ product }: { product: Product }) {
                             ))}
                         </select>
                     </label>
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Trạng thái
                         <select
-                            className={fieldClass}
+                            className={`${fieldClass} admin-field-medium`}
                             value={form.status}
                             onChange={(event) =>
                                 setForm({
@@ -802,7 +803,7 @@ function ProductEditor({ product }: { product: Product }) {
                             <option value="inactive">Ngừng hoạt động</option>
                         </select>
                     </label>
-                    <label className="sm:col-span-2 text-sm">
+                    <label className="admin-form-field admin-form-label sm:col-span-2">
                         Mô tả
                         <textarea
                             className={fieldClass}
@@ -813,13 +814,13 @@ function ProductEditor({ product }: { product: Product }) {
                             }
                         />
                     </label>
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Ngưỡng tồn kho thấp
                         <input
                             type="number"
                             min="0"
                             step="1"
-                            className={fieldClass}
+                            className={`${fieldClass} admin-field-compact`}
                             value={form.default_low_stock_threshold}
                             onChange={(event) =>
                                 setForm({
@@ -829,7 +830,7 @@ function ProductEditor({ product }: { product: Product }) {
                             }
                         />
                     </label>
-                    <div className="sm:col-span-2 flex flex-wrap gap-4 text-sm">
+                    <div className="sm:col-span-2 flex flex-wrap gap-4 pt-1 text-sm">
                         <label className="flex items-center gap-2">
                             <input
                                 type="checkbox"
@@ -892,7 +893,7 @@ function ProductEditor({ product }: { product: Product }) {
                             {key}: {value}
                         </p>
                     ))}
-                    <div className="sm:col-span-2">
+                    <div className="flex justify-end sm:col-span-2">
                         <button disabled={save.isPending || running} className={buttonClass}>
                             {save.isPending || running ? "Đang lưu..." : "Lưu sản phẩm"}
                         </button>
@@ -930,7 +931,7 @@ function ProductEditor({ product }: { product: Product }) {
                         }}
                     >
                         <h2 className="sm:col-span-2 text-xl text-primary">Thêm SKU</h2>
-                        <label className="text-sm">
+                        <label className="admin-form-field admin-form-label">
                             SKU
                             <input
                                 required
@@ -942,7 +943,7 @@ function ProductEditor({ product }: { product: Product }) {
                             />
                             {errors["sku"] && <span className="text-red-700">{errors["sku"]}</span>}
                         </label>
-                        <label className="text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Tên biến thể
                             <input
                                 required
@@ -953,11 +954,11 @@ function ProductEditor({ product }: { product: Product }) {
                                 }
                             />
                         </label>
-                        <label className="text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Đơn vị
                             <select
                                 required
-                                className={fieldClass}
+                                className={`${fieldClass} admin-field-medium`}
                                 value={variant.unit_id}
                                 onChange={(event) =>
                                     setVariant({ ...variant, unit_id: event.target.value })
@@ -993,7 +994,7 @@ function ProductEditor({ product }: { product: Product }) {
                                 </label>
                             ))}
                         </div>
-                        <div className="sm:col-span-2">
+                        <div className="flex justify-end sm:col-span-2">
                             <button
                                 disabled={addVariant.isPending || running}
                                 className={buttonClass}
@@ -1073,16 +1074,19 @@ function ProductEditor({ product }: { product: Product }) {
                         }}
                     >
                         <h2 className="text-xl text-primary">Tải ảnh sản phẩm</h2>
-                        <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            required
-                            onChange={(event) => setFile(event.target.files?.[0] || null)}
-                        />
-                        <label className="block text-sm">
+                        <label className="admin-form-field admin-form-label">
+                            Tệp ảnh
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                required
+                                onChange={(event) => setFile(event.target.files?.[0] || null)}
+                            />
+                        </label>
+                        <label className="admin-form-field admin-form-label">
                             SKU áp dụng
                             <select
-                                className={fieldClass}
+                                className={`${fieldClass} admin-field-medium`}
                                 value={imageVariantId}
                                 onChange={(event) => setImageVariantId(event.target.value)}
                             >
@@ -1094,7 +1098,7 @@ function ProductEditor({ product }: { product: Product }) {
                                 ))}
                             </select>
                         </label>
-                        <label className="block text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Mô tả ảnh
                             <input
                                 className={fieldClass}
@@ -1102,12 +1106,12 @@ function ProductEditor({ product }: { product: Product }) {
                                 onChange={(event) => setImageAlt(event.target.value)}
                             />
                         </label>
-                        <label className="block text-sm">
+                        <label className="admin-form-field admin-form-label">
                             Thứ tự
                             <input
                                 type="number"
                                 min="0"
-                                className={fieldClass}
+                                className={`${fieldClass} admin-field-compact`}
                                 value={imageSortOrder}
                                 onChange={(event) => setImageSortOrder(event.target.value)}
                             />
@@ -1120,12 +1124,14 @@ function ProductEditor({ product }: { product: Product }) {
                             />
                             Ảnh chính
                         </label>
-                        <button
-                            disabled={!file || upload.isPending || running}
-                            className={buttonClass}
-                        >
-                            {upload.isPending || running ? "Đang tải..." : "Tải lên"}
-                        </button>
+                        <div className="flex justify-end">
+                            <button
+                                disabled={!file || upload.isPending || running}
+                                className={buttonClass}
+                            >
+                                {upload.isPending || running ? "Đang tải..." : "Tải lên"}
+                            </button>
+                        </div>
                     </form>
                 </div>
             )}
@@ -1268,14 +1274,16 @@ function ProductPricingForm({
                     {notice}
                 </p>
             )}
-            <button
-                type="button"
-                disabled={save.isPending}
-                className={buttonClass}
-                onClick={submit}
-            >
-                {save.isPending ? "Đang lưu..." : "Lưu giá"}
-            </button>
+            <div className="flex justify-end">
+                <button
+                    type="button"
+                    disabled={save.isPending}
+                    className={buttonClass}
+                    onClick={submit}
+                >
+                    {save.isPending ? "Đang lưu..." : "Lưu giá"}
+                </button>
+            </div>
         </div>
     );
 }
@@ -1341,24 +1349,27 @@ function VariantRow({
                 >
                     {editing ? "Đóng" : "Sửa SKU"}
                 </button>
-                <select
-                    aria-label={`Trạng thái ${item.sku}`}
-                    className={fieldClass + " max-w-44"}
-                    value={item.status}
-                    disabled={update.isPending}
-                    onChange={(event) => {
-                        const status = event.target.value;
-                        if (
-                            status === "inactive" &&
-                            !window.confirm(`Ngừng hoạt động SKU ${item.sku}?`)
-                        )
-                            return;
-                        void change({ status });
-                    }}
-                >
-                    <option value="active">Hoạt động</option>
-                    <option value="inactive">Ngừng hoạt động</option>
-                </select>
+                <label className="admin-form-field admin-form-label w-full sm:w-40">
+                    Trạng thái
+                    <select
+                        aria-label={`Trạng thái ${item.sku}`}
+                        className={fieldClass}
+                        value={item.status}
+                        disabled={update.isPending}
+                        onChange={(event) => {
+                            const status = event.target.value;
+                            if (
+                                status === "inactive" &&
+                                !window.confirm(`Ngừng hoạt động SKU ${item.sku}?`)
+                            )
+                                return;
+                            void change({ status });
+                        }}
+                    >
+                        <option value="active">Hoạt động</option>
+                        <option value="inactive">Ngừng hoạt động</option>
+                    </select>
+                </label>
             </div>
             {editing && (
                 <form
@@ -1370,11 +1381,11 @@ function VariantRow({
                         }
                     }}
                 >
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         SKU
                         <input className={fieldClass} value={form.sku} disabled />
                     </label>
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Tên biến thể
                         <input
                             className={fieldClass}
@@ -1385,7 +1396,7 @@ function VariantRow({
                             required
                         />
                     </label>
-                    <label className="text-sm">
+                    <label className="admin-form-field admin-form-label">
                         Đơn vị
                         <select
                             className={fieldClass}
@@ -1421,7 +1432,7 @@ function VariantRow({
                             ),
                         )}
                     </div>
-                    <div className="sm:col-span-3">
+                    <div className="flex justify-end sm:col-span-3">
                         <button className={buttonClass} disabled={update.isPending}>
                             Lưu SKU
                         </button>

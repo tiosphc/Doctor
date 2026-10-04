@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdministrativeWard;
 use App\Models\DealerAccount;
 use App\Models\DealerAccountUser;
 use App\Models\DealerOrderImport;
@@ -12,6 +13,7 @@ use App\Models\ProductVariant;
 use App\Models\SalesPromotion;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Models\WarehouseServiceArea;
 use App\Services\DealerOrderImportService;
 use App\Services\DealerQuickOrderService;
 use App\Services\DealerWalletService;
@@ -50,11 +52,10 @@ class SalesPromotionConcurrencyTest extends TestCase
     private function process(User $user, DealerAccount $account, ProductVariant $variant, ?string $code): Process
     {
         $items = [['product_variant_id' => $variant->id, 'quantity' => '1']];
-        $review = app(DealerQuickOrderService::class)->review($user, $account, $items);
+        $shipping = $this->shipping();
+        $review = app(DealerQuickOrderService::class)->review($user, $account, $items, $shipping);
         $body = ['operation_key' => (string) Str::uuid(), 'review_fingerprint' => $review['review_fingerprint'],
-            'items' => $items, 'recipient_name' => 'Recipient',
-            'recipient_phone' => '0900000000', 'shipping_address_line1' => 'Street',
-            'shipping_city' => 'HCM', 'shipping_province' => 'HCM', 'shipping_country' => 'VN'];
+            'items' => $items, ...$shipping];
         $arguments = var_export([$user->id, $account->id, $body], true);
 
         return new Process([PHP_BINARY, '-r', 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; '
@@ -67,6 +68,16 @@ class SalesPromotionConcurrencyTest extends TestCase
             .'echo json_encode(["status" => "conflict", "code" => $exception->getResponse()->getData(true)["code"]]); }'],
             base_path(), ['APP_ENV' => 'testing', 'DB_CONNECTION' => 'mysql', 'DB_DATABASE' => 'aesthetic_clinic_testing',
                 'CACHE_STORE' => 'array', 'QUEUE_CONNECTION' => 'sync'], null, 30);
+    }
+
+    /** @return array<string, string> */
+    private function shipping(): array
+    {
+        $ward = AdministrativeWard::query()->where('province_code', '79')->firstOrFail();
+
+        return ['recipient_name' => 'Recipient', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => 'Street', 'shipping_province_code' => '79',
+            'shipping_ward_code' => $ward->code];
     }
 
     private function importProcess(User $user, DealerAccount $account, DealerOrderImport $import): Process
@@ -92,6 +103,7 @@ class SalesPromotionConcurrencyTest extends TestCase
         $tier = DealerTier::factory()->create();
         $variant = ProductVariant::factory()->create(['sellable_dealer' => true, 'track_inventory' => true]);
         $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
+        WarehouseServiceArea::query()->create(['warehouse_id' => $warehouse->id, 'province_code' => '79']);
         $list = PriceList::factory()->create(['pricing_context' => 'dealer', 'scope_type' => 'tier',
             'dealer_tier_id' => $tier->id, 'currency' => 'VND']);
         PriceListItem::factory()->create(['price_list_id' => $list->id,
@@ -99,7 +111,7 @@ class SalesPromotionConcurrencyTest extends TestCase
         $admin = User::factory()->admin()->create();
         app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
             'product_variant_id' => $variant->id, 'quantity' => '2', 'operation_key' => (string) Str::uuid()], $admin->id);
-        $promotion = SalesPromotion::factory()->create(['discount_type' => 'fixed_amount',
+        $promotion = SalesPromotion::factory()->create(['discount_type' => 'percentage',
             'discount_value' => '10.00', 'sales_scope' => 'dealer', 'total_usage_limit' => 1]);
         $processes = [];
         foreach (range(1, 2) as $index) {
@@ -134,6 +146,7 @@ class SalesPromotionConcurrencyTest extends TestCase
         $tier = DealerTier::factory()->create();
         $variant = ProductVariant::factory()->create(['sellable_dealer' => true, 'track_inventory' => true]);
         $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
+        WarehouseServiceArea::query()->create(['warehouse_id' => $warehouse->id, 'province_code' => '79']);
         $list = PriceList::factory()->create(['pricing_context' => 'dealer', 'scope_type' => 'tier',
             'dealer_tier_id' => $tier->id, 'currency' => 'VND']);
         PriceListItem::factory()->create(['price_list_id' => $list->id,
@@ -141,7 +154,7 @@ class SalesPromotionConcurrencyTest extends TestCase
         $admin = User::factory()->admin()->create();
         app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id,
             'product_variant_id' => $variant->id, 'quantity' => '2', 'operation_key' => (string) Str::uuid()], $admin->id);
-        $promotion = SalesPromotion::factory()->create(['discount_type' => 'fixed_amount',
+        $promotion = SalesPromotion::factory()->create(['discount_type' => 'percentage',
             'discount_value' => '10.00', 'sales_scope' => 'dealer', 'total_usage_limit' => 1]);
         $accounts = [];
         foreach (range(1, 2) as $index) {
@@ -163,7 +176,8 @@ class SalesPromotionConcurrencyTest extends TestCase
             'quantity' => '1', 'promotion_code' => null,
             'recipient' => ['recipient_name' => 'Recipient', 'recipient_phone' => '0900000000',
                 'recipient_email' => '', 'shipping_address_line1' => 'Street', 'shipping_address_line2' => '',
-                'shipping_city' => 'HCM', 'shipping_province' => 'HCM', 'shipping_country' => 'VN',
+                'shipping_province_code' => '79',
+                'shipping_ward_code' => AdministrativeWard::query()->where('province_code', '79')->firstOrFail()->code,
                 'shipping_postal_code' => '', 'delivery_note' => ''], 'validation_errors' => []]);
         $import->groups()->create(['external_reference' => 'PO-PROMO', 'external_reference_normalized' => 'PO-PROMO']);
         $import = app(DealerOrderImportService::class)->revalidate($importUser, $importAccount, $import);

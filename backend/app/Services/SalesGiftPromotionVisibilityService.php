@@ -26,10 +26,7 @@ class SalesGiftPromotionVisibilityService
                 ->withCount(['redemptions as redeemed_count' => fn ($query) => $query->where('status', 'redeemed')]),
                 'buyProduct', 'buyVariant', 'giftProduct.images', 'giftVariant'])
             ->whereIn('buy_product_id', $productIds)
-            ->whereHas('promotion', fn ($query) => $query->where('status', 'active')
-                ->whereIn('sales_scope', [$channel, 'both'])
-                ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now))
-                ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now)))
+            ->whereHas('promotion', fn ($query) => $query->effectiveAt($now)->forChannel($channel))
             ->orderBy('sales_promotion_id')
             ->get();
         if ($rules->isEmpty()) {

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\SalesPromotionFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -15,6 +16,20 @@ class SalesPromotion extends Model
     use HasFactory;
 
     protected $guarded = [];
+
+    public function scopeEffectiveAt(Builder $query, ?\DateTimeInterface $at = null): Builder
+    {
+        $at ??= now();
+
+        return $query->where('status', 'active')
+            ->where(fn (Builder $query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', $at))
+            ->where(fn (Builder $query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', $at));
+    }
+
+    public function scopeForChannel(Builder $query, string $channel): Builder
+    {
+        return $query->whereIn('sales_scope', [$channel, 'both']);
+    }
 
     public function targets(): HasMany
     {

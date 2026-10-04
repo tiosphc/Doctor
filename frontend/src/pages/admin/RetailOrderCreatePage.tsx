@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import {
     Dialog,
     DialogContent,
@@ -457,7 +458,7 @@ export function SalesOrderCreatePage({ draftId }: { draftId?: number }) {
 
     return (
         <ProductAdminGuard>
-            <div className="mx-auto max-w-6xl space-y-5 pb-24">
+            <div className={`${adminFormLayout.standard} space-y-5 pb-24`}>
                 <header>
                     <Link to="/admin/sales-orders/retail" className={secondaryButtonClass}>
                         ← Đơn hàng

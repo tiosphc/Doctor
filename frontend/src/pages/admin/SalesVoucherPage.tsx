@@ -2,9 +2,13 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { adminFormLayout } from "@/components/admin/AdminFormLayout";
+import { formatPercentage } from "@/lib/formatPercentage";
 import { apiRequest, errorMessage, firstFieldErrors } from "@/services/api";
 import type { RawPage } from "@/types/product";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
+import { PromotionDateRangePicker } from "./PromotionDateRangePicker";
+import { fieldClass } from "./ProductAdminShared";
 
 type SalesVoucher = {
     id: number;
@@ -150,25 +154,24 @@ export function SalesVoucherPage({
         setNotice("");
         save.mutate();
     };
-    const fieldClass = "w-full rounded-md border bg-background px-3 py-2 text-sm";
     const fieldError = (field: string) =>
         fieldErrors[field] ? (
             <span className="text-xs text-red-700">{fieldErrors[field]}</span>
         ) : null;
 
     return (
-        <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+        <main className={`${mode === "list" ? "w-full" : adminFormLayout.standard} space-y-6`}>
             <header className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <p className="label-luxury">Bán hàng Retail</p>
-                    <h1 className="mt-2 text-3xl text-primary">
+                    <h1 className="admin-page-title mt-2 text-primary">
                         {mode === "list"
                             ? "Voucher bán lẻ"
                             : mode === "create"
                               ? "Thêm voucher"
                               : "Sửa voucher"}
                     </h1>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="admin-helper-text mt-2">
                         Quản lý mã giảm giá cho đơn hàng Retail.
                     </p>
                 </div>
@@ -204,168 +207,188 @@ export function SalesVoucherPage({
                         retry={() => void editDetail.refetch()}
                     />
                 ) : (
-                    <form onSubmit={submit} className="rounded-xl border bg-card p-5 shadow-sm">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-xl text-primary">
-                                {editingId === null ? "Tạo voucher" : "Sửa voucher"}
-                            </h2>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            <div className="grid gap-1 text-sm">
-                                <label htmlFor="sales-voucher-code">Mã voucher</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        id="sales-voucher-code"
-                                        className={`${fieldClass} min-w-0 flex-1`}
-                                        value={form.code}
-                                        required
-                                        maxLength={80}
-                                        onChange={(e) => set("code", e.target.value)}
-                                    />
-                                    {editingId === null && (
-                                        <button
-                                            type="button"
-                                            className="shrink-0 rounded-md border px-3 py-2 text-sm"
-                                            disabled={generateCode.isPending || save.isPending}
-                                            onClick={() => generateCode.mutate()}
-                                        >
-                                            {generateCode.isPending ? "Đang tạo..." : "Tạo mã"}
-                                        </button>
-                                    )}
+                    <form onSubmit={submit} className="space-y-5">
+                        <section className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+                            <h2 className="admin-section-title text-primary">Thông tin cơ bản</h2>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="admin-form-label grid gap-1.5">
+                                    <label htmlFor="sales-voucher-code">Mã voucher</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            id="sales-voucher-code"
+                                            className={`${fieldClass} min-w-0 flex-1`}
+                                            value={form.code}
+                                            required
+                                            maxLength={80}
+                                            onChange={(e) => set("code", e.target.value)}
+                                        />
+                                        {editingId === null && (
+                                            <button
+                                                type="button"
+                                                className="shrink-0 rounded-md border px-3 py-2 text-sm"
+                                                disabled={generateCode.isPending || save.isPending}
+                                                onClick={() => generateCode.mutate()}
+                                            >
+                                                {generateCode.isPending ? "Đang tạo..." : "Tạo mã"}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {fieldError("code")}
                                 </div>
-                                {fieldError("code")}
-                            </div>
-                            <label className="grid gap-1 text-sm">
-                                Tên voucher
-                                <input
-                                    className={fieldClass}
-                                    value={form.name}
-                                    required
-                                    onChange={(e) => set("name", e.target.value)}
-                                />
-                                {fieldError("name")}
-                            </label>
-                            <label className="grid gap-1 text-sm">
-                                Kiểu giảm
-                                <select
-                                    className={fieldClass}
-                                    value={form.discount_type}
-                                    onChange={(e) => set("discount_type", e.target.value)}
-                                >
-                                    <option value="percentage">Phần trăm</option>
-                                    <option value="fixed_amount">Số tiền cố định</option>
-                                </select>
-                                {fieldError("discount_type")}
-                            </label>
-                            <label className="grid gap-1 text-sm">
-                                Giá trị giảm
-                                <input
-                                    className={fieldClass}
-                                    type="number"
-                                    min="0.01"
-                                    step="0.01"
-                                    value={form.discount_value}
-                                    required
-                                    onChange={(e) => set("discount_value", e.target.value)}
-                                />
-                                {fieldError("discount_value")}
-                            </label>
-                            <label className="grid gap-1 text-sm">
-                                Đơn tối thiểu
-                                <input
-                                    className={fieldClass}
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={form.minimum_order_amount}
-                                    onChange={(e) => set("minimum_order_amount", e.target.value)}
-                                />
-                                {fieldError("minimum_order_amount")}
-                            </label>
-                            {form.discount_type === "percentage" && (
-                                <label className="grid gap-1 text-sm">
-                                    Giảm tối đa
+                                <label className="admin-form-label grid gap-1.5">
+                                    Tên voucher
                                     <input
                                         className={fieldClass}
+                                        value={form.name}
+                                        required
+                                        onChange={(e) => set("name", e.target.value)}
+                                    />
+                                    {fieldError("name")}
+                                </label>
+                            </div>
+                        </section>
+                        <section className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+                            <h2 className="admin-section-title text-primary">Giá trị & giới hạn</h2>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <label className="admin-form-label grid gap-1.5">
+                                    Kiểu giảm
+                                    <select
+                                        className={fieldClass}
+                                        value={form.discount_type}
+                                        onChange={(e) => set("discount_type", e.target.value)}
+                                    >
+                                        <option value="percentage">Phần trăm</option>
+                                        <option value="fixed_amount">Số tiền cố định</option>
+                                    </select>
+                                    {fieldError("discount_type")}
+                                </label>
+                                <label className="admin-form-label grid gap-1.5">
+                                    Giá trị giảm
+                                    <input
+                                        className={`${fieldClass} max-w-56`}
                                         type="number"
                                         min="0.01"
                                         step="0.01"
-                                        value={form.max_discount_amount}
-                                        onChange={(e) => set("max_discount_amount", e.target.value)}
+                                        value={form.discount_value}
+                                        required
+                                        onChange={(e) => set("discount_value", e.target.value)}
                                     />
-                                    {fieldError("max_discount_amount")}
+                                    {fieldError("discount_value")}
                                 </label>
-                            )}
-                            <label className="grid gap-1 text-sm">
-                                Bắt đầu
-                                <input
+                                <label className="admin-form-label grid gap-1.5">
+                                    Đơn tối thiểu
+                                    <input
+                                        className={`${fieldClass} max-w-56`}
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={form.minimum_order_amount}
+                                        onChange={(e) =>
+                                            set("minimum_order_amount", e.target.value)
+                                        }
+                                    />
+                                    {fieldError("minimum_order_amount")}
+                                </label>
+                                {form.discount_type === "percentage" && (
+                                    <label className="admin-form-label grid gap-1.5">
+                                        Giảm tối đa
+                                        <input
+                                            className={`${fieldClass} max-w-56`}
+                                            type="number"
+                                            min="0.01"
+                                            step="0.01"
+                                            value={form.max_discount_amount}
+                                            onChange={(e) =>
+                                                set("max_discount_amount", e.target.value)
+                                            }
+                                        />
+                                        {fieldError("max_discount_amount")}
+                                    </label>
+                                )}
+                                <label className="admin-form-label grid gap-1.5">
+                                    Tổng lượt dùng
+                                    <input
+                                        className={`${fieldClass} max-w-48`}
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        value={form.total_usage_limit}
+                                        onChange={(e) => set("total_usage_limit", e.target.value)}
+                                    />
+                                    {fieldError("total_usage_limit")}
+                                </label>
+                                <label className="admin-form-label grid gap-1.5">
+                                    Lượt mỗi khách
+                                    <input
+                                        className={`${fieldClass} max-w-48`}
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        value={form.per_buyer_usage_limit}
+                                        onChange={(e) =>
+                                            set("per_buyer_usage_limit", e.target.value)
+                                        }
+                                    />
+                                    {fieldError("per_buyer_usage_limit")}
+                                </label>
+                                <label className="admin-form-label grid gap-1.5">
+                                    Trạng thái
+                                    <select
+                                        className={fieldClass}
+                                        value={form.status}
+                                        onChange={(e) => set("status", e.target.value)}
+                                    >
+                                        <option value="active">Đang hoạt động</option>
+                                        <option value="inactive">Tạm ngừng</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </section>
+                        <section className="space-y-3 rounded-xl border bg-card p-5 shadow-sm">
+                            <h2 className="admin-section-title text-primary">Thời gian áp dụng</h2>
+                            <PromotionDateRangePicker
+                                start={form.starts_at || null}
+                                end={form.ends_at || null}
+                                onChange={(startsAt, endsAt) => {
+                                    save.reset();
+                                    setForm((current) => ({
+                                        ...current,
+                                        starts_at: startsAt ?? "",
+                                        ends_at: endsAt ?? "",
+                                    }));
+                                }}
+                                errors={[fieldErrors["starts_at"], fieldErrors["ends_at"]].filter(
+                                    (error): error is string => Boolean(error),
+                                )}
+                            />
+                        </section>
+                        <section className="space-y-3 rounded-xl border bg-card p-5 shadow-sm">
+                            <h2 className="admin-section-title text-primary">Mô tả</h2>
+                            <label className="admin-form-label grid gap-1.5">
+                                Nội dung
+                                <textarea
                                     className={fieldClass}
-                                    type="datetime-local"
-                                    value={form.starts_at}
-                                    onChange={(e) => set("starts_at", e.target.value)}
-                                />
-                                {fieldError("starts_at")}
-                            </label>
-                            <label className="grid gap-1 text-sm">
-                                Kết thúc
-                                <input
-                                    className={fieldClass}
-                                    type="datetime-local"
-                                    value={form.ends_at}
-                                    onChange={(e) => set("ends_at", e.target.value)}
-                                />
-                                {fieldError("ends_at")}
-                            </label>
-                            <label className="grid gap-1 text-sm">
-                                Tổng lượt dùng
-                                <input
-                                    className={fieldClass}
-                                    type="number"
-                                    min="1"
-                                    step="1"
-                                    value={form.total_usage_limit}
-                                    onChange={(e) => set("total_usage_limit", e.target.value)}
-                                />
-                                {fieldError("total_usage_limit")}
-                            </label>
-                            <label className="grid gap-1 text-sm">
-                                Lượt mỗi khách
-                                <input
-                                    className={fieldClass}
-                                    type="number"
-                                    min="1"
-                                    step="1"
-                                    value={form.per_buyer_usage_limit}
-                                    onChange={(e) => set("per_buyer_usage_limit", e.target.value)}
-                                />
-                                {fieldError("per_buyer_usage_limit")}
-                            </label>
-                            <label className="grid gap-1 text-sm">
-                                Trạng thái
-                                <select
-                                    className={fieldClass}
-                                    value={form.status}
-                                    onChange={(e) => set("status", e.target.value)}
-                                >
-                                    <option value="active">Đang hoạt động</option>
-                                    <option value="inactive">Tạm ngừng</option>
-                                </select>
-                            </label>
-                            <label className="grid gap-1 text-sm sm:col-span-2">
-                                Mô tả
-                                <input
-                                    className={fieldClass}
+                                    rows={2}
                                     value={form.description}
                                     onChange={(e) => set("description", e.target.value)}
                                 />
                             </label>
+                        </section>
+                        <div className="flex flex-col justify-end gap-2 rounded-xl border bg-card p-4 sm:flex-row">
+                            <button
+                                type="button"
+                                className="rounded-md border px-5 py-2 text-sm"
+                                onClick={() => void navigate({ to: "/admin/sales-vouchers" })}
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                className="rounded-md bg-primary px-5 py-2 text-sm text-primary-foreground disabled:opacity-50"
+                                disabled={save.isPending}
+                            >
+                                {save.isPending ? "Đang lưu..." : "Lưu voucher"}
+                            </button>
                         </div>
-                        <button
-                            className="mt-5 rounded-md bg-primary px-5 py-2 text-sm text-primary-foreground disabled:opacity-50"
-                            disabled={save.isPending}
-                        >
-                            {save.isPending ? "Đang lưu..." : "Lưu voucher"}
-                        </button>
                     </form>
                 ))}
             {mode === "list" && (
@@ -434,7 +457,7 @@ export function SalesVoucherPage({
                                             </td>
                                             <td className="p-2">
                                                 {voucher.discount_type === "percentage"
-                                                    ? `${voucher.discount_value}%`
+                                                    ? formatPercentage(voucher.discount_value)
                                                     : `${Number(voucher.discount_value).toLocaleString("vi-VN")}đ`}
                                             </td>
                                             <td className="p-2">

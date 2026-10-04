@@ -290,7 +290,7 @@ export function InventoryOperationDrawer({
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Kho *
                                     <select
                                         className={fieldClass}
@@ -310,7 +310,7 @@ export function InventoryOperationDrawer({
                                             ))}
                                     </select>
                                 </label>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Tìm sản phẩm
                                     <input
                                         className={fieldClass}
@@ -323,7 +323,7 @@ export function InventoryOperationDrawer({
                                         }}
                                     />
                                 </label>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Sản phẩm *
                                     <select
                                         className={fieldClass}
@@ -343,7 +343,7 @@ export function InventoryOperationDrawer({
                                             ))}
                                     </select>
                                 </label>
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     SKU *
                                     <select
                                         className={fieldClass}
@@ -487,7 +487,7 @@ export function InventoryOperationDrawer({
                                         </button>
                                     </div>
                                 )}
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     {mode === "opening"
                                         ? "Số lượng tồn đầu kỳ"
                                         : mode === "receipt"
@@ -504,7 +504,7 @@ export function InventoryOperationDrawer({
                                                   ? 0
                                                   : 1
                                         }
-                                        className={fieldClass}
+                                        className={`${fieldClass} admin-field-compact`}
                                         value={quantity}
                                         onChange={(event) => {
                                             setQuantity(event.target.value);
@@ -525,7 +525,7 @@ export function InventoryOperationDrawer({
                                     </p>
                                 )}
                                 {mode !== "opening" && (
-                                    <label className="block text-sm">
+                                    <label className="admin-form-field admin-form-label">
                                         Lý do *
                                         <select
                                             className={fieldClass}
@@ -550,7 +550,7 @@ export function InventoryOperationDrawer({
                                     </label>
                                 )}
                                 {mode !== "opening" && (
-                                    <label className="block text-sm">
+                                    <label className="admin-form-field admin-form-label">
                                         Mã tham chiếu
                                         <input
                                             className={fieldClass}
@@ -569,7 +569,7 @@ export function InventoryOperationDrawer({
                                         (theo thời điểm xác nhận)
                                     </p>
                                 )}
-                                <label className="block text-sm">
+                                <label className="admin-form-field admin-form-label">
                                     Ghi chú {mode !== "receipt" && "*"}
                                     <textarea
                                         className={fieldClass}

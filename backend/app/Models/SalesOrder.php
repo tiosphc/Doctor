@@ -14,15 +14,21 @@ class SalesOrder extends Model
 
     public function permitsPromotionGift(ProductVariant $variant, ?int $sourcePromotionId): bool
     {
-        if ($sourcePromotionId === null || $sourcePromotionId !== $this->sales_promotion_id) {
+        $gift = $this->promotion_gift_snapshot;
+        if (! is_array($gift) && $sourcePromotionId === null) {
+            return false;
+        }
+        if ($sourcePromotionId !== null && $sourcePromotionId !== $this->sales_promotion_id
+            && $sourcePromotionId !== (int) ($gift['promotion_id'] ?? 0)) {
+            return false;
+        }
+        if ($sourcePromotionId === null && (int) ($gift['gift_variant_id'] ?? 0) !== $variant->id) {
             return false;
         }
 
         if ($variant->product->can_be_gift) {
             return true;
         }
-
-        $gift = $this->promotion_gift_snapshot;
 
         return is_array($gift)
             && (int) ($gift['buy_product_id'] ?? 0) === $variant->product_id
@@ -73,6 +79,11 @@ class SalesOrder extends Model
     public function promotionRedemption(): HasOne
     {
         return $this->hasOne(SalesPromotionRedemption::class);
+    }
+
+    public function promotionRedemptions(): HasMany
+    {
+        return $this->hasMany(SalesPromotionRedemption::class);
     }
 
     public function salesVoucherRedemption(): HasOne

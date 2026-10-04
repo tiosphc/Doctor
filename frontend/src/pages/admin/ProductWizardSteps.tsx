@@ -45,12 +45,17 @@ function Field({
     full?: boolean;
 }) {
     return (
-        <div data-field={name} className={full ? "sm:col-span-2" : ""}>
-            <label htmlFor={name} className="mb-1 block text-sm font-medium">
-                {label}
-            </label>
+        <div
+            data-field={name}
+            className={`grid min-w-0 content-start gap-1.5 ${full ? "sm:col-span-2" : ""}`}
+        >
+            {label && (
+                <label htmlFor={name} className="admin-form-label">
+                    {label}
+                </label>
+            )}
             {children}
-            <p className="min-h-5 pt-1 text-xs text-red-700" role={error ? "alert" : undefined}>
+            <p className="min-h-5 text-xs text-red-700" role={error ? "alert" : undefined}>
                 {error || "\u00a0"}
             </p>
         </div>
@@ -74,22 +79,22 @@ export function BasicStep({ data, update, errors, categories, brands, units }: S
     return (
         <section className="grid gap-x-5 rounded-xl border bg-card p-5 sm:grid-cols-2">
             <div className="mb-5 sm:col-span-2">
-                <h2 className="text-xl text-primary">Thông tin cơ bản</h2>
+                <h2 className="admin-section-title text-primary">Thông tin cơ bản</h2>
                 <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
             </div>
-            <div className="grid gap-x-5 sm:col-span-2 sm:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+            <div className="grid gap-x-5 sm:col-span-2 sm:grid-cols-2">
                 <Field name="sku" label="SKU chính *" error={errors["sku"]}>
                     <div className="flex gap-2">
                         <input
                             id="sku"
                             value={data.sku}
                             maxLength={100}
-                            className={`${input(errors["sku"])} min-w-0`}
+                            className={`${input(errors["sku"])} h-10 min-w-0`}
                             onChange={(e) => update({ sku: e.target.value })}
                         />
                         <button
                             type="button"
-                            className={secondaryButtonClass}
+                            className={`${secondaryButtonClass} h-10 shrink-0 whitespace-nowrap`}
                             onClick={() =>
                                 update({
                                     sku: normalizeSku(
@@ -111,7 +116,7 @@ export function BasicStep({ data, update, errors, categories, brands, units }: S
                         id="name"
                         value={data.name}
                         maxLength={255}
-                        className={input(errors["name"])}
+                        className={`${input(errors["name"])} h-10`}
                         onChange={(e) => update({ name: e.target.value })}
                     />
                 </Field>
@@ -288,7 +293,7 @@ export function ImagesStep({
     return (
         <div className="space-y-5">
             <section className="rounded-xl border bg-card p-5">
-                <h2 className="text-xl text-primary">Hình ảnh sản phẩm *</h2>
+                <h2 className="admin-section-title text-primary">Hình ảnh sản phẩm *</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                     JPG, PNG hoặc WebP, tối đa 5 MB mỗi ảnh. Kéo ảnh để đổi thứ tự.
                 </p>
@@ -394,7 +399,7 @@ export function ImagesStep({
                 </div>
             </section>
             <section className="rounded-xl border bg-card p-5">
-                <h2 className="text-xl text-primary">YouTube Video</h2>
+                <h2 className="admin-section-title text-primary">YouTube Video</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                     Không bắt buộc. URL phải thuộc YouTube.
                 </p>
@@ -467,7 +472,7 @@ export function VariantsStep({ data, update, errors, images }: StepProps) {
     return (
         <section className="space-y-5 rounded-xl border bg-card p-5">
             <div>
-                <h2 className="text-xl text-primary">Biến thể sản phẩm</h2>
+                <h2 className="admin-section-title text-primary">Biến thể sản phẩm</h2>
                 <p className="text-sm text-muted-foreground">
                     Sản phẩm không có biến thể sẽ dùng SKU chính.
                 </p>
@@ -665,7 +670,7 @@ export function VariantsStep({ data, update, errors, images }: StepProps) {
                                                     min="0"
                                                     step="1"
                                                     value={variant.initial_stock}
-                                                    className={fieldClass}
+                                                    className={`${fieldClass} max-w-32`}
                                                     onChange={(e) =>
                                                         changeVariant(index, {
                                                             initial_stock: e.target.value,
@@ -745,7 +750,7 @@ export function PricesStep({
             )}
             {data.sellable_retail && (
                 <section className="rounded-xl border bg-card p-5">
-                    <h2 className="text-xl text-primary">Giá Retail</h2>
+                    <h2 className="admin-section-title text-primary">Giá Retail</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
                         Giá riêng theo biến thể được ưu tiên; để trống sẽ dùng giá bán lẻ mặc định.
                     </p>
@@ -760,62 +765,67 @@ export function PricesStep({
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                className={input(errors["retail_price"])}
+                                className={`${input(errors["retail_price"])} admin-field-medium`}
                                 value={data.retail_price}
                                 onChange={(event) => update({ retail_price: event.target.value })}
                             />
-                            <span className="text-xs text-muted-foreground">
+                            <span className="admin-helper-text">
                                 {formatPrice(data.retail_price)}
                             </span>
                         </Field>
                     </div>
                     {data.has_variants && (
                         <>
-                            <h3 className="mt-4 font-medium">Giá riêng theo biến thể</h3>
-                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            <h3 className="admin-subsection-title mt-4">Giá riêng theo biến thể</h3>
+                            <div className="mt-3 grid gap-4 sm:grid-cols-2">
                                 {data.variants.map((variant, index) => (
-                                    <Field
+                                    <div
                                         key={variant.sku}
-                                        name={"variants." + index + ".retail_price_override"}
-                                        label={
-                                            Object.values(variant.specifications).join(" / ") ||
-                                            variant.sku
-                                        }
-                                        error={
-                                            errors["variants." + index + ".retail_price_override"]
-                                        }
+                                        className="min-w-0 rounded-lg border bg-card p-4"
                                     >
-                                        <input
-                                            id={"variants." + index + ".retail_price_override"}
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className={input(
+                                        <Field
+                                            name={"variants." + index + ".retail_price_override"}
+                                            label={variant.sku}
+                                            error={
                                                 errors[
                                                     "variants." + index + ".retail_price_override"
-                                                ],
-                                            )}
-                                            value={variant.retail_price_override}
-                                            onChange={(event) =>
-                                                update({
-                                                    variants: data.variants.map((item, position) =>
-                                                        position === index
-                                                            ? {
-                                                                  ...item,
-                                                                  retail_price_override:
-                                                                      event.target.value,
-                                                              }
-                                                            : item,
-                                                    ),
-                                                })
+                                                ]
                                             }
-                                        />
-                                        <span className="text-xs text-muted-foreground">
-                                            {variant.retail_price_override
-                                                ? formatPrice(variant.retail_price_override)
-                                                : "Dùng giá mặc định"}
-                                        </span>
-                                    </Field>
+                                        >
+                                            <input
+                                                id={"variants." + index + ".retail_price_override"}
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                className={`${input(errors["variants." + index + ".retail_price_override"])} admin-field-medium`}
+                                                value={variant.retail_price_override}
+                                                onChange={(event) =>
+                                                    update({
+                                                        variants: data.variants.map(
+                                                            (item, position) =>
+                                                                position === index
+                                                                    ? {
+                                                                          ...item,
+                                                                          retail_price_override:
+                                                                              event.target.value,
+                                                                      }
+                                                                    : item,
+                                                        ),
+                                                    })
+                                                }
+                                            />
+                                            <span className="admin-helper-text">
+                                                {variant.retail_price_override
+                                                    ? formatPrice(variant.retail_price_override)
+                                                    : "Dùng giá mặc định"}
+                                            </span>
+                                        </Field>
+                                        {Object.values(variant.specifications).length > 0 && (
+                                            <p className="admin-helper-text mt-1">
+                                                {Object.values(variant.specifications).join(" / ")}
+                                            </p>
+                                        )}
+                                    </div>
                                 ))}
                             </div>
                         </>
@@ -826,7 +836,7 @@ export function PricesStep({
                 <section className="rounded-xl border bg-card p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h2 className="text-xl text-primary">Giá Đại lý</h2>
+                            <h2 className="admin-section-title text-primary">Giá Đại lý</h2>
                             <p className="mt-1 text-sm text-muted-foreground">
                                 Tier quyết định giá. MOQ chỉ là số lượng đặt tối thiểu; số lượng lớn
                                 hơn vẫn dùng cùng đơn giá.
@@ -948,11 +958,7 @@ export function PricesStep({
                                                 type="number"
                                                 min="1"
                                                 step="1"
-                                                className={input(
-                                                    errors[
-                                                        "dealer_rules." + index + ".min_quantity"
-                                                    ],
-                                                )}
+                                                className={`${input(errors["dealer_rules." + index + ".min_quantity"])} max-w-28`}
                                                 value={row.min_quantity}
                                                 onChange={(event) =>
                                                     changeRule(index, {
@@ -970,9 +976,7 @@ export function PricesStep({
                                                 type="number"
                                                 min="0.01"
                                                 step="0.01"
-                                                className={input(
-                                                    errors["dealer_rules." + index + ".unit_price"],
-                                                )}
+                                                className={`${input(errors["dealer_rules." + index + ".unit_price"])} max-w-44`}
                                                 value={row.unit_price}
                                                 onChange={(event) =>
                                                     changeRule(index, {
@@ -1018,7 +1022,7 @@ export function StockStep({ data, update, errors, warehouses }: StepProps) {
         <div className="space-y-5">
             <section className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                    <h2 className="text-xl text-primary">Quản lý kho</h2>
+                    <h2 className="admin-section-title text-primary">Quản lý kho</h2>
                     <p className="text-sm text-muted-foreground">
                         Tồn đầu kỳ được ghi qua Stock Movement khi hoàn tất.
                     </p>
@@ -1069,7 +1073,7 @@ export function StockStep({ data, update, errors, warehouses }: StepProps) {
                             type="number"
                             min="0"
                             step="1"
-                            className={input(errors["initial_stock"])}
+                            className={`${input(errors["initial_stock"])} max-w-40`}
                             value={data.initial_stock}
                             onChange={(e) => update({ initial_stock: e.target.value })}
                         />
@@ -1085,7 +1089,7 @@ export function StockStep({ data, update, errors, warehouses }: StepProps) {
                         type="number"
                         min="0"
                         step="1"
-                        className={input(errors["low_stock_threshold"])}
+                        className={`${input(errors["low_stock_threshold"])} max-w-40`}
                         value={data.low_stock_threshold}
                         onChange={(e) => update({ low_stock_threshold: e.target.value })}
                     />
@@ -1096,7 +1100,9 @@ export function StockStep({ data, update, errors, warehouses }: StepProps) {
                 </p>
             </section>
             <section className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
-                <h2 className="sm:col-span-2 text-xl text-primary">Đóng gói / vận chuyển</h2>
+                <h2 className="admin-section-title text-primary sm:col-span-2">
+                    Đóng gói / vận chuyển
+                </h2>
                 {(
                     [
                         ["weight", "Trọng lượng (kg)"],
@@ -1111,7 +1117,7 @@ export function StockStep({ data, update, errors, warehouses }: StepProps) {
                             type="number"
                             min="0"
                             step="0.001"
-                            className={input(errors[key])}
+                            className={`${input(errors[key])} max-w-40`}
                             value={data[key]}
                             onChange={(e) => update({ [key]: e.target.value })}
                         />
@@ -1125,7 +1131,7 @@ export function StockStep({ data, update, errors, warehouses }: StepProps) {
 export function InstructionsStep({ data, update, errors }: StepProps) {
     return (
         <section className="rounded-xl border bg-card p-5">
-            <h2 className="text-xl text-primary">Hướng dẫn sử dụng</h2>
+            <h2 className="admin-section-title text-primary">Hướng dẫn sử dụng</h2>
             <p className="mt-1 text-sm text-muted-foreground">
                 Nội dung tùy chọn, lưu dưới dạng văn bản an toàn.
             </p>

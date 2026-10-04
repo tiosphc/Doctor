@@ -570,10 +570,10 @@ function PriceEditor({
                     </p>
                 </div>
                 <form onSubmit={submit} className="grid gap-4">
-                    <label className="grid gap-1 text-sm font-medium">
+                    <label className="admin-form-field admin-form-label">
                         Giá mới (VND)
                         <input
-                            className={fieldClass}
+                            className={`${fieldClass} admin-field-medium`}
                             aria-label="Giá mới"
                             inputMode="decimal"
                             type="number"
@@ -585,10 +585,10 @@ function PriceEditor({
                         />
                     </label>
                     {context === "dealer" && (
-                        <label className="grid gap-1 text-sm font-medium">
+                        <label className="admin-form-field admin-form-label">
                             MOQ ({row.unit_symbol || "đơn vị"})
                             <input
-                                className={fieldClass}
+                                className={`${fieldClass} admin-field-compact`}
                                 aria-label="MOQ"
                                 type="number"
                                 min={1}

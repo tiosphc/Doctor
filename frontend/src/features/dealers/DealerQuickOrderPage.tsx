@@ -470,23 +470,23 @@ export function DealerQuickOrderPage({
     );
     const validRows = rows.length > 0 && rows.every((row) => !rowQuantityError(row));
     return (
-        <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+        <main className="dealer-page-form space-y-6">
             <header className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <p className="label-luxury">Junie B2B</p>
-                    <h1 className="mt-2 text-3xl text-primary">Đặt hàng nhanh</h1>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <h1 className="dealer-page-title mt-2 text-primary">Đặt hàng nhanh</h1>
+                    <p className="mt-2 text-[15px] leading-6 text-muted-foreground">
                         Tìm sản phẩm, kiểm tra giá đại lý và MOQ trước khi gửi đơn.
                     </p>
                 </div>
-                <Link to="/dealer/orders" className="text-sm font-medium text-primary underline">
+                <Link to="/dealer/orders" className="dealer-action text-primary underline">
                     Đơn hàng đại lý
                 </Link>
             </header>
             {successOrder ? (
                 <section
                     role="status"
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm shadow-sm"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-[15px] shadow-sm"
                 >
                     <div>
                         <strong className="text-emerald-900">
@@ -499,7 +499,7 @@ export function DealerQuickOrderPage({
                     <div className="flex flex-wrap gap-2">
                         <button
                             type="button"
-                            className="rounded-md border border-primary px-3 py-2 font-medium text-primary"
+                            className="dealer-action rounded-md border border-primary px-3 text-primary"
                             onClick={() =>
                                 void navigate({
                                     to: "/dealer/orders/$orderId",
@@ -511,7 +511,7 @@ export function DealerQuickOrderPage({
                         </button>
                         <button
                             type="button"
-                            className="rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground"
+                            className="dealer-action rounded-md bg-primary px-3 text-primary-foreground"
                             onClick={() => void createAnother()}
                         >
                             Tạo đơn khác
@@ -533,15 +533,15 @@ export function DealerQuickOrderPage({
                         />
                     )}
                     {recent.data && recent.data.length > 0 && (
-                        <section className="space-y-2 text-sm">
-                            <h2 className="font-medium text-primary">Đã mua gần đây</h2>
+                        <section className="space-y-2 text-[14px]">
+                            <h2 className="text-base font-semibold text-primary">Đã mua gần đây</h2>
                             <div className="flex flex-wrap gap-2">
                                 {recent.data.map((item) => (
                                     <button
                                         key={item.sku}
                                         type="button"
                                         disabled={Boolean(busy)}
-                                        className="rounded-full border bg-card px-3 py-1.5 text-left hover:bg-accent disabled:opacity-50"
+                                        className="min-h-10 rounded-full border bg-card px-4 py-2 text-left hover:bg-accent disabled:opacity-50"
                                         onClick={() => void addRecent(item.sku)}
                                         title={`Thêm ${item.product_name} · ${item.variant_name} · ${item.sku}`}
                                     >
@@ -591,9 +591,9 @@ export function DealerQuickOrderPage({
                                 retry={() => void reorder.refetch()}
                             />
                         ) : null)}
-                    <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
+                    <section className="space-y-4 rounded-xl border bg-card p-5 sm:p-6">
                         <div className="flex items-center justify-between gap-3">
-                            <h2 className="text-xl text-primary">Sản phẩm đã chọn</h2>
+                            <h2 className="dealer-section-title text-primary">Sản phẩm đã chọn</h2>
                             <span className="text-sm text-muted-foreground">
                                 {rows.length} sản phẩm
                             </span>
@@ -605,7 +605,7 @@ export function DealerQuickOrderPage({
                                 {rows.map((row) => (
                                     <div
                                         key={row.product_variant_id}
-                                        className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center"
+                                        className="grid gap-3 rounded-lg border p-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center"
                                     >
                                         <DealerProductThumbnail
                                             src={row.image_url}
@@ -616,7 +616,7 @@ export function DealerQuickOrderPage({
                                                 {row.product_name}
                                             </strong>
                                             <span>{row.variant_name}</span>
-                                            <span className="block text-xs text-muted-foreground">
+                                            <span className="dealer-meta block text-muted-foreground">
                                                 SKU: {row.sku}
                                             </span>
                                             <span className="block">
@@ -625,14 +625,14 @@ export function DealerQuickOrderPage({
                                                 {money(row.unit_price)}
                                             </span>
                                             {row.unit_price !== null && (
-                                                <span className="block text-xs text-muted-foreground">
+                                                <span className="dealer-meta block text-muted-foreground">
                                                     MOQ{" "}
                                                     {formatProductQuantity(row.minimum_quantity)}{" "}
                                                     {row.unit_symbol}
                                                 </span>
                                             )}
                                             {row.available_quantity !== null && (
-                                                <span className="block text-xs text-muted-foreground">
+                                                <span className="dealer-meta block text-muted-foreground">
                                                     Khả dụng lúc kiểm tra:{" "}
                                                     {formatProductQuantity(row.available_quantity)}
                                                 </span>
@@ -641,7 +641,7 @@ export function DealerQuickOrderPage({
                                                 <p
                                                     key={code}
                                                     role="alert"
-                                                    className="text-xs text-red-700"
+                                                    className="dealer-meta text-red-700"
                                                 >
                                                     {commerceCodeMessage(code, row.sku, {
                                                         available: row.available_quantity,
@@ -651,14 +651,14 @@ export function DealerQuickOrderPage({
                                                 </p>
                                             ))}
                                         </div>
-                                        <div className="grid gap-2 text-sm sm:justify-items-end">
+                                        <div className="grid gap-2 text-sm md:justify-items-end">
                                             <label className="grid gap-1">
                                                 Số lượng
                                                 <span className="flex items-center">
                                                     <button
                                                         type="button"
                                                         aria-label={`Giảm số lượng ${row.product_name}`}
-                                                        className="rounded-l-md border px-3 py-2"
+                                                        className="min-h-10 rounded-l-md border px-3"
                                                         disabled={
                                                             !isPositiveProductQuantity(
                                                                 row.quantity,
@@ -676,7 +676,7 @@ export function DealerQuickOrderPage({
                                                         −
                                                     </button>
                                                     <input
-                                                        className="w-20 border-y bg-background px-2 py-2 text-center"
+                                                        className="min-h-10 w-20 border-y bg-background px-2 text-center"
                                                         type="number"
                                                         min={Number(row.minimum_quantity)}
                                                         step={1}
@@ -700,7 +700,7 @@ export function DealerQuickOrderPage({
                                                     <button
                                                         type="button"
                                                         aria-label={`Tăng số lượng ${row.product_name}`}
-                                                        className="rounded-r-md border px-3 py-2"
+                                                        className="min-h-10 rounded-r-md border px-3"
                                                         disabled={
                                                             !isPositiveProductQuantity(
                                                                 row.quantity,
@@ -721,7 +721,10 @@ export function DealerQuickOrderPage({
                                                 </span>
                                             </label>
                                             {rowQuantityError(row) && (
-                                                <p role="alert" className="text-xs text-red-700">
+                                                <p
+                                                    role="alert"
+                                                    className="dealer-meta text-red-700"
+                                                >
                                                     {rowQuantityError(row)}
                                                 </p>
                                             )}
@@ -778,12 +781,12 @@ export function DealerQuickOrderPage({
                                 Tạm tính: {money(String(estimatedTotal))}
                             </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="dealer-meta text-muted-foreground">
                             Giá, ưu đãi, tồn kho và số dư ví được kiểm tra lại khi xem đơn.
                         </p>
                         <button
                             type="button"
-                            className="rounded-md bg-primary px-5 py-2 text-primary-foreground disabled:opacity-50"
+                            className="dealer-action rounded-md bg-primary px-5 text-primary-foreground disabled:opacity-50"
                             disabled={!validRows || Boolean(busy)}
                             onClick={startReview}
                         >
@@ -801,13 +804,13 @@ export function DealerQuickOrderPage({
                     <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
                         <DialogContent
                             ref={reviewDialogRef}
-                            className="max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-xl"
+                            className="max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-xl p-5 sm:p-6"
                         >
-                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            <p className="dealer-meta font-semibold uppercase tracking-wide text-muted-foreground">
                                 Bước {reviewStep === "address" ? "1" : "2"} / 2
                             </p>
                             <DialogHeader>
-                                <DialogTitle className="text-xl text-primary">
+                                <DialogTitle className="dealer-modal-title text-primary">
                                     {reviewStep === "address"
                                         ? "Thông tin giao hàng"
                                         : "Xem lại đơn hàng"}
@@ -828,7 +831,7 @@ export function DealerQuickOrderPage({
                                     />
                                     <button
                                         type="button"
-                                        className="w-full rounded-md bg-primary px-5 py-2 text-primary-foreground disabled:opacity-50"
+                                        className="dealer-action w-full rounded-md bg-primary px-5 text-primary-foreground disabled:opacity-50"
                                         disabled={Boolean(busy)}
                                         onClick={() => void reviewDelivery()}
                                     >
@@ -852,12 +855,12 @@ export function DealerQuickOrderPage({
                                             Kiểm tra đơn cuối cùng
                                         </h3>
                                         {review.effective_tier && (
-                                            <span className="rounded-full border px-3 py-1 text-xs">
+                                            <span className="dealer-meta rounded-full border px-3 py-1">
                                                 Giá đại lý · {review.effective_tier.name}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="space-y-2 rounded-lg border bg-card p-4 text-sm">
+                                    <div className="space-y-2 rounded-lg border bg-card p-5 text-[14px] leading-6">
                                         <h4 className="font-semibold text-primary">
                                             Thông tin giao hàng
                                         </h4>
@@ -873,7 +876,7 @@ export function DealerQuickOrderPage({
                                             {recipient?.shipping_province}
                                         </p>
                                         {shippingForm.save_address && (
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="dealer-meta text-muted-foreground">
                                                 Địa chỉ này sẽ được lưu sau khi đặt hàng thành công.
                                             </p>
                                         )}
@@ -932,23 +935,36 @@ export function DealerQuickOrderPage({
                                                         </ul>
                                                     )}
                                                 </div>
-                                                <span>Đơn giá: {money(line.unit_price)}</span>
+                                                <span>
+                                                    Đơn giá:{" "}
+                                                    {money(
+                                                        line.discounted_unit_price ??
+                                                            line.unit_price,
+                                                    )}
+                                                    {Number(line.promotion_discount_amount) > 0 && (
+                                                        <span className="ml-2 text-muted-foreground line-through">
+                                                            {money(line.unit_price)}
+                                                        </span>
+                                                    )}
+                                                </span>
                                                 <strong>
-                                                    Thành tiền: {money(line.line_total)}
+                                                    Thành tiền:{" "}
+                                                    {money(
+                                                        line.discounted_line_total ??
+                                                            line.line_total,
+                                                    )}
                                                 </strong>
                                             </div>
                                         ))}
                                     </div>
                                     <div className="space-y-1 text-right text-sm">
                                         <p>Tạm tính: {money(review.subtotal)}</p>
-                                        {review.promotion && (
-                                            <p>
-                                                Ưu đãi {review.promotion.name}:{" "}
-                                                {review.promotion.discount_type === "buy_a_get_b"
-                                                    ? "Quà tặng"
-                                                    : `−${money(review.discount_total)}`}
+                                        {review.promotions?.map((promotion) => (
+                                            <p key={promotion.code}>
+                                                Ưu đãi {promotion.name}: −
+                                                {money(promotion.discount_amount)}
                                             </p>
-                                        )}
+                                        ))}
                                         {review.gift_item && (
                                             <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-left text-amber-900">
                                                 Quà tặng: {review.gift_item.product_name} /{" "}
@@ -966,12 +982,13 @@ export function DealerQuickOrderPage({
                                                 đãi quà tặng chưa được áp dụng.
                                             </p>
                                         )}
-                                        {review.promotion?.discount_type === "buy_a_get_b" &&
-                                            !review.promotion.qualified && (
+                                        {review.gift_promotion?.discount_type === "buy_a_get_b" &&
+                                            !review.gift_promotion.qualified && (
                                                 <p className="text-amber-800">
                                                     Mua thêm{" "}
                                                     {formatProductQuantity(
-                                                        review.promotion.remaining_buy_quantity,
+                                                        review.gift_promotion
+                                                            .remaining_buy_quantity,
                                                     )}{" "}
                                                     sản phẩm để nhận quà.
                                                 </p>
@@ -989,10 +1006,10 @@ export function DealerQuickOrderPage({
                                             Vui lòng nạp tiền trước khi gửi đơn.
                                         </p>
                                     )}
-                                    <label className="grid gap-1 text-sm">
+                                    <label className="grid gap-2 text-sm font-medium">
                                         Ghi chú giao hàng
                                         <textarea
-                                            className="rounded-md border bg-background px-3 py-2"
+                                            className="min-h-24 rounded-md border bg-background px-3 py-2 font-normal"
                                             value={recipient?.delivery_note ?? ""}
                                             onChange={(event) =>
                                                 setRecipient((current) =>
@@ -1020,7 +1037,7 @@ export function DealerQuickOrderPage({
                                     <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-between">
                                         <button
                                             type="button"
-                                            className="rounded-md border px-5 py-2 text-primary hover:bg-accent disabled:opacity-50"
+                                            className="dealer-action rounded-md border px-5 text-primary hover:bg-accent disabled:opacity-50"
                                             disabled={Boolean(busy)}
                                             onClick={() => setReviewStep("address")}
                                         >
@@ -1028,7 +1045,7 @@ export function DealerQuickOrderPage({
                                         </button>
                                         <button
                                             type="button"
-                                            className="rounded-md bg-primary px-5 py-2 text-primary-foreground disabled:opacity-50"
+                                            className="dealer-action rounded-md bg-primary px-5 text-primary-foreground disabled:opacity-50"
                                             disabled={
                                                 !review.can_submit ||
                                                 Boolean(busy) ||
@@ -1048,13 +1065,13 @@ export function DealerQuickOrderPage({
                 </>
             )}
             <Dialog open={successOrder !== null && successOpen} onOpenChange={setSuccessOpen}>
-                <DialogContent className="w-[calc(100%-2rem)] max-w-[34rem] rounded-xl border shadow-lg">
+                <DialogContent className="dealer-success-modal w-[calc(100%-2rem)] max-w-[34rem] rounded-xl border shadow-lg">
                     <DialogHeader className="items-center text-center sm:text-center">
                         <CheckCircle2
                             className="mb-2 size-12 text-emerald-600"
                             aria-hidden="true"
                         />
-                        <DialogTitle className="text-2xl text-primary">
+                        <DialogTitle className="dealer-modal-title text-primary">
                             Đặt hàng thành công
                         </DialogTitle>
                         <DialogDescription>Đơn hàng của bạn đã được tạo.</DialogDescription>
@@ -1097,7 +1114,7 @@ export function DealerQuickOrderPage({
                     <DialogFooter className="grid gap-2 sm:grid-cols-2 sm:space-x-0">
                         <button
                             type="button"
-                            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                            className="dealer-action w-full rounded-md bg-primary px-4 text-primary-foreground hover:bg-primary/90"
                             onClick={() =>
                                 successOrder &&
                                 void navigate({
@@ -1110,7 +1127,7 @@ export function DealerQuickOrderPage({
                         </button>
                         <button
                             type="button"
-                            className="w-full rounded-md border px-4 py-2.5 text-sm font-medium text-primary hover:bg-accent"
+                            className="dealer-action w-full rounded-md border px-4 text-primary hover:bg-accent"
                             onClick={() => void createAnother()}
                         >
                             Tạo đơn khác
