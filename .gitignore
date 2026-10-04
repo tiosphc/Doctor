@@ -25,3 +25,11 @@
 /backend/Homestead.json
 /backend/Homestead.yaml
 Thumbs.db
+# Local AI agents / assistant config
+.agents/
+.claude/
+.codex/
+
+AGENTS.md
+CLAUDE.md
+.mcp.json

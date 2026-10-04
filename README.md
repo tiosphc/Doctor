@@ -1,360 +1,280 @@
-# Junie Aesthetic & Dermatology
+# ERP Sales & Dealer Management
 
-Hệ thống quản lý và đặt lịch trực tuyến cho phòng khám da liễu – thẩm mỹ Junie. Dự án hỗ trợ khách vãng lai, khách hàng có tài khoản, lễ tân, bác sĩ và quản trị viên; quản lý xuyên suốt từ lúc khách chọn dịch vụ đến khi hoàn thành khám, đánh giá và nhận quyền lợi thành viên.
+Hệ thống ERP bán hàng và quản lý đại lý, tập trung vào các nghiệp vụ sản phẩm, bảng giá, đơn hàng, kho, tồn kho, khách hàng, đại lý và chương trình khuyến mãi.
 
-## 1. Tổng quan công nghệ
+Dự án hỗ trợ hai kênh bán hàng chính:
+
+- **Retail**: khách hàng mua lẻ theo giá Retail.
+- **Dealer**: đại lý đặt số lượng lớn theo Tier, số dư ví và khu vực phục vụ của kho.
+
+## 1. Công nghệ sử dụng
 
 | Thành phần | Công nghệ |
 | --- | --- |
 | Backend | Laravel 13, PHP 8.4 |
-| Cơ sở dữ liệu | MySQL |
-| Xác thực | Laravel Sanctum, session cookie và CSRF |
+| Database | MySQL |
+| Authentication | Laravel Sanctum |
 | Frontend | React 19, TypeScript, TanStack Start/Router |
-| Quản lý dữ liệu frontend | TanStack Query |
-| Giao diện | Tailwind CSS 4, shadcn/Radix UI |
-| Kiểm thử backend | PHPUnit 12 |
+| Data fetching | TanStack Query |
+| UI | Tailwind CSS 4, shadcn/Radix UI |
+| Backend testing | PHPUnit 12 |
 
-Dự án được tách thành hai ứng dụng:
-
-- `backend/`: Laravel REST API, nghiệp vụ và truy cập cơ sở dữ liệu.
-- `frontend/`: giao diện React dành cho khách hàng và các vai trò vận hành.
-
-## 2. Business chính
-
-Nghiệp vụ trung tâm của hệ thống là quản lý toàn bộ vòng đời lịch khám:
+Cấu trúc chính:
 
 ```text
-Dịch vụ
-  → Chọn bác sĩ phù hợp
-  → Chọn ngày
-  → Tính khung giờ còn trống
-  → Đặt lịch
-  → Lễ tân xác nhận và check-in
-  → Bác sĩ bắt đầu và hoàn thành khám
-  → Lễ tân hoàn tất lịch hẹn
-  → Khách hàng đánh giá
-  → Nhận voucher và quyền lợi thành viên
+backend/     Laravel REST API và business logic
+frontend/    React application cho Retail, Dealer và Admin
 ```
 
-### 2.1. Đặt lịch
+## 2. Chức năng chính
 
-Khách hàng đặt lịch theo bốn bước:
+### 2.1. Quản lý sản phẩm
 
-1. Chọn dịch vụ.
-2. Chọn bác sĩ đang phụ trách dịch vụ và đã có lịch làm việc.
-3. Chọn ngày, giờ và nhập thông tin liên hệ.
-4. Xác nhận lịch hẹn và chọn voucher nếu có.
+- Quản lý sản phẩm, danh mục và thương hiệu.
+- Hỗ trợ SKU và nhiều đơn vị bán như `piece`, `box`.
+- Quản lý giá Retail và giá theo Dealer Tier.
+- Quản lý tồn kho theo kho.
+- Hiển thị trạng thái tồn kho trên giao diện quản trị.
 
-Khung giờ không được hardcode. Backend tính giờ trống từ:
+### 2.2. Bảng giá
 
-- Lịch làm việc trong `doctor_schedules`.
-- Thời lượng của dịch vụ.
-- Lịch nghỉ trong `doctor_time_offs`.
-- Các lịch hẹn đang giữ chỗ trong `appointments`.
-- Thời điểm hiện tại nếu khách đặt trong ngày hôm nay.
+Hệ thống có hai nhóm giá chính:
 
-Logic chính nằm trong [`backend/app/Services/BookingService.php`](backend/app/Services/BookingService.php). Khi tạo hoặc đổi lịch, backend khóa các bản ghi liên quan trong transaction và kiểm tra lại giờ trống trước khi ghi dữ liệu nhằm hạn chế đặt trùng.
+- **Retail Price**: giá bán cho khách hàng thông thường.
+- **Dealer Price**: giá riêng cho từng Tier đại lý.
 
-### 2.2. Vòng đời lịch hẹn
+Các Tier hiện tại:
 
 ```text
-pending
-  → confirmed
-  → checked_in
-  → in_progress
-  → treatment_done
-  → completed
+Silver → Gold → Diamond
 ```
 
-Các nhánh phụ:
+Giá Dealer có thể được điều chỉnh theo kho/khu vực phục vụ trước khi áp dụng promotion.
 
-- `pending` hoặc `confirmed` có thể chuyển sang `cancelled`.
-- `confirmed` có thể chuyển sang `no_show` sau thời gian chờ cấu hình.
+Luồng tính giá tổng quát:
 
-Quy tắc chuyển trạng thái được định nghĩa trong [`backend/app/Models/Appointment.php`](backend/app/Models/Appointment.php) và thực thi tập trung trong `BookingService`.
+```text
+Retail / Silver / Gold / Diamond
+        ↓
+Warehouse Adjustment
+        ↓
+Product Override
+        ↓
+Promotion
+        ↓
+Final Price
+```
 
-### 2.3. Đặt lịch không cần tài khoản
+## 3. Khách hàng và đại lý
 
-Guest vẫn có thể đặt lịch qua quy trình:
+### Retail
 
-1. Nhập email và yêu cầu OTP.
-2. Nhận OTP qua email.
-3. Xác minh OTP để nhận verification token dùng một lần.
-4. Gửi thông tin đặt lịch.
-5. Nhận mã đặt lịch để tra cứu hoặc hủy sau này.
+Khách hàng có thể:
 
-OTP được lưu dưới dạng hash trong cache, có thời hạn và giới hạn số lần nhập sai. Nghiệp vụ này nằm trong [`backend/app/Services/GuestBookingVerificationService.php`](backend/app/Services/GuestBookingVerificationService.php).
+- Xem sản phẩm.
+- Thêm sản phẩm vào giỏ hàng.
+- Đặt đơn.
+- Chọn COD hoặc chuyển khoản.
+- Theo dõi trạng thái đơn hàng.
+- Gửi yêu cầu trả hàng trong thời gian cho phép.
 
-### 2.4. Đánh giá, voucher và loyalty
+### Dealer
 
-- Chỉ lịch đã `completed` mới được đánh giá.
-- Mỗi lịch hẹn chỉ có một đánh giá.
-- Đánh giá hợp lệ có thể phát hành voucher giảm giá.
-- Khách hàng đạt mốc lượt khám được nhận voucher loyalty.
-- Mỗi lịch chỉ áp dụng tối đa một voucher.
-- Voucher đã sử dụng được khôi phục khi lịch bị hủy nếu voucher chưa hết hạn.
+Đại lý có:
 
-Các nghiệp vụ tương ứng nằm trong:
+- Tier riêng: Silver, Gold hoặc Diamond.
+- Giá sản phẩm theo Tier.
+- Ví tiền dùng để thanh toán đơn Dealer.
+- Quick Order cho một khách hàng.
+- Excel Import để tạo đơn cho nhiều khách hàng.
+- Theo dõi đơn hàng và gửi yêu cầu hủy/hoàn trả khi phù hợp.
 
-- [`ReviewService.php`](backend/app/Services/ReviewService.php)
-- [`VoucherService.php`](backend/app/Services/VoucherService.php)
-- [`LoyaltyService.php`](backend/app/Services/LoyaltyService.php)
+Tài khoản Dealer phải được Admin duyệt trước khi sử dụng đầy đủ chức năng đặt hàng.
 
-## 3. Vai trò người dùng
+## 4. Quick Order và Excel Import
+
+### Quick Order
+
+Quick Order phục vụ trường hợp đại lý đặt hàng cho **một khách hàng**.
+
+Luồng chính:
+
+```text
+Chọn sản phẩm
+  → Nhập số lượng
+  → Xem lại đơn
+  → Xác nhận
+  → Nhập địa chỉ khách hàng
+  → Backend chọn kho phù hợp
+  → Tạo đơn hàng
+```
+
+Người dùng có thể tùy chọn lưu địa chỉ để sử dụng lại sau.
+
+### Excel Import
+
+Excel Import dùng khi đại lý cần tạo đơn cho **nhiều khách hàng**.
+
+Các cột chính:
+
+```text
+customer_name
+phone
+province
+district
+address_line
+sku
+quantity
+```
+
+Backend tự gộp các dòng thành cùng một đơn khi chúng có cùng:
+
+```text
+Tên khách hàng + Số điện thoại + Địa chỉ
+```
+
+Dealer không cần nhập mã đơn hàng trong file Excel.
+
+## 5. Quản lý đơn hàng
+
+Workflow chính:
+
+```text
+Draft
+  → Pending
+  → Confirmed
+  → Picking
+  → Shipped
+  → Completed
+```
+
+Các trạng thái bổ sung:
+
+```text
+Cancelled
+Returned / Refunded
+```
+
+Một số nguyên tắc:
+
+- Retail cần Admin xác nhận đơn.
+- Đơn chưa thanh toán không được chuyển thẳng sang `Completed`.
+- Dealer có thể hủy trước khi Admin xác nhận nếu điều kiện cho phép.
+- Đơn đã thanh toán phải đi qua quy trình Refund thay vì hủy trực tiếp.
+- Yêu cầu trả hàng được gửi cho Admin xét duyệt.
+
+## 6. Kho và tồn kho
+
+Hệ thống phân biệt rõ các nghiệp vụ:
+
+### Tồn đầu kỳ
+
+Dùng để thiết lập số lượng ban đầu khi bắt đầu quản lý tồn kho cho sản phẩm.
+
+### Điều chỉnh tồn
+
+Dùng khi cần tăng hoặc giảm tồn do kiểm kê hoặc chênh lệch thực tế.
+
+### Nhập kho
+
+Dùng để ghi nhận hàng thực tế được nhập vào kho.
+
+### Đơn mua / nhận hàng
+
+Dùng để quản lý quá trình mua hàng từ nhà cung cấp và ghi nhận số lượng, giá nhập.
+
+Dealer không tự chọn kho. Backend xác định kho dựa trên tỉnh/thành của địa chỉ giao hàng và cấu hình khu vực phục vụ.
+
+## 7. Promotion và Voucher
+
+### Product Promotion
+
+Hệ thống hỗ trợ:
+
+- Giảm phần trăm trực tiếp trên sản phẩm.
+- Mua X tặng Y.
+- Mua sản phẩm A tặng sản phẩm B.
+- Điều kiện theo sản phẩm.
+- Điều kiện theo Dealer Tier.
+- Phạm vi áp dụng: Retail, Dealer hoặc Both.
+
+Một sản phẩm tại cùng một thời điểm chỉ được nằm trong tối đa **một promotion giảm giá trực tiếp đang có hiệu lực**.
+
+Promotion hết thời gian hiệu lực sẽ không tiếp tục khóa sản phẩm.
+
+### Voucher
+
+Voucher được sử dụng cho Retail và áp dụng ở cấp đơn hàng.
+
+Dealer không sử dụng Voucher nhưng vẫn có thể nhận Product Promotion nếu promotion được cấu hình cho Dealer hoặc Both.
+
+## 8. Ví đại lý
+
+Dealer Wallet dùng để quản lý số dư của đại lý.
+
+Các nghiệp vụ chính:
+
+- Khởi tạo ví.
+- Admin cộng tiền vào ví.
+- Ghi nhận lịch sử giao dịch.
+- Trừ tiền khi thanh toán đơn Dealer.
+- Hoàn tiền về ví khi Refund được duyệt.
+
+Mọi thay đổi số dư cần có transaction/ledger tương ứng để có thể đối soát.
+
+## 9. Vai trò hệ thống
 
 | Vai trò | Chức năng chính |
 | --- | --- |
-| Guest | Xem dịch vụ, bác sĩ và bài viết; xác minh OTP; đặt lịch; tra cứu và hủy lịch bằng mã đặt lịch |
-| Customer | Quản lý lịch cá nhân, đổi lịch, hủy lịch, đánh giá, sử dụng voucher và theo dõi quyền lợi thành viên |
-| Receptionist | Xác nhận lịch, check-in, đánh dấu vắng, hủy và hoàn tất lịch sau khi bác sĩ khám xong |
-| Doctor | Xem lịch của chính mình, bắt đầu khám, hoàn thành điều trị, xem lịch làm việc và đánh giá |
-| Admin | Quản lý bác sĩ, nhân viên, dịch vụ, lịch làm việc, lịch nghỉ, khách hàng, lịch hẹn, blog, đánh giá và voucher |
+| Customer | Xem sản phẩm, đặt đơn Retail, thanh toán, theo dõi và yêu cầu trả hàng |
+| Dealer | Xem giá Dealer, Quick Order, Excel Import, quản lý đơn và ví |
+| Admin | Quản lý sản phẩm, giá, kho, khách hàng, Dealer, đơn hàng, promotion và voucher |
 
-Phân quyền backend được áp dụng bằng middleware trong [`backend/bootstrap/app.php`](backend/bootstrap/app.php).
-
-## 4. Cấu trúc thư mục
+## 10. Cấu trúc dự án
 
 ```text
 Doctor/
-├── backend/                         Laravel REST API
+├── backend/                 Laravel REST API
 │   ├── app/
-│   │   ├── Console/Commands/        Lệnh chạy nền và nhắc lịch
 │   │   ├── Http/
-│   │   │   ├── Controllers/         Nhận request và trả response
-│   │   │   │   └── Api/
-│   │   │   │       ├── Admin/       API quản trị viên
-│   │   │   │       └── Staff/       API bác sĩ và lễ tân
-│   │   │   ├── Middleware/          Xác thực và phân quyền
-│   │   │   ├── Requests/            Validation đầu vào
-│   │   │   └── Resources/           Chuẩn hóa JSON trả về
-│   │   ├── Mail/                     Email OTP
-│   │   ├── Models/                   Eloquent model và quan hệ
-│   │   ├── Notifications/            Thông báo database/email
-│   │   ├── Policies/                 Quyền truy cập tài nguyên
-│   │   ├── Services/                 Business logic chính
-│   │   └── Support/                  Tiện ích dùng chung
-│   ├── config/                       Cấu hình booking, loyalty, reward
+│   │   ├── Models/
+│   │   ├── Services/
+│   │   └── Support/
 │   ├── database/
-│   │   ├── factories/                Dữ liệu phục vụ test
-│   │   ├── migrations/               Cấu trúc cơ sở dữ liệu
-│   │   └── seeders/                  Dữ liệu khởi tạo
-│   ├── routes/                       Route API và scheduler
-│   └── tests/                        PHPUnit feature test
+│   │   ├── migrations/
+│   │   └── seeders/
+│   ├── routes/
+│   └── tests/
 │
-├── frontend/                         React/TanStack application
+├── frontend/                React application
 │   ├── src/
-│   │   ├── assets/                   Ảnh tĩnh
-│   │   ├── components/               Component tái sử dụng
-│   │   │   ├── admin/                Component quản trị
-│   │   │   ├── common/               Button, field, loading, error
-│   │   │   ├── layout/               Layout công khai và nhân viên
-│   │   │   ├── loyalty/              Quyền lợi thành viên
-│   │   │   ├── notifications/        Chuông và danh sách thông báo
-│   │   │   ├── reviews/              Giao diện đánh giá
-│   │   │   ├── services/             Giao diện dịch vụ
-│   │   │   └── ui/                   shadcn/Radix UI primitives
-│   │   ├── contexts/                 Trạng thái xác thực
-│   │   ├── data/                     Nội dung giao diện tĩnh
-│   │   ├── hooks/                    React hooks dùng chung
-│   │   ├── lib/                      Hàm tiện ích
-│   │   ├── pages/                    Màn hình nghiệp vụ
-│   │   ├── routes/                   File-based routing
-│   │   ├── services/                 Lớp gọi Laravel API
-│   │   ├── types/                    TypeScript types
-│   │   └── styles.css                CSS và cấu hình giao diện
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── types/
 │   └── package.json
 │
-├── .codex/                            Thông tin bàn giao dự án
-├── .agents/                           Skill và hướng dẫn phát triển
-├── AGENTS.md                          Quy tắc làm việc của dự án
-└── README.md                          Tài liệu tổng quan này
+└── README.md
 ```
 
-## 5. Luồng xử lý backend
-
-```text
-HTTP Request
-  → routes/api.php
-  → Middleware xác thực và phân quyền
-  → Form Request kiểm tra dữ liệu
-  → Controller điều phối
-  → Service xử lý nghiệp vụ
-  → Model/Eloquent đọc hoặc ghi MySQL
-  → API Resource chuẩn hóa JSON
-  → HTTP Response
-```
-
-### Controllers
-
-- `app/Http/Controllers/Api/`: API công khai, khách hàng và guest.
-- `app/Http/Controllers/Api/Admin/`: chức năng quản trị.
-- `app/Http/Controllers/Api/Staff/`: cổng bác sĩ và lễ tân.
-
-Toàn bộ endpoint chính được khai báo trong [`backend/routes/api.php`](backend/routes/api.php).
-
-### Requests
-
-`app/Http/Requests/` chứa validation cho từng nghiệp vụ, ví dụ:
-
-- `StoreAppointmentRequest`: dữ liệu đặt lịch.
-- `AvailableSlotsRequest`: bác sĩ, dịch vụ và ngày lấy giờ trống.
-- `StoreDoctorRequest`: thông tin tạo bác sĩ.
-- `ReplaceDoctorSchedulesRequest`: lịch làm việc theo tuần.
-- `StoreReviewRequest`: dữ liệu đánh giá.
-
-### Services
-
-`app/Services/` chứa nghiệp vụ có thể dùng lại:
-
-| Service | Trách nhiệm |
-| --- | --- |
-| `BookingService` | Giờ trống, đặt lịch, đổi lịch, hủy lịch, trạng thái lịch |
-| `DoctorAccountService` | Tạo hồ sơ và tài khoản bác sĩ, gửi thư mời |
-| `DoctorLifecycleService` | Kích hoạt, ngừng hoạt động và xóa bác sĩ an toàn |
-| `AppointmentNotificationService` | Chọn người nhận thông báo lịch hẹn |
-| `ReviewService` | Tạo và cập nhật đánh giá |
-| `VoucherService` | Phát hành, sử dụng và hoàn lại voucher |
-| `LoyaltyService` | Tính lượt khám và phát thưởng thành viên |
-| `AdminDashboardService` | Tổng hợp dữ liệu dashboard quản trị |
-
-Dự án không có Repository layer riêng; các service truy vấn Eloquent Model trực tiếp.
-
-### Models và quan hệ dữ liệu
-
-Các model nghiệp vụ chính:
-
-- `User`
-- `Doctor`
-- `Service`, `ServiceCategory`
-- `DoctorSchedule`, `DoctorTimeOff`
-- `Appointment`
-- `Review`
-- `Voucher`
-- `Blog`, `BlogCategory`
-
-```text
-User ──< Appointment >── Doctor
-                    ├── Service
-                    └── Voucher
-
-Doctor >──< Service       qua doctor_service
-Doctor ──< DoctorSchedule
-Doctor ──< DoctorTimeOff
-Appointment ──1 Review
-```
-
-## 6. Luồng xử lý frontend
-
-```text
-TanStack Route
-  → Page nghiệp vụ
-  → React Query
-  → API service
-  → Laravel REST API
-  → Cập nhật cache
-  → Render component
-```
-
-### `src/routes`
-
-Dự án sử dụng file-based routing. Ví dụ:
-
-- `booking.tsx` tương ứng `/booking`.
-- `account.appointments.$id.tsx` tương ứng `/account/appointments/{id}`.
-- `admin.doctors.$id.tsx` tương ứng `/admin/doctors/{id}`.
-- `doctor.appointments.$id.tsx` tương ứng `/doctor/appointments/{id}`.
-
-File route chỉ nên đọc tham số URL, khai báo metadata và gọi Page/Component. `routeTree.gen.ts` được TanStack tự sinh, không sửa thủ công.
-
-### `src/pages`
-
-- [`BookingPage.tsx`](frontend/src/pages/BookingPage.tsx): luồng đặt lịch bốn bước.
-- `account/AccountPages.tsx`: tài khoản, lịch cá nhân, đổi lịch và loyalty.
-- `admin/AdminPages.tsx`: quản lý bác sĩ, lịch hẹn và khách hàng.
-- `admin/AdminDashboardPage.tsx`: dashboard quản trị.
-- `staff/StaffPages.tsx`: giao diện bác sĩ và lễ tân.
-- `ServicesPage.tsx`, `ServiceExplorerDetailPage.tsx`: dịch vụ công khai.
-- `ReviewVoucherPages.tsx`: đánh giá và voucher.
-
-### `src/services`
-
-Đây là lớp giao tiếp với backend:
-
-- `api.ts`: fetch dùng chung, CSRF, cookie và xử lý lỗi HTTP.
-- `authApi.ts`: đăng nhập, đăng ký, đăng xuất.
-- `appointmentApi.ts`: đặt, đổi, hủy và tra cứu lịch.
-- `doctorApi.ts`: bác sĩ và giờ trống.
-- `adminApi.ts`: API quản trị.
-- `staffApi.ts`: API bác sĩ và lễ tân.
-- `notificationApi.ts`, `reviewVoucherApi.ts`, `loyaltyApi.ts`: các nghiệp vụ bổ sung.
-
-## 7. Bản đồ chức năng và file xử lý
-
-| Chức năng | Backend chính | Frontend chính |
-| --- | --- | --- |
-| Đăng nhập, đăng ký | `AuthController`, `User`, Sanctum middleware | `AuthContext`, `authApi`, `AuthPages` |
-| Đặt lịch | `AppointmentController`, `AvailableSlotController`, `BookingService` | `BookingPage`, `appointmentApi`, `doctorApi` |
-| Guest OTP | `GuestBookingVerificationController`, `GuestBookingVerificationService` | `BookingPage`, `appointmentApi` |
-| Quản lý bác sĩ | `Api/Admin/Doctor*`, `DoctorAccountService`, `DoctorLifecycleService` | `DoctorManagement`, `AdminPages`, `adminApi` |
-| Lịch làm việc/ngày nghỉ | `DoctorScheduleController`, `DoctorTimeOffController`, `BookingService` | `DoctorManagement`, `adminApi` |
-| Vận hành lễ tân | `ReceptionistAppointmentController` | `StaffPages`, `staffApi` |
-| Cổng bác sĩ | `DoctorPortalController` | `StaffPages`, `staffApi` |
-| Dịch vụ và danh mục | `ServiceController`, `ServiceCategoryController` | `ServicePages`, `ServiceForm`, `ServiceExplorer` |
-| Đánh giá | `ReviewController`, `ReviewService` | `ReviewVoucherPages`, `reviewVoucherApi` |
-| Voucher và loyalty | `VoucherService`, `LoyaltyService` | `ReviewVoucherPages`, `LoyaltyCard`, `loyaltyApi` |
-| Thông báo | `AppointmentNotificationService`, `Notifications/` | `useNotifications`, `NotificationBell`, `NotificationItem` |
-| Nhắc lịch tự động | `SendAppointmentReminders`, `routes/console.php` | Hiển thị qua hệ thống notification |
-| Dashboard admin | `AdminDashboardService`, `DashboardController` | `AdminDashboardPage`, `components/admin/dashboard` |
-| Blog | `BlogController`, `BlogCategoryController` | `BlogPages`, `BlogAdminPage` |
-
-## 8. Cơ sở dữ liệu
-
-Các bảng nghiệp vụ chính:
-
-- `users`
-- `doctors`
-- `services`, `service_categories`
-- `doctor_service`
-- `doctor_schedules`
-- `doctor_time_offs`
-- `appointments`
-- `reviews`
-- `vouchers`
-- `notifications`
-- `blogs`, `blog_categories`
-
-Migration nằm trong `backend/database/migrations/`. Dữ liệu khởi tạo nằm trong `backend/database/seeders/`; factory trong `backend/database/factories/` chỉ phục vụ test và tạo dữ liệu phát triển.
-
-## 9. Thông báo và tác vụ nền
-
-- Thông báo lịch hẹn sử dụng database notification và email.
-- Thư mời bác sĩ thiết lập mật khẩu được đưa vào queue.
-- Lệnh `appointments:send-reminders` gửi nhắc lịch sắp tới.
-- Scheduler chạy lệnh nhắc lịch mỗi năm phút và chống chạy chồng lặp.
-
-Khi chạy môi trường phát triển cần có queue worker và scheduler nếu muốn kiểm tra đầy đủ thông báo.
-
-## 10. Chạy dự án ở local
+## 11. Chạy dự án local
 
 ### Backend
 
 ```bash
 cd backend
 composer install
-php artisan migrate --no-interaction
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
 php artisan serve --host=localhost --port=8000
 ```
 
-Chạy queue và scheduler ở hai terminal khác:
+Nếu dự án sử dụng queue:
 
 ```bash
-cd backend
 php artisan queue:work
-```
-
-```bash
-cd backend
-php artisan schedule:work
 ```
 
 ### Frontend
@@ -365,19 +285,18 @@ bun install
 bun run dev
 ```
 
-Frontend mặc định kết nối API qua `VITE_API_URL`. Khi dùng Sanctum cookie, frontend và backend nên sử dụng cùng một hostname, ví dụ đều dùng `localhost`.
+Frontend kết nối backend thông qua biến môi trường như `VITE_API_URL`.
 
-## 11. Kiểm thử và kiểm tra chất lượng
+## 12. Kiểm tra trước khi deploy
 
-Backend:
+### Backend
 
 ```bash
 cd backend
-php artisan test --compact
-vendor/bin/pint --format agent
+php artisan test
 ```
 
-Frontend:
+### Frontend
 
 ```bash
 cd frontend
@@ -386,15 +305,24 @@ bun run lint
 bun run build
 ```
 
-## 12. Lưu ý vận hành
+Không commit file `.env` hoặc các thông tin bí mật lên Git repository.
 
-- Production phải cấu hình SMTP thật; mailer `log` chỉ phù hợp môi trường phát triển.
-- Queue worker phải chạy để gửi email và database notification kịp thời.
-- Scheduler phải chạy để gửi nhắc lịch tự động.
-- Ảnh tải lên sử dụng Laravel public disk và cần `backend/public/storage` trỏ đến `backend/storage/app/public`.
-- Không chạy `migrate:fresh` trên cơ sở dữ liệu có dữ liệu thật nếu chưa có xác nhận rõ ràng.
-- Không sửa trực tiếp `frontend/src/routeTree.gen.ts` vì đây là file được sinh tự động.
+## 13. Deployment
 
-## 13. Tóm tắt
+Frontend có thể deploy lên Vercel.
 
-Junie là hệ thống full-stack quản lý phòng khám thẩm mỹ, trong đó `Appointment` là nghiệp vụ trung tâm kết nối khách hàng, bác sĩ và dịch vụ. Laravel chịu trách nhiệm xác thực, phân quyền, validation, tính giờ trống, chống đặt trùng và xử lý vòng đời lịch hẹn. React/TanStack cung cấp giao diện riêng cho từng vai trò và đồng bộ dữ liệu với backend qua REST API. Ngoài đặt lịch, hệ thống còn hỗ trợ quản lý bác sĩ, lịch làm việc, ngày nghỉ, thông báo, đánh giá, voucher, loyalty, dịch vụ và nội dung blog.
+Backend Laravel cần môi trường hỗ trợ PHP, database và các tiến trình cần thiết như queue worker. Với production, backend thường phù hợp hơn với VPS hoặc nền tảng hỗ trợ Laravel/PHP đầy đủ.
+
+Các biến môi trường production cần được cấu hình trực tiếp trên nền tảng deploy thay vì commit vào repository.
+
+## 14. Tóm tắt
+
+Dự án tập trung vào ba nhóm nghiệp vụ chính:
+
+```text
+Sales
+  + Dealer Management
+  + Inventory / Warehouse
+```
+
+Hệ thống cho phép vận hành đồng thời kênh Retail và Dealer, quản lý bảng giá theo Tier, tồn kho theo kho, đơn hàng, ví đại lý, chương trình khuyến mãi và quy trình trả hàng/hoàn tiền trong cùng một hệ thống ERP.
