@@ -10,6 +10,7 @@ use App\Models\ProductCategory;
 use App\Models\SalesPromotion;
 use App\Models\SalesPromotionGiftRule;
 use App\Services\SalesGiftPromotionVisibilityService;
+use App\Support\ProductCatalogDiagnosticStage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
@@ -30,6 +31,7 @@ class ProductCatalogController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
+        ProductCatalogDiagnosticStage::mark($request, 'query');
         $data = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'category' => ['nullable', 'integer', 'exists:product_categories,id'],
@@ -39,7 +41,9 @@ class ProductCatalogController extends Controller
             'promotions_only' => ['nullable', 'boolean'],
         ]);
         $query = $this->visible();
+        ProductCatalogDiagnosticStage::mark($request, 'promotion');
         $promotions = $this->retailDiscounts();
+        ProductCatalogDiagnosticStage::mark($request, 'query');
         if ($data['promotions_only'] ?? false) {
             $giftCandidates = app(SalesGiftPromotionVisibilityService::class)->isAvailable()
                 ? SalesPromotionGiftRule::query()->whereHas('promotion', fn (Builder $query) => $query
@@ -75,8 +79,12 @@ class ProductCatalogController extends Controller
             $query->latest('id');
         }
 
+        ProductCatalogDiagnosticStage::mark($request, 'relationship');
         $page = $query->paginate($data['per_page'] ?? 15)->withQueryString();
+        ProductCatalogDiagnosticStage::mark($request, 'promotion');
         $this->attachPromotions($page->getCollection(), $promotions);
+
+        ProductCatalogDiagnosticStage::mark($request, 'resource');
 
         return ProductCatalogResource::collection($page);
     }

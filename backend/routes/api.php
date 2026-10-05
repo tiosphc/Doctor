@@ -71,6 +71,7 @@ use App\Http\Controllers\Api\LoyaltyController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PayOsWebhookController;
 use App\Http\Controllers\Api\ProductCatalogController;
+use App\Http\Controllers\Api\ProductCatalogDiagnosticController;
 use App\Http\Controllers\Api\PublicReviewController;
 use App\Http\Controllers\Api\RetailCartController;
 use App\Http\Controllers\Api\RetailCheckoutController;
@@ -92,6 +93,8 @@ Route::post('/auth/setup-password', DoctorPasswordSetupController::class)
 
 Route::apiResource('services', ServiceController::class)->only(['index', 'show']);
 Route::get('/products', [ProductCatalogController::class, 'index'])->name('products.index');
+Route::get('/internal/diagnostics/products', ProductCatalogDiagnosticController::class)
+    ->name('internal.diagnostics.products');
 Route::get('/gift-promotions', [GiftPromotionCatalogController::class, 'retail'])->name('gift-promotions.retail');
 Route::get('/product-filters', [ProductCatalogController::class, 'filters'])->name('products.filters');
 Route::get('/products/{product}', [ProductCatalogController::class, 'show'])->name('products.show');
