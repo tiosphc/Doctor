@@ -7,7 +7,13 @@
         "build": {
             "commands": [
                 "...",
-                "test -f storage/app/public/products/demo/DEMO-PRD-12.jpg && if [ ! -e public/storage ]; then php artisan storage:link --no-interaction; fi && test -f public/storage/products/demo/DEMO-PRD-12.jpg"
+                "test -f storage/app/public/products/demo/DEMO-PRD-12.jpg && if [ ! -e public/storage ]; then php artisan storage:link --no-interaction; fi && test -f public/storage/products/demo/DEMO-PRD-12.jpg",
+                "test -s app/Models/User.php",
+                "grep -q 'class User extends Authenticatable' app/Models/User.php",
+                "grep -q 'internal/diagnostics/auth' routes/api.php",
+                "php artisan route:list --path=internal/diagnostics/auth --no-interaction",
+                "php artisan route:list --path=internal/diagnostics/auth --no-ansi --no-interaction | grep -Fq 'GET|HEAD api/internal/diagnostics/auth'",
+                "php artisan route:list --path=internal/diagnostics/auth --no-ansi --no-interaction | grep -Fq 'POST api/internal/diagnostics/auth/login'"
             ]
         }
     },
