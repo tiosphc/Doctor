@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use App\Services\RetailPricingService;
 use App\Services\SalesPromotionService;
-use App\Support\ProductCatalogDiagnosticStage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +17,6 @@ class ProductCatalogResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        ProductCatalogDiagnosticStage::mark($request, 'resource');
         $pricing = app(RetailPricingService::class);
         $promotions = app(SalesPromotionService::class);
         $discount = $this->retail_discount_model;
@@ -35,15 +33,11 @@ class ProductCatalogResource extends JsonResource
                     && is_string($value)
                     && ! preg_match('/cost|price|dealer|tier|stock|inventory|margin|warehouse/i', $key))
                 ->all(),
-            'retail_price' => (function () use ($request, $variant, $pricing, $promotions, $discount): array {
-                ProductCatalogDiagnosticStage::mark($request, 'pricing');
+            'retail_price' => (function () use ($variant, $pricing, $promotions, $discount): array {
                 $price = array_intersect_key($pricing->resolve($variant), array_flip(['unit_price', 'currency', 'pricing_context']));
-                ProductCatalogDiagnosticStage::mark($request, 'promotion');
                 $price['discounted_unit_price'] = $discount !== null
                     && bccomp($price['unit_price'], $discount->minimum_order_amount, 2) >= 0
                     ? $promotions->discountedUnitPrice($price['unit_price'], $discount) : null;
-
-                ProductCatalogDiagnosticStage::mark($request, 'resource');
 
                 return $price;
             })(),
