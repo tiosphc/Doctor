@@ -1,6 +1,9 @@
 import type { ValidationErrors } from "@/types";
 
-const apiUrl = (import.meta.env["VITE_API_URL"] || "http://localhost:8000").replace(/\/$/, "");
+const apiUrl = (
+    import.meta.env["VITE_API_URL"] ||
+    (import.meta.env.DEV ? "http://localhost:8000" : "https://api.drjunie.online")
+).replace(/\/$/, "");
 let csrfRequest: Promise<void> | null = null;
 
 type RequestOptions = Omit<RequestInit, "body"> & {

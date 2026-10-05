@@ -28,6 +28,23 @@ class ProductFoundationTest extends TestCase
         Sanctum::actingAs(User::factory()->admin()->create());
     }
 
+    public function test_public_product_filters_return_only_active_categories_and_brands(): void
+    {
+        $category = ProductCategory::factory()->create(['code' => 'SKIN', 'name' => 'Skin']);
+        $brand = Brand::factory()->create(['code' => 'JUNIE', 'name' => 'Junie']);
+        ProductCategory::factory()->create(['status' => 'inactive']);
+        Brand::factory()->create(['status' => 'inactive']);
+
+        $this->getJson('/api/product-filters')
+            ->assertOk()
+            ->assertJsonPath('categories.0.id', $category->id)
+            ->assertJsonPath('categories.0.code', 'SKIN')
+            ->assertJsonPath('brands.0.id', $brand->id)
+            ->assertJsonPath('brands.0.code', 'JUNIE')
+            ->assertJsonCount(1, 'categories')
+            ->assertJsonCount(1, 'brands');
+    }
+
     public function test_master_crud_and_category_cycle_validation(): void
     {
         $this->admin();

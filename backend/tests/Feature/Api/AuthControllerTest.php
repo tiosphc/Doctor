@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
@@ -249,6 +250,49 @@ class AuthControllerTest extends TestCase
             ->assertNoContent()
             ->assertHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
             ->assertHeader('Access-Control-Allow-Credentials', 'true');
+    }
+
+    public function test_production_spa_origin_can_call_authenticated_api_and_unknown_origin_is_rejected(): void
+    {
+        config()->set('cors.allowed_origins', [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'https://drjunie.online',
+        ]);
+
+        $this->call('OPTIONS', '/api/user', server: [
+            'HTTP_ORIGIN' => 'https://drjunie.online',
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'GET',
+        ])->assertNoContent()
+            ->assertHeader('Access-Control-Allow-Origin', 'https://drjunie.online')
+            ->assertHeader('Access-Control-Allow-Credentials', 'true');
+
+        $this->withHeader('Origin', 'https://drjunie.online')->getJson('/api/user')
+            ->assertUnauthorized()
+            ->assertHeader('Access-Control-Allow-Origin', 'https://drjunie.online');
+
+        $this->call('OPTIONS', '/api/user', server: [
+            'HTTP_ORIGIN' => 'https://untrusted.example',
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'GET',
+        ])->assertNoContent()
+            ->assertHeaderMissing('Access-Control-Allow-Origin');
+    }
+
+    public function test_trusted_proxy_generates_https_pagination_links(): void
+    {
+        TrustProxies::at('127.0.0.1');
+
+        try {
+            $this->withServerVariables([
+                'REMOTE_ADDR' => '127.0.0.1',
+                'HTTP_X_FORWARDED_PROTO' => 'https',
+                'HTTP_X_FORWARDED_PORT' => '443',
+            ])->getJson('http://api.drjunie.online/api/services')
+                ->assertOk()
+                ->assertJsonPath('links.first', 'https://api.drjunie.online/api/services?page=1');
+        } finally {
+            TrustProxies::flushState();
+        }
     }
 
     /** @return array<string, string> */

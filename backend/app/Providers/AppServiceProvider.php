@@ -7,6 +7,7 @@ use App\Services\PayOsClient;
 use App\Services\WalletTopUpGateway;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -27,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $trustedProxies = config('app.trusted_proxies');
+        if (is_string($trustedProxies) && $trustedProxies !== '') {
+            TrustProxies::at($trustedProxies);
+        }
+
         RateLimiter::for('login', function (Request $request): Limit {
             $email = Str::transliterate(Str::lower($request->string('email')->toString()));
 
