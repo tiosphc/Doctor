@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\Admin\WarehouseController;
 use App\Http\Controllers\Api\AdministrativeLocationController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AuthDiagnosticController;
 use App\Http\Controllers\Api\AvailableSlotController;
 use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\CustomerSalesReturnController;
@@ -88,6 +89,12 @@ Route::post('/register', [AuthController::class, 'register'])->middleware('throt
 Route::get('/internal/diagnostics/storage', StorageDiagnosticController::class)
     ->middleware('throttle:10,1')
     ->name('internal.diagnostics.storage');
+Route::get('/internal/diagnostics/auth', [AuthDiagnosticController::class, 'show'])
+    ->middleware('throttle:10,1')
+    ->name('internal.diagnostics.auth');
+Route::post('/internal/diagnostics/auth/login', [AuthDiagnosticController::class, 'login'])
+    ->middleware('throttle:5,1')
+    ->name('internal.diagnostics.auth.login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/webhooks/payos', PayOsWebhookController::class)->middleware('throttle:120,1')->name('webhooks.payos');
 Route::post('/auth/setup-password', DoctorPasswordSetupController::class)
