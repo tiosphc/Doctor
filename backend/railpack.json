@@ -2,5 +2,18 @@
     "$schema": "https://schema.railpack.com",
     "packages": {
         "php": "8.4"
+    },
+    "steps": {
+        "build": {
+            "commands": [
+                "...",
+                "if [ -L public/storage ]; then [ \"$(readlink -f public/storage)\" = \"$(readlink -f storage/app/public)\" ] || { echo 'public/storage points to the wrong directory' >&2; exit 1; }; elif [ -e public/storage ]; then echo 'public/storage is not a symlink' >&2; exit 1; else php artisan storage:link --no-interaction; fi && test -f public/storage/products/demo/DEMO-PRD-12.jpg"
+            ]
+        }
+    },
+    "deploy": {
+        "variables": {
+            "RAILPACK_SKIP_MIGRATIONS": "true"
+        }
     }
 }

@@ -1,8 +1,5 @@
 *
-!products/
-products/*
-!products/demo/
-products/demo/*
-!products/demo/DEMO-PRD-*.jpg
-!products/demo/DEMO-GIFT-*.jpg
 !.gitignore
+!products/
+!products/demo/
+!products/demo/**
