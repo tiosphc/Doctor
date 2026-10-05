@@ -71,7 +71,6 @@ use App\Http\Controllers\Api\LoyaltyController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PayOsWebhookController;
 use App\Http\Controllers\Api\ProductCatalogController;
-use App\Http\Controllers\Api\ProductCatalogDiagnosticController;
 use App\Http\Controllers\Api\PublicReviewController;
 use App\Http\Controllers\Api\RetailCartController;
 use App\Http\Controllers\Api\RetailCheckoutController;
@@ -81,10 +80,14 @@ use App\Http\Controllers\Api\ServiceCategoryController as PublicServiceCategoryC
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\Staff\DoctorPortalController;
 use App\Http\Controllers\Api\Staff\ReceptionistAppointmentController;
+use App\Http\Controllers\Api\StorageDiagnosticController;
 use App\Http\Controllers\Api\VoucherController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::get('/internal/diagnostics/storage', StorageDiagnosticController::class)
+    ->middleware('throttle:10,1')
+    ->name('internal.diagnostics.storage');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/webhooks/payos', PayOsWebhookController::class)->middleware('throttle:120,1')->name('webhooks.payos');
 Route::post('/auth/setup-password', DoctorPasswordSetupController::class)
@@ -93,8 +96,6 @@ Route::post('/auth/setup-password', DoctorPasswordSetupController::class)
 
 Route::apiResource('services', ServiceController::class)->only(['index', 'show']);
 Route::get('/products', [ProductCatalogController::class, 'index'])->name('products.index');
-Route::get('/internal/diagnostics/products', ProductCatalogDiagnosticController::class)
-    ->name('internal.diagnostics.products');
 Route::get('/gift-promotions', [GiftPromotionCatalogController::class, 'retail'])->name('gift-promotions.retail');
 Route::get('/product-filters', [ProductCatalogController::class, 'filters'])->name('products.filters');
 Route::get('/products/{product}', [ProductCatalogController::class, 'show'])->name('products.show');
