@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Award, ShieldCheck, Phone, ArrowRight, CalendarDays, Sparkles } from "lucide-react";
+import { Award, ShieldCheck, Phone, ArrowRight, ShoppingBag, Sparkles } from "lucide-react";
 import hero from "@/assets/clinic-hero.jpg";
 import treatment from "@/assets/treatment.jpg";
 import { reviews, results } from "@/data/content";
@@ -26,125 +26,131 @@ export function HomePage() {
     const doctors = doctorsQuery.data?.data ?? [];
     return (
         <>
-            <section className="relative isolate min-h-screen overflow-hidden bg-navy-deep text-white lg:h-screen lg:min-h-[680px]">
+            <section className="relative isolate min-h-screen overflow-hidden bg-navy-deep text-white">
                 <img
                     src={hero}
                     alt="Không gian phòng khám Junie"
                     className="absolute inset-0 -z-30 h-full w-full object-cover object-center"
                 />
 
-                <div className="absolute inset-0 -z-20 bg-black/15" />
-                <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,12,20,0.82)_0%,rgba(3,14,24,0.6)_40%,rgba(3,14,24,0.28)_68%,rgba(3,14,24,0.4)_100%)]" />
+                <div className="absolute inset-0 -z-20 bg-black/20" />
+                <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,12,20,0.9)_0%,rgba(3,14,24,0.72)_48%,rgba(3,14,24,0.48)_100%)]" />
                 <div className="absolute inset-x-0 bottom-0 -z-10 h-52 bg-gradient-to-t from-[#03111d]/70 to-transparent" />
 
-                <div className="mx-auto flex min-h-screen w-full max-w-[1600px] items-center px-5 pb-12 pt-28 sm:px-8 lg:h-full lg:min-h-[680px] lg:px-12 lg:pb-12 lg:pt-28 xl:px-16 2xl:px-20">
-                    <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_410px] xl:gap-16">
-                        <div className="max-w-4xl">
+                <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col justify-center gap-10 px-5 pb-12 pt-28 sm:px-8 lg:gap-14 lg:px-12 lg:pb-14 lg:pt-32 xl:px-16 2xl:px-20">
+                    <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] xl:gap-16">
+                        <div className="min-w-0 max-w-4xl">
                             <div className="inline-flex items-center rounded-full border border-[#c8a466]/35 bg-[#12344d]/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#efd29d] backdrop-blur-md sm:text-xs">
-                                Viện da liễu &amp; thẩm mỹ y khoa chuẩn quốc tế
+                                DERMATOLOGY • SKINCARE • PROFESSIONAL CARE
                             </div>
 
-                            <h1 className="mt-6 max-w-[920px] font-display text-[2.75rem] font-semibold leading-[1.06] tracking-[-0.025em] text-white sm:text-5xl md:text-6xl xl:text-[4.35rem]">
-                                Tôn vinh nét riêng,
-                                <br className="hidden sm:block" /> lan tỏa{" "}
+                            <h1 className="mt-6 font-display text-[2.5rem] font-semibold leading-[1.1] tracking-[-0.025em] text-white sm:text-5xl xl:text-[3.8rem]">
+                                Chăm sóc làn da khoa học,
+                                <br />
                                 <span className="font-normal italic text-[#f0cc91]">
-                                    vẻ đẹp tự nhiên
+                                    bắt đầu từ sản phẩm phù hợp
                                 </span>
                             </h1>
 
-                            <p className="mt-6 max-w-3xl text-sm leading-7 text-white/75 sm:text-base lg:text-[17px] lg:leading-8">
-                                Hệ thống khám da liễu chuyên sâu, trẻ hóa công nghệ cao và phác đồ
-                                điều trị cá nhân hóa 1:1 trực tiếp cùng đội ngũ bác sĩ chuyên khoa.
+                            <p className="mt-6 max-w-2xl text-sm leading-7 text-white/85 sm:text-base lg:leading-8">
+                                Khám phá các sản phẩm chăm sóc da được tuyển chọn theo nhu cầu, với
+                                thông tin minh bạch, giá bán rõ ràng và hỗ trợ chuyên môn khi cần.
                             </p>
 
-                            <div className="mt-8 flex flex-wrap gap-3">
+                            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                                 <ButtonLink
-                                    to="/booking"
-                                    className="min-h-11 rounded-full border border-[#d3b06f]/40 bg-[#aa7d3f] px-6 text-white shadow-lg shadow-black/15 hover:bg-[#bd8d4b]"
+                                    to="/products"
+                                    className="w-full rounded-full border border-[#d3b06f]/40 bg-[#aa7d3f] px-6 text-white shadow-lg shadow-black/15 hover:bg-[#bd8d4b] sm:w-auto"
                                 >
-                                    <CalendarDays size={16} />
-                                    Đặt lịch khám bác sĩ
+                                    <ShoppingBag size={16} />
+                                    Mua sản phẩm
                                 </ButtonLink>
                                 <ButtonLink
-                                    to="/services"
+                                    to="/dealer/apply"
                                     variant="outline"
-                                    className="min-h-11 rounded-full border-white/20 bg-[#0c2e47]/75 px-6 text-white backdrop-blur-sm hover:bg-[#123b58] hover:text-white"
+                                    className="w-full rounded-full border-white/30 bg-[#0c2e47]/75 px-6 text-white backdrop-blur-sm hover:bg-[#123b58] hover:text-white sm:w-auto"
                                 >
-                                    Khám phá dịch vụ &amp; Phác đồ <ArrowRight size={16} />
+                                    Dành cho đại lý <ArrowRight size={16} />
                                 </ButtonLink>
                             </div>
-
-                            <div className="mt-9 grid max-w-4xl grid-cols-2 gap-x-5 gap-y-6 border-t border-white/15 pt-6 sm:grid-cols-4 lg:mt-10">
-                                <HeroStat n="15+" t="Năm kinh nghiệm" />
-                                <HeroStat n="100%" t="Bác sĩ Da liễu" />
-                                <HeroStat n="50.000+" t="Khách hàng tin chọn" />
-                                <HeroStat n="FDA & CE" t="Chuẩn hóa quốc tế" />
-                            </div>
+                            <ButtonLink
+                                to="/booking"
+                                variant="ghost"
+                                className="mt-4 w-full justify-center px-0 text-xs font-medium text-white/85 hover:bg-transparent hover:text-white sm:w-auto sm:justify-start"
+                            >
+                                Cần tư vấn chuyên môn? Đặt lịch với bác sĩ <ArrowRight size={14} />
+                            </ButtonLink>
                         </div>
 
-                        <div className="relative mx-auto w-full max-w-[410px] lg:mx-0 lg:justify-self-end">
+                        <div className="relative mx-auto w-full max-w-[460px] lg:mx-0 lg:justify-self-end">
                             <div className="overflow-hidden rounded-xl border border-white/10 bg-[#15364b]/90 shadow-2xl shadow-black/30 backdrop-blur-xl">
-                                <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-5">
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-0.5 grid h-8 w-8 place-items-center rounded-md bg-white/5 text-[#e9c989]">
-                                            <MicroscopeIcon />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-semibold uppercase leading-4 tracking-[0.04em] text-white">
-                                                Phác đồ chuyên khoa
-                                            </p>
-                                            <p className="mt-1 text-[10px] text-white/45">
-                                                Cá nhân hóa theo tình trạng da
-                                            </p>
-                                        </div>
+                                <div className="flex items-start gap-3 border-b border-white/10 px-5 py-5">
+                                    <div className="mt-0.5 grid h-8 w-8 place-items-center rounded-md bg-white/5 text-[#e9c989]">
+                                        <Sparkles size={17} />
                                     </div>
-                                    <span className="rounded bg-[#d3b06f]/20 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.08em] text-[#e6c27f]">
-                                        Chuẩn y khoa
-                                    </span>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase leading-4 tracking-[0.04em] text-white">
+                                            CHĂM SÓC THEO NHU CẦU
+                                        </p>
+                                        <p className="mt-1 text-xs text-white/70">
+                                            Tìm sản phẩm phù hợp với làn da
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div className="px-5 py-4">
-                                    <p className="mb-4 text-xs leading-5 text-white/70">
-                                        Chọn dịch vụ quan tâm để nhận tư vấn trực tiếp từ bác sĩ
-                                        chuyên khoa da liễu.
-                                    </p>
                                     <div className="space-y-2.5">
-                                        <HeroTreatment label="Điều trị mụn & sẹo rỗ y khoa" />
-                                        <HeroTreatment label="Trẻ hóa Ultherapy & Thermage" />
-                                        <HeroTreatment label="Tiêm Botox & Filler chuẩn y khoa" />
-                                        <HeroTreatment label="Trị nám & sắc tố da Pico Laser" />
+                                        <HeroProductNeed label="Chăm sóc da mụn" />
+                                        <HeroProductNeed label="Phục hồi & làm dịu" />
+                                        <HeroProductNeed label="Dưỡng ẩm & hàng rào da" />
+                                        <HeroProductNeed label="Chống nắng" />
+                                        <HeroProductNeed label="Chăm sóc sắc tố" />
                                     </div>
 
-                                    <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4 text-[10px] text-white/55">
-                                        <span>Tư vấn bảo mật 1:1</span>
+                                    <div className="mt-5 border-t border-white/10 pt-4">
                                         <ButtonLink
-                                            to="/booking"
+                                            to="/products"
                                             variant="ghost"
-                                            className="h-auto min-h-0 p-0 text-[10px] font-semibold text-[#e8c47f] hover:bg-transparent hover:text-[#f4d79f]"
+                                            className="h-auto min-h-0 p-0 text-xs font-semibold text-[#e8c47f] hover:bg-transparent hover:text-[#f4d79f]"
                                         >
-                                            Đặt hẹn ngay <ArrowRight size={12} />
+                                            Xem tất cả sản phẩm <ArrowRight size={14} />
                                         </ButtonLink>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mt-4 flex items-center gap-4 rounded-xl border border-white/20 bg-white/95 px-5 py-4 text-[#0b2d49] shadow-xl shadow-black/15 lg:absolute lg:-bottom-24 lg:left-0 lg:right-0 lg:mt-0">
+                            <div className="mt-4 flex items-center gap-4 rounded-xl border border-white/20 bg-white/95 px-5 py-4 text-[#0b2d49] shadow-xl shadow-black/15">
                                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f3ead9] text-[#b78a49]">
                                     <ShieldCheck size={21} />
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <strong className="text-xs sm:text-sm">
-                                            Chứng nhận FDA &amp; CE
-                                        </strong>
-                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                    </div>
+                                    <strong className="text-xs sm:text-sm">
+                                        Sản phẩm được tuyển chọn
+                                    </strong>
                                     <p className="mt-0.5 text-[10px] leading-4 text-slate-500 sm:text-xs">
-                                        100% công nghệ và quy trình chuyên môn chuẩn hóa y khoa.
+                                        Thông tin rõ ràng • Nguồn gốc minh bạch • Hỗ trợ tư vấn
                                     </p>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-5 border-t border-white/20 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <HeroTrustItem
+                            title="SẢN PHẨM CHÍNH HÃNG"
+                            description="Nguồn gốc minh bạch"
+                        />
+                        <HeroTrustItem
+                            title="GIÁ BÁN RÕ RÀNG"
+                            description="Retail & giá dành cho đại lý"
+                        />
+                        <HeroTrustItem
+                            title="ĐẶT HÀNG DỄ DÀNG"
+                            description="Mua lẻ hoặc đặt số lượng lớn"
+                        />
+                        <HeroTrustItem
+                            title="TƯ VẤN CHUYÊN MÔN"
+                            description="Hỗ trợ khi khách hàng cần"
+                        />
                     </div>
                 </div>
             </section>
@@ -367,21 +373,21 @@ export function HomePage() {
         </>
     );
 }
-function HeroStat({ n, t }: { n: string; t: string }) {
+function HeroTrustItem({ title, description }: { title: string; description: string }) {
     return (
         <div>
-            <strong className="font-display text-2xl font-semibold text-white md:text-[1.75rem]">
-                {n}
+            <strong className="text-xs font-semibold tracking-[0.08em] text-[#f0cc91]">
+                {title}
             </strong>
-            <p className="mt-1.5 text-[10px] text-white/55 md:text-xs">{t}</p>
+            <p className="mt-1 text-xs text-white/75">{description}</p>
         </div>
     );
 }
 
-function HeroTreatment({ label }: { label: string }) {
+function HeroProductNeed({ label }: { label: string }) {
     return (
         <ButtonLink
-            to="/services"
+            to="/products"
             variant="ghost"
             className="group flex min-h-11 w-full items-center justify-between rounded-md border border-white/10 bg-white/[0.055] px-3.5 py-2.5 text-left text-xs font-medium text-white hover:bg-white/10 hover:text-white"
         >
@@ -394,27 +400,5 @@ function HeroTreatment({ label }: { label: string }) {
                 className="shrink-0 text-white/50 transition-transform group-hover:translate-x-0.5"
             />
         </ButtonLink>
-    );
-}
-
-function MicroscopeIcon() {
-    return (
-        <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-        >
-            <path d="M9 3h6" />
-            <path d="M10 3v5.5a3 3 0 0 0 3 3h1" />
-            <path d="M8 21h10" />
-            <path d="M6 17h7a5 5 0 0 0 5-5v-1" />
-            <path d="M6 13v4" />
-            <path d="M13 7h4v4h-4z" />
-        </svg>
     );
 }
