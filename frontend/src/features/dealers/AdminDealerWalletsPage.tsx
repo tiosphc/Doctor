@@ -1,16 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ErrorState, LoadingState } from "@/components/common/AsyncState";
 import { ProductAdminGuard, fieldClass } from "@/pages/admin/ProductAdminShared";
 import { dealerApi, dealerKeys } from "./api";
 import { AdminDealerWalletTopUpsPage } from "./AdminDealerWalletTopUpsPage";
+import { AdminDealerWalletDepositRequestsPage } from "./AdminDealerWalletDepositRequestsPage";
 import { DealerWalletTransactionsTable } from "./DealerWalletTransactionsTable";
 import { walletMoney } from "./dealerWalletFormat";
 
-type PageTab = "transactions" | "requests";
+type PageTab = "transactions" | "requests" | "legacy";
 
 export function AdminDealerWalletsPage() {
     const [tab, setTab] = useState<PageTab>("transactions");
+    useEffect(() => {
+        if (new URLSearchParams(window.location.search).has("request")) setTab("requests");
+    }, []);
     const [search, setSearch] = useState("");
     const [dealerId, setDealerId] = useState<number | "">("");
     const [dealerSearch, setDealerSearch] = useState("");
@@ -29,9 +33,9 @@ export function AdminDealerWalletsPage() {
         queryFn: () => dealerApi.adminList({ page: 1, search: dealerSearch }),
         enabled: tab === "transactions",
     });
-    const pendingTopUps = useQuery({
-        queryKey: dealerKeys.adminTopUps({ status: "pending", page: 1 }),
-        queryFn: () => dealerApi.adminTopUps({ status: "pending", page: 1 }),
+    const pendingRequests = useQuery({
+        queryKey: dealerKeys.adminDepositRequests({ status: "pending", page: 1 }),
+        queryFn: () => dealerApi.adminDepositRequests({ status: "pending", page: 1 }),
     });
     const resetPage = () => setPage(1);
 
@@ -63,12 +67,23 @@ export function AdminDealerWalletsPage() {
                         onClick={() => setTab("requests")}
                     >
                         Yêu cầu nạp tiền
-                        {pendingTopUps.data && pendingTopUps.data.total > 0
-                            ? ` (${pendingTopUps.data.total})`
+                        {pendingRequests.data && pendingRequests.data.pending_count > 0
+                            ? ` (${pendingRequests.data.pending_count})`
                             : ""}
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === "legacy"}
+                        className={`whitespace-nowrap rounded-md px-3 py-2 ${tab === "legacy" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                        onClick={() => setTab("legacy")}
+                    >
+                        PayOS trước đây
                     </button>
                 </div>
                 {tab === "requests" ? (
+                    <AdminDealerWalletDepositRequestsPage />
+                ) : tab === "legacy" ? (
                     <AdminDealerWalletTopUpsPage embedded />
                 ) : (
                     <div className="space-y-4">

@@ -17,19 +17,6 @@ use Illuminate\Support\Str;
 
 class ProductWizardController extends Controller
 {
-    public function index(Request $request): JsonResponse
-    {
-        $drafts = Product::query()
-            ->whereNotNull('wizard_key')
-            ->where('wizard_owner_user_id', $request->user()->id)
-            ->where('status', 'draft')
-            ->withCount('images')
-            ->latest('updated_at')
-            ->paginate(20);
-
-        return response()->json($drafts);
-    }
-
     public function store(SaveProductWizardDraftRequest $request, AuditLogger $audit): JsonResponse
     {
         $key = $request->validated('wizard_key');
@@ -72,25 +59,6 @@ class ProductWizardController extends Controller
     public function show(Request $request, Product $product): JsonResponse
     {
         $this->assertOwner($product, $request);
-
-        return response()->json(['data' => $this->loaded($product)]);
-    }
-
-    public function update(SaveProductWizardDraftRequest $request, Product $product, AuditLogger $audit): JsonResponse
-    {
-        $this->assertOwner($product, $request);
-        abort_unless($product->status === 'draft', 409);
-        abort_unless($product->wizard_key === $request->validated('wizard_key'), 409);
-        $data = $request->input('data');
-        DB::transaction(function () use ($product, $data, $audit): void {
-            $product->update([
-                'name' => filled($data['name'] ?? null) ? trim($data['name']) : null,
-                'product_category_id' => $data['product_category_id'] ?? null,
-                'brand_id' => $data['brand_id'] ?? null,
-                'wizard_data' => $data,
-            ]);
-            $audit->log(AuditLogger::ACTION_UPDATE, AuditLogger::MODULE_PRODUCT, $product, 'Saved Product wizard draft');
-        });
 
         return response()->json(['data' => $this->loaded($product)]);
     }

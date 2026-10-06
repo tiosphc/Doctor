@@ -24,6 +24,8 @@ import type {
     AdminDealerWalletRow,
     DealerWalletTopUp,
     AdminDealerWalletTopUp,
+    DealerWalletDepositRequest,
+    AdminDealerWalletDepositRequest,
 } from "./types";
 
 export type DealerOrderFilters = {
@@ -75,6 +77,10 @@ export const dealerKeys = {
     walletTopUp: (userId: number | undefined, accountId: number, topUpId: number) =>
         ["dealer-wallet-top-up", userId, accountId, topUpId] as const,
     adminTopUps: (filters: object) => ["admin-dealer-wallet-top-ups", filters] as const,
+    depositRequests: (userId: number | undefined, accountId: number, page: number) =>
+        ["dealer-wallet-deposit-requests", userId, accountId, page] as const,
+    adminDepositRequests: (filters: object) =>
+        ["admin-dealer-wallet-deposit-requests", filters] as const,
 };
 
 export const dealerApi = {
@@ -174,6 +180,16 @@ export const dealerApi = {
             `/api/dealer/accounts/${id}/wallet/transactions`,
             { query: { page } },
         ),
+    depositRequests: (id: number, page: number) =>
+        apiRequest<RawPage<DealerWalletDepositRequest>>(
+            `/api/dealer/accounts/${id}/wallet/deposit-requests`,
+            { query: { page } },
+        ),
+    createDepositRequest: (id: number, body: FormData) =>
+        apiRequest<ResourceResponse<DealerWalletDepositRequest>>(
+            `/api/dealer/accounts/${id}/wallet/deposit-requests`,
+            { method: "POST", body },
+        ),
     walletTopUps: (id: number, page: number) =>
         apiRequest<RawPage<DealerWalletTopUp>>(`/api/dealer/accounts/${id}/wallet/top-ups`, {
             query: { page },
@@ -271,6 +287,33 @@ export const dealerApi = {
         apiRequest<RawPage<AdminDealerWalletTopUp>>("/api/admin/dealer-wallet-top-ups", {
             query: filters,
         }),
+    adminDepositRequests: (filters: {
+        status?: string;
+        search?: string;
+        from?: string;
+        to?: string;
+        page?: number;
+    }) =>
+        apiRequest<RawPage<AdminDealerWalletDepositRequest> & { pending_count: number }>(
+            "/api/admin/dealer-wallet-deposit-requests",
+            { query: filters },
+        ),
+    adminDepositRequest: (id: number) =>
+        apiRequest<ResourceResponse<AdminDealerWalletDepositRequest>>(
+            `/api/admin/dealer-wallet-deposit-requests/${id}`,
+        ),
+    adminDepositProof: (id: number) =>
+        apiDownload(`/api/admin/dealer-wallet-deposit-requests/${id}/proof`, "image/*"),
+    approveDepositRequest: (id: number) =>
+        apiRequest<ResourceResponse<AdminDealerWalletDepositRequest>>(
+            `/api/admin/dealer-wallet-deposit-requests/${id}/approve`,
+            { method: "POST" },
+        ),
+    rejectDepositRequest: (id: number, rejectionReason: string) =>
+        apiRequest<ResourceResponse<AdminDealerWalletDepositRequest>>(
+            `/api/admin/dealer-wallet-deposit-requests/${id}/reject`,
+            { method: "POST", body: { rejection_reason: rejectionReason } },
+        ),
     adminWalletTransactions: (
         id: number,
         filters: { search?: string; type?: string; from?: string; to?: string; page?: number } = {},

@@ -73,6 +73,17 @@ class ProductWizardTest extends TestCase
         $this->assertDatabaseCount('product_variants', 0);
     }
 
+    public function test_unfinished_wizard_product_is_hidden_from_admin_catalog_and_can_be_discarded(): void
+    {
+        $this->admin();
+        $id = $this->draft(['name' => 'Unfinished product']);
+
+        $this->getJson('/api/admin/products')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/admin/products?search=Unfinished')->assertOk()->assertJsonPath('data.0.id', $id);
+        $this->deleteJson("/api/admin/products/{$id}")->assertNoContent();
+        $this->assertDatabaseMissing('products', ['id' => $id]);
+    }
+
     public function test_wizard_requires_image_and_rejects_invalid_fields(): void
     {
         $this->admin();

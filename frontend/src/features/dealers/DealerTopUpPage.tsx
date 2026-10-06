@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, WalletCards } from "lucide-react";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/AsyncState";
 import { useAuth } from "@/contexts/AuthContext";
 import { errorMessage } from "@/services/api";
 import { dealerApi, dealerKeys } from "./api";
-import { DealerWalletTopUpPanel } from "./DealerWalletTopUpPanel";
+import { DealerWalletDepositRequestPanel } from "./DealerWalletDepositRequestPanel";
 
 const money = (value: string | null | undefined) =>
     value === null || value === undefined
@@ -16,12 +17,14 @@ const money = (value: string | null | undefined) =>
 
 export function DealerTopUpPage() {
     const { user, isLoading } = useAuth();
+    const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
     const accounts = useQuery({
         queryKey: dealerKeys.mine(user?.id),
         queryFn: dealerApi.mine,
         enabled: user?.role === "customer",
     });
-    const account = accounts.data?.data[0];
+    const account =
+        accounts.data?.data.find((item) => item.id === selectedAccountId) ?? accounts.data?.data[0];
     const wallet = useQuery({
         queryKey: dealerKeys.wallet(user?.id, account?.id ?? 0),
         queryFn: () => dealerApi.wallet(account!.id),
@@ -59,6 +62,22 @@ export function DealerTopUpPage() {
                     Số dư ví dùng để thanh toán đơn hàng đại lý.
                 </p>
             </header>
+            {(accounts.data?.data.length ?? 0) > 1 && (
+                <label className="grid max-w-sm gap-2 text-sm font-medium">
+                    Đại lý
+                    <select
+                        className="dealer-control rounded-xl border px-3"
+                        value={account.id}
+                        onChange={(event) => setSelectedAccountId(Number(event.target.value))}
+                    >
+                        {accounts.data?.data.map((item) => (
+                            <option key={item.id} value={item.id}>
+                                {item.code} · {item.legal_name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            )}
             {wallet.isPending ? (
                 <LoadingState />
             ) : wallet.isError ? (
@@ -83,7 +102,11 @@ export function DealerTopUpPage() {
                     </div>
                 </section>
             )}
-            <DealerWalletTopUpPanel key={account.id} accountId={account.id} />
+            <DealerWalletDepositRequestPanel
+                key={account.id}
+                accountId={account.id}
+                userId={user.id}
+            />
             <section className="rounded-2xl border bg-card p-5 sm:p-6">
                 <h2 className="text-xl font-semibold text-[#092b5c]">Lịch sử biến động số dư</h2>
                 {transactions.isPending ? (

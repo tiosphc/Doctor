@@ -22,6 +22,7 @@ class DealerWalletTopUpTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config()->set('services.payos.top_up_creation_enabled', true);
         config()->set('services.payos.client_id', 'test-client');
         config()->set('services.payos.api_key', 'test-api-key');
         config()->set('services.payos.checksum_key', 'test-checksum');

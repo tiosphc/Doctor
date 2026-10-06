@@ -155,6 +155,13 @@ function OrderBody({ order }: { order: DealerOrder }) {
                                         ? "· Quà tặng"
                                         : `· MOQ ${formatProductQuantity(item.minimum_quantity)}`}
                                 </p>
+                                {item.shipped_quantity !== null &&
+                                    item.shipped_quantity !== undefined && (
+                                        <p className="mt-1 text-sm font-medium text-primary">
+                                            Đã xuất: {formatProductQuantity(item.shipped_quantity)}/
+                                            {formatProductQuantity(item.quantity)} {item.unit_name}
+                                        </p>
+                                    )}
                             </div>
                             <span>{money(item.unit_price)}</span>
                             <strong>{money(item.line_total)}</strong>

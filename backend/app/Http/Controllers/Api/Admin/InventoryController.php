@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\InventoryOperationRequest;
 use App\Models\InventoryBalance;
+use App\Models\Product;
 use App\Models\StockMovement;
 use App\Services\InventoryReconciliationService;
 use App\Services\InventoryService;
@@ -22,6 +23,7 @@ class InventoryController extends Controller
             'search' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'in:active,inactive'],
             'low_stock' => ['nullable', 'boolean'],
+            'group_by' => ['nullable', 'in:product'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
         $query = InventoryBalance::query()
@@ -44,6 +46,7 @@ class InventoryController extends Controller
         if (isset($data['status'])) {
             $query->whereHas('variant', fn ($builder) => $builder->where('status', $data['status']));
         }
+        $summaryQuery = clone $query;
         if (isset($data['search'])) {
             $query->whereHas('variant', fn ($builder) => $builder->where('sku', 'like', '%'.$data['search'].'%')
                 ->orWhere('variant_name', 'like', '%'.$data['search'].'%')
@@ -55,6 +58,40 @@ class InventoryController extends Controller
                 ->whereHas('product', fn ($product) => $product->where('track_inventory', true)
                     ->whereNotNull('default_low_stock_threshold')
                     ->whereRaw('(inventory_balances.on_hand_quantity - inventory_balances.reserved_quantity) <= products.default_low_stock_threshold')));
+        }
+
+        if (($data['group_by'] ?? null) === 'product') {
+            $matchingProductIds = (clone $query)
+                ->join('product_variants', 'product_variants.id', '=', 'inventory_balances.product_variant_id')
+                ->select('product_variants.product_id')->distinct();
+            $products = Product::query()->whereIn('id', $matchingProductIds)
+                ->with(['images' => fn ($images) => $images->orderByDesc('is_primary')->orderBy('sort_order')])
+                ->orderBy('id')->paginate($data['per_page'] ?? 20);
+            $balances = $summaryQuery->whereHas('variant', fn ($variants) => $variants
+                ->whereIn('product_id', $products->getCollection()->pluck('id')))
+                ->orderBy('inventory_balances.warehouse_id')
+                ->orderBy('inventory_balances.product_variant_id')->get()
+                ->groupBy(fn (InventoryBalance $balance): int => $balance->variant->product_id);
+
+            return response()->json($products->through(function (Product $product) use ($balances): array {
+                $rows = $balances->get($product->id, collect())->map(fn (InventoryBalance $balance): array => $this->balanceData($balance));
+                $sum = fn (string $field): string => $rows->reduce(
+                    fn (string $total, array $row): string => bcadd($total, $row[$field], 3), '0.000');
+
+                return [
+                    'id' => $product->id,
+                    'product_code' => $product->product_code,
+                    'name' => $product->name,
+                    'image_url' => $product->images->first()?->url,
+                    'variant_count' => $rows->pluck('product_variant_id')->unique()->count(),
+                    'on_hand_quantity' => $sum('on_hand_quantity'),
+                    'reserved_quantity' => $sum('reserved_quantity'),
+                    'available_quantity' => $sum('available_quantity'),
+                    'low_stock_count' => $rows->where('low_stock', true)->pluck('product_variant_id')->unique()->count(),
+                    'last_movement_at' => $rows->max('last_movement_at'),
+                    'balances' => $rows->values()->all(),
+                ];
+            }));
         }
 
         return response()->json($query->orderBy('inventory_balances.warehouse_id')

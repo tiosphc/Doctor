@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
 import { Badge } from "@/components/common/Status";
 import {
@@ -41,6 +42,7 @@ export function InventoryPage() {
     const [search, setSearch] = useState("");
     const [lowStock, setLowStock] = useState(false);
     const [balancePage, setBalancePage] = useState(1);
+    const [expandedProductId, setExpandedProductId] = useState<number | null>(null);
     const [movementPage, setMovementPage] = useState(1);
     const [movementVariantId, setMovementVariantId] = useState("");
     const [movementType, setMovementType] = useState("");
@@ -69,10 +71,24 @@ export function InventoryPage() {
         queryFn: () => inventoryApi.warehouses({ per_page: 100 }),
     });
     const balances = useQuery({
-        queryKey: inventoryKeys.balances(balanceFilters),
-        queryFn: () => inventoryApi.balances(balanceFilters),
+        queryKey: inventoryKeys.productBalances(balanceFilters),
+        queryFn: () => inventoryApi.productBalances(balanceFilters),
         enabled: tab === "balances",
     });
+    useEffect(() => {
+        const term = search.trim().toLocaleLowerCase();
+        if (!term || !balances.data) return;
+        const match = balances.data.data.find(
+            (product) =>
+                !`${product.name} ${product.product_code}`.toLocaleLowerCase().includes(term) &&
+                product.balances.some((row) =>
+                    `${row.variant.sku} ${row.variant.variant_name}`
+                        .toLocaleLowerCase()
+                        .includes(term),
+                ),
+        );
+        if (match) setExpandedProductId(match.id);
+    }, [search, balances.data]);
     const movements = useQuery({
         queryKey: inventoryKeys.movements(movementFilters),
         queryFn: () => inventoryApi.movements(movementFilters),
@@ -86,6 +102,7 @@ export function InventoryPage() {
     const refresh = async () => {
         await Promise.all([
             client.invalidateQueries({ queryKey: ["inventory-balances"] }),
+            client.invalidateQueries({ queryKey: ["inventory-products"] }),
             client.invalidateQueries({ queryKey: ["stock-movements"] }),
             client.invalidateQueries({ queryKey: ["inventory-reconciliation"] }),
         ]);
@@ -103,7 +120,8 @@ export function InventoryPage() {
                         <p className="label-luxury">Inventory Core</p>
                         <h1 className="mt-2 text-3xl text-primary">Tồn kho</h1>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Theo dõi số dư, biến động và đối soát theo từng Kho / SKU.
+                            Theo dõi số dư theo sản phẩm, biến thể và kho; xem biến động và đối
+                            soát.
                         </p>
                     </div>
                     <DropdownMenu>
@@ -149,6 +167,7 @@ export function InventoryPage() {
                         onChange={(event) => {
                             setWarehouseFilter(event.target.value);
                             setBalancePage(1);
+                            setExpandedProductId(null);
                             setMovementPage(1);
                         }}
                     >
@@ -172,6 +191,7 @@ export function InventoryPage() {
                                     onChange={(event) => {
                                         setSearch(event.target.value);
                                         setBalancePage(1);
+                                        setExpandedProductId(null);
                                     }}
                                 />
                             </label>
@@ -182,6 +202,7 @@ export function InventoryPage() {
                                     onChange={(event) => {
                                         setLowStock(event.target.checked);
                                         setBalancePage(1);
+                                        setExpandedProductId(null);
                                     }}
                                 />
                                 Chỉ tồn thấp
@@ -207,92 +228,316 @@ export function InventoryPage() {
                         ) : (
                             <>
                                 <div className="mt-4 overflow-x-auto">
-                                    <table className="w-full min-w-[860px] text-left text-sm">
+                                    <table className="w-full min-w-[760px] text-left text-sm">
+                                        <colgroup>
+                                            <col className="w-[28%]" />
+                                            <col className="w-[10%]" />
+                                            <col className="w-[11%]" />
+                                            <col className="w-[10%]" />
+                                            <col className="w-[11%]" />
+                                            <col className="w-[15%]" />
+                                            <col className="w-[10%]" />
+                                            <col className="w-[5%]" />
+                                        </colgroup>
                                         <thead className="border-b text-muted-foreground">
                                             <tr>
-                                                <th className="p-3">SKU / Sản phẩm</th>
-                                                <th className="p-3">Kho</th>
-                                                <th className="p-3">Đơn vị</th>
+                                                <th className="p-3">Sản phẩm</th>
+                                                <th className="p-3">Biến thể</th>
                                                 <th className="p-3">Tồn kho</th>
                                                 <th className="p-3">Đã giữ</th>
                                                 <th className="p-3">Khả dụng</th>
                                                 <th className="p-3">Biến động gần nhất</th>
-                                                <th className="p-3">Thao tác</th>
+                                                <th className="p-3">Tồn thấp</th>
+                                                <th className="p-3">
+                                                    <span className="sr-only">Mở rộng</span>
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {balances.data.data.map((row) => (
-                                                <tr key={row.id} className="border-b align-top">
-                                                    <td className="p-3">
-                                                        <strong className="font-mono">
-                                                            {row.variant.sku}
-                                                        </strong>
-                                                        <span className="block text-muted-foreground">
-                                                            {row.product.name}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-3">{row.warehouse.name}</td>
-                                                    <td className="p-3">{row.unit.symbol}</td>
-                                                    <td className="p-3 tabular-nums">
-                                                        {formatProductQuantity(
-                                                            row.on_hand_quantity,
-                                                        )}
-                                                    </td>
-                                                    <td className="p-3 tabular-nums">
-                                                        {formatProductQuantity(
-                                                            row.reserved_quantity,
-                                                        )}
-                                                    </td>
-                                                    <td className="p-3">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <span className="tabular-nums">
-                                                                {formatProductQuantity(
-                                                                    row.available_quantity,
-                                                                )}
-                                                            </span>
-                                                            {row.low_stock && (
-                                                                <Badge tone="warning">
-                                                                    Tồn kho thấp
-                                                                </Badge>
+                                            {balances.data.data.map((product) => {
+                                                const expanded = expandedProductId === product.id;
+                                                return (
+                                                    <tr key={product.id} className="border-b">
+                                                        <td colSpan={8} className="p-0">
+                                                            <table className="w-full table-fixed text-left">
+                                                                <tbody>
+                                                                    <tr className="hover:bg-accent/40">
+                                                                        <td className="w-[28%] p-3">
+                                                                            <button
+                                                                                type="button"
+                                                                                className="flex items-center gap-3 text-left"
+                                                                                aria-expanded={
+                                                                                    expanded
+                                                                                }
+                                                                                aria-controls={`inventory-variants-${product.id}`}
+                                                                                onClick={() =>
+                                                                                    setExpandedProductId(
+                                                                                        expanded
+                                                                                            ? null
+                                                                                            : product.id,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                {product.image_url ? (
+                                                                                    <img
+                                                                                        src={
+                                                                                            product.image_url
+                                                                                        }
+                                                                                        alt=""
+                                                                                        className="h-11 w-11 rounded-md border object-cover"
+                                                                                    />
+                                                                                ) : (
+                                                                                    <span className="flex h-11 w-11 items-center justify-center rounded-md border bg-muted text-xs">
+                                                                                        Ảnh
+                                                                                    </span>
+                                                                                )}
+                                                                                <span className="min-w-0">
+                                                                                    <strong className="block text-primary">
+                                                                                        {
+                                                                                            product.name
+                                                                                        }
+                                                                                    </strong>
+                                                                                    <span className="block truncate font-mono text-xs text-muted-foreground">
+                                                                                        {
+                                                                                            product.product_code
+                                                                                        }
+                                                                                    </span>
+                                                                                </span>
+                                                                            </button>
+                                                                        </td>
+                                                                        <td className="w-[10%] p-3">
+                                                                            {product.variant_count}{" "}
+                                                                            SKU
+                                                                        </td>
+                                                                        <td className="w-[11%] p-3 tabular-nums">
+                                                                            {formatProductQuantity(
+                                                                                product.on_hand_quantity,
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="w-[10%] p-3 tabular-nums">
+                                                                            {formatProductQuantity(
+                                                                                product.reserved_quantity,
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="w-[11%] p-3 tabular-nums font-semibold">
+                                                                            {formatProductQuantity(
+                                                                                product.available_quantity,
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="w-[15%] p-3">
+                                                                            {when(
+                                                                                product.last_movement_at,
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="w-[10%] p-3">
+                                                                            {product.low_stock_count >
+                                                                                0 && (
+                                                                                <Badge tone="warning">
+                                                                                    {
+                                                                                        product.low_stock_count
+                                                                                    }{" "}
+                                                                                    SKU thấp
+                                                                                </Badge>
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="w-[5%] p-3">
+                                                                            <button
+                                                                                type="button"
+                                                                                aria-label={`${expanded ? "Thu gọn" : "Mở"} ${product.name}`}
+                                                                                aria-expanded={
+                                                                                    expanded
+                                                                                }
+                                                                                onClick={() =>
+                                                                                    setExpandedProductId(
+                                                                                        expanded
+                                                                                            ? null
+                                                                                            : product.id,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <ChevronDown
+                                                                                    size={18}
+                                                                                    className={`transition-transform ${expanded ? "rotate-180" : ""}`}
+                                                                                />
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                            {expanded && (
+                                                                <div
+                                                                    id={`inventory-variants-${product.id}`}
+                                                                    className="overflow-x-auto border-t bg-muted/20 p-2 sm:p-3"
+                                                                >
+                                                                    <table className="w-full min-w-[740px] text-left text-xs sm:text-sm">
+                                                                        <thead className="text-muted-foreground">
+                                                                            <tr>
+                                                                                <th className="p-2">
+                                                                                    SKU / Biến thể
+                                                                                </th>
+                                                                                {!warehouseId && (
+                                                                                    <th className="p-2">
+                                                                                        Kho
+                                                                                    </th>
+                                                                                )}
+                                                                                <th className="p-2">
+                                                                                    Đơn vị
+                                                                                </th>
+                                                                                <th className="p-2">
+                                                                                    Tồn kho
+                                                                                </th>
+                                                                                <th className="p-2">
+                                                                                    Đã giữ
+                                                                                </th>
+                                                                                <th className="p-2">
+                                                                                    Khả dụng
+                                                                                </th>
+                                                                                <th className="p-2">
+                                                                                    Cập nhật
+                                                                                </th>
+                                                                                <th className="p-2">
+                                                                                    Thao tác
+                                                                                </th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {product.balances.map(
+                                                                                (row) => {
+                                                                                    const term =
+                                                                                        search
+                                                                                            .trim()
+                                                                                            .toLocaleLowerCase();
+                                                                                    const matched =
+                                                                                        term &&
+                                                                                        `${row.variant.sku} ${row.variant.variant_name}`
+                                                                                            .toLocaleLowerCase()
+                                                                                            .includes(
+                                                                                                term,
+                                                                                            );
+                                                                                    return (
+                                                                                        <tr
+                                                                                            key={
+                                                                                                row.id
+                                                                                            }
+                                                                                            className={`border-t ${matched ? "bg-amber-50" : ""}`}
+                                                                                        >
+                                                                                            <td className="p-2">
+                                                                                                <strong className="font-mono">
+                                                                                                    {
+                                                                                                        row
+                                                                                                            .variant
+                                                                                                            .sku
+                                                                                                    }
+                                                                                                </strong>
+                                                                                                <span className="block text-muted-foreground">
+                                                                                                    {
+                                                                                                        row
+                                                                                                            .variant
+                                                                                                            .variant_name
+                                                                                                    }
+                                                                                                </span>
+                                                                                            </td>
+                                                                                            {!warehouseId && (
+                                                                                                <td className="p-2">
+                                                                                                    {
+                                                                                                        row
+                                                                                                            .warehouse
+                                                                                                            .name
+                                                                                                    }
+                                                                                                </td>
+                                                                                            )}
+                                                                                            <td className="p-2">
+                                                                                                {
+                                                                                                    row
+                                                                                                        .unit
+                                                                                                        .symbol
+                                                                                                }
+                                                                                            </td>
+                                                                                            <td className="p-2 tabular-nums">
+                                                                                                {formatProductQuantity(
+                                                                                                    row.on_hand_quantity,
+                                                                                                )}
+                                                                                            </td>
+                                                                                            <td className="p-2 tabular-nums">
+                                                                                                {formatProductQuantity(
+                                                                                                    row.reserved_quantity,
+                                                                                                )}
+                                                                                            </td>
+                                                                                            <td className="p-2">
+                                                                                                <span className="tabular-nums">
+                                                                                                    {formatProductQuantity(
+                                                                                                        row.available_quantity,
+                                                                                                    )}
+                                                                                                </span>
+                                                                                                {row.low_stock && (
+                                                                                                    <span className="block">
+                                                                                                        <Badge tone="warning">
+                                                                                                            Tồn
+                                                                                                            thấp
+                                                                                                        </Badge>
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </td>
+                                                                                            <td className="p-2">
+                                                                                                {when(
+                                                                                                    row.last_movement_at,
+                                                                                                )}
+                                                                                            </td>
+                                                                                            <td className="p-2">
+                                                                                                <div className="flex flex-wrap gap-2">
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        className="text-primary underline"
+                                                                                                        onClick={() =>
+                                                                                                            openRow(
+                                                                                                                row,
+                                                                                                                "history",
+                                                                                                            )
+                                                                                                        }
+                                                                                                    >
+                                                                                                        Lịch
+                                                                                                        sử
+                                                                                                    </button>
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        className="text-primary underline"
+                                                                                                        onClick={() =>
+                                                                                                            openRow(
+                                                                                                                row,
+                                                                                                                "receipt",
+                                                                                                            )
+                                                                                                        }
+                                                                                                    >
+                                                                                                        Nhập
+                                                                                                        kho
+                                                                                                    </button>
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        className="text-primary underline"
+                                                                                                        onClick={() =>
+                                                                                                            openRow(
+                                                                                                                row,
+                                                                                                                "adjustment",
+                                                                                                            )
+                                                                                                        }
+                                                                                                    >
+                                                                                                        Điều
+                                                                                                        chỉnh
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    );
+                                                                                },
+                                                                            )}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
                                                             )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-3">
-                                                        {when(row.last_movement_at)}
-                                                    </td>
-                                                    <td className="p-3">
-                                                        <div className="flex flex-wrap gap-x-3 gap-y-1">
-                                                            <button
-                                                                type="button"
-                                                                className="text-primary underline"
-                                                                onClick={() =>
-                                                                    openRow(row, "history")
-                                                                }
-                                                            >
-                                                                Lịch sử
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                className="text-primary underline"
-                                                                onClick={() =>
-                                                                    openRow(row, "receipt")
-                                                                }
-                                                            >
-                                                                Nhập kho thủ công
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                className="text-primary underline"
-                                                                onClick={() =>
-                                                                    openRow(row, "adjustment")
-                                                                }
-                                                            >
-                                                                Điều chỉnh tồn
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>

@@ -352,6 +352,32 @@ export type AdminDealerWalletTopUp = Omit<DealerWalletTopUp, "checkout_url"> & {
     provider_payment_link_id: string | null;
 };
 
+export type DealerWalletDepositRequest = {
+    id: number;
+    request_code: string;
+    dealer_account_id: number;
+    amount: string;
+    status: "pending" | "approved" | "rejected";
+    transaction_reference: string | null;
+    note: string | null;
+    rejection_reason: string | null;
+    created_at: string;
+    reviewed_at: string | null;
+};
+
+export type AdminDealerWalletDepositRequest = Omit<
+    DealerWalletDepositRequest,
+    "dealer_account_id"
+> & {
+    dealer_account: Pick<DealerAccount, "id" | "code" | "legal_name"> & {
+        tier: DealerTierIdentity | null;
+    };
+    wallet_balance?: string;
+    reviewed_by?: { id: number; name: string } | null;
+    wallet_transaction_id?: number | null;
+    wallet_transaction_code?: string | null;
+};
+
 export type DealerWalletTransaction = {
     id: number;
     wallet?: { dealer_account: Pick<DealerAccount, "id" | "code" | "legal_name"> | null };
@@ -524,6 +550,7 @@ export type DealerOrder = DealerRecipient & {
         unit_code: string;
         unit_name: string;
         quantity: string;
+        shipped_quantity: string | null;
         unit_price: string;
         base_amount: string;
         discount_amount: string;

@@ -4,12 +4,17 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveProductRequest;
+use App\Models\PriceListItem;
 use App\Models\Product;
+use App\Services\AuditLogger;
 use App\Services\SalesPromotionService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
@@ -31,6 +36,9 @@ class ProductController extends Controller
             'promotion_ends_at' => ['nullable', 'date'],
         ]);
         $query = Product::query()->with(['category:id,code,name', 'brand:id,code,name', 'variants:id,product_id,unit_id,sku,variant_name,status,sellable_retail,track_inventory', 'variants.unit:id,name,symbol', 'images:id,product_id,path,is_primary,sort_order']);
+        if (! isset($data['search'])) {
+            $query->where('status', '!=', 'draft');
+        }
         if (isset($data['search'])) {
             $search = $data['search'];
             $query->where(fn ($query) => $query->where('name', 'like', '%'.$search.'%')
@@ -92,6 +100,7 @@ class ProductController extends Controller
     public function store(SaveProductRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $data['status'] ??= 'active';
         $data['track_inventory'] ??= true;
         $unitId = $data['default_unit_id'];
         unset($data['default_unit_id']);
@@ -125,6 +134,45 @@ class ProductController extends Controller
         $product->update($request->validated());
 
         return response()->json(['data' => $this->loaded($product)]);
+    }
+
+    public function destroy(Product $product, AuditLogger $audit): JsonResponse|Response
+    {
+        try {
+            $imagePaths = DB::transaction(function () use ($product, $audit): array {
+                $locked = Product::query()->lockForUpdate()->findOrFail($product->id);
+                $imagePaths = $locked->images()->pluck('path')->all();
+                $variantIds = $locked->variants()->pluck('id')->all();
+
+                if ($variantIds !== []) {
+                    PriceListItem::query()->whereIn('product_variant_id', $variantIds)->delete();
+                }
+                $locked->images()->delete();
+                $locked->variants()->delete();
+                $audit->log(
+                    AuditLogger::ACTION_DELETE,
+                    AuditLogger::MODULE_PRODUCT,
+                    $locked,
+                    'Đã xóa sản phẩm '.$locked->name.'.',
+                    oldValues: $locked->only(['product_code', 'name', 'status']),
+                );
+                $locked->delete();
+
+                return $imagePaths;
+            });
+        } catch (QueryException $exception) {
+            if (in_array((string) $exception->getCode(), ['23000', '23503'], true)) {
+                return response()->json([
+                    'message' => 'Sản phẩm đã có dữ liệu đơn hàng, kho, giỏ hàng hoặc khuyến mãi. Hãy ngừng hoạt động thay vì xóa.',
+                ], 409);
+            }
+
+            throw $exception;
+        }
+
+        Storage::disk('public')->delete($imagePaths);
+
+        return response()->noContent();
     }
 
     private function loaded(Product $product): Product

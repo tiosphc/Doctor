@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Admin\DealerAccountTierController as AdminDealerAcc
 use App\Http\Controllers\Api\Admin\DealerApplicationController as AdminDealerApplicationController;
 use App\Http\Controllers\Api\Admin\DealerTierController;
 use App\Http\Controllers\Api\Admin\DealerWalletController as AdminDealerWalletController;
+use App\Http\Controllers\Api\Admin\DealerWalletDepositRequestController as AdminDealerWalletDepositRequestController;
 use App\Http\Controllers\Api\Admin\DealerWalletTopUpController as AdminDealerWalletTopUpController;
 use App\Http\Controllers\Api\Admin\DoctorController as AdminDoctorController;
 use App\Http\Controllers\Api\Admin\DoctorInvitationController;
@@ -62,6 +63,7 @@ use App\Http\Controllers\Api\DealerProductController;
 use App\Http\Controllers\Api\DealerQuickOrderController;
 use App\Http\Controllers\Api\DealerShippingAddressController;
 use App\Http\Controllers\Api\DealerWalletController;
+use App\Http\Controllers\Api\DealerWalletDepositRequestController;
 use App\Http\Controllers\Api\DealerWalletTopUpController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\DoctorPasswordSetupController;
@@ -157,6 +159,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/dealer/accounts/{dealer}/auto-tier', [DealerAccountTierController::class, 'autoTier'])->name('dealer.accounts.auto-tier');
     Route::get('/dealer/accounts/{dealer}/wallet', [DealerWalletController::class, 'show'])->name('dealer.accounts.wallet.show');
     Route::get('/dealer/accounts/{dealer}/wallet/transactions', [DealerWalletController::class, 'transactions'])->name('dealer.accounts.wallet.transactions');
+    Route::get('/dealer/accounts/{dealer}/wallet/deposit-requests', [DealerWalletDepositRequestController::class, 'index'])->name('dealer.accounts.wallet.deposit-requests.index');
+    Route::post('/dealer/accounts/{dealer}/wallet/deposit-requests', [DealerWalletDepositRequestController::class, 'store'])->name('dealer.accounts.wallet.deposit-requests.store');
+    Route::get('/dealer/accounts/{dealer}/wallet/deposit-requests/{depositRequest}/proof', [DealerWalletDepositRequestController::class, 'proof'])->name('dealer.accounts.wallet.deposit-requests.proof');
     Route::get('/dealer/accounts/{dealer}/wallet/top-ups', [DealerWalletTopUpController::class, 'index'])->name('dealer.accounts.wallet.top-ups.index');
     Route::post('/dealer/accounts/{dealer}/wallet/top-ups', [DealerWalletTopUpController::class, 'store'])->name('dealer.accounts.wallet.top-ups.store');
     Route::get('/dealer/accounts/{dealer}/wallet/top-ups/{topUp}', [DealerWalletTopUpController::class, 'show'])->name('dealer.accounts.wallet.top-ups.show');
@@ -230,6 +235,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::get('/dealer-wallets', [AdminDealerWalletController::class, 'index'])->name('dealer-wallets.index');
     Route::get('/dealer-wallet-transactions', [AdminDealerWalletController::class, 'allTransactions'])->name('dealer-wallet-transactions.index');
     Route::get('/dealer-wallet-top-ups', [AdminDealerWalletTopUpController::class, 'index'])->name('dealer-wallet-top-ups.index');
+    Route::get('/dealer-wallet-deposit-requests', [AdminDealerWalletDepositRequestController::class, 'index'])->name('dealer-wallet-deposit-requests.index');
+    Route::get('/dealer-wallet-deposit-requests/{depositRequest}', [AdminDealerWalletDepositRequestController::class, 'show'])->name('dealer-wallet-deposit-requests.show');
+    Route::get('/dealer-wallet-deposit-requests/{depositRequest}/proof', [AdminDealerWalletDepositRequestController::class, 'proof'])->name('dealer-wallet-deposit-requests.proof');
+    Route::post('/dealer-wallet-deposit-requests/{depositRequest}/approve', [AdminDealerWalletDepositRequestController::class, 'approve'])->name('dealer-wallet-deposit-requests.approve');
+    Route::post('/dealer-wallet-deposit-requests/{depositRequest}/reject', [AdminDealerWalletDepositRequestController::class, 'reject'])->name('dealer-wallet-deposit-requests.reject');
     Route::get('/dealer-applications', [AdminDealerApplicationController::class, 'index'])->name('dealer-applications.index');
     Route::get('/dealer-applications/{application}', [AdminDealerApplicationController::class, 'show'])->name('dealer-applications.show');
     Route::post('/dealer-applications/{application}/approve', [AdminDealerApplicationController::class, 'approve'])->name('dealer-applications.approve');
@@ -255,10 +265,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::get('/dealer-tiers/auto-policy', [DealerTierController::class, 'autoPolicy'])->name('dealer-tiers.auto-policy');
     Route::put('/dealer-tiers/auto-policy', [DealerTierController::class, 'setAutoPolicy'])->name('dealer-tiers.auto-policy.update');
     Route::patch('/dealer-tiers/{tier}', [DealerTierController::class, 'update'])->name('dealer-tiers.update');
-    Route::get('/product-wizard/drafts', [ProductWizardController::class, 'index'])->name('product-wizard.drafts.index');
     Route::post('/product-wizard/drafts', [ProductWizardController::class, 'store'])->name('product-wizard.drafts.store');
     Route::get('/product-wizard/drafts/{product}', [ProductWizardController::class, 'show'])->name('product-wizard.drafts.show');
-    Route::patch('/product-wizard/drafts/{product}', [ProductWizardController::class, 'update'])->name('product-wizard.drafts.update');
     Route::post('/product-wizard/drafts/{product}/complete', [ProductWizardController::class, 'complete'])->name('product-wizard.drafts.complete');
     Route::get('/product-wizard/sku-availability', [ProductWizardController::class, 'skuAvailability'])->name('product-wizard.sku-availability');
     Route::apiResource('warehouses', WarehouseController::class)->except(['destroy']);
@@ -287,7 +295,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::post('/product-master/{kind}', [ProductMasterController::class, 'store'])->whereIn('kind', ['categories', 'brands', 'units'])->name('product-master.store');
     Route::get('/product-master/{kind}/{id}', [ProductMasterController::class, 'show'])->whereIn('kind', ['categories', 'brands', 'units'])->name('product-master.show');
     Route::patch('/product-master/{kind}/{id}', [ProductMasterController::class, 'update'])->whereIn('kind', ['categories', 'brands', 'units'])->name('product-master.update');
-    Route::apiResource('products', AdminProductController::class)->except(['destroy']);
+    Route::apiResource('products', AdminProductController::class);
     Route::get('/products/{product}/pricing', [ProductPricingController::class, 'show'])->name('products.pricing.show');
     Route::patch('/products/{product}/pricing', [ProductPricingController::class, 'update'])->name('products.pricing.update');
     Route::get('/retail-prices', [CatalogPricingController::class, 'retailIndex'])->name('retail-prices.index');

@@ -262,6 +262,32 @@ class DealerQuickOrderTest extends TestCase
         $this->assertDatabaseCount('sales_orders', 0);
     }
 
+    public function test_dealer_order_detail_shows_admin_shipped_quantity_for_partial_fulfillment(): void
+    {
+        [$user, $account, , $variant] = $this->fixture();
+        Sanctum::actingAs($user);
+        $url = "/api/dealer/accounts/{$account->id}";
+        $items = [['product_variant_id' => $variant->id, 'quantity' => '5']];
+        $fingerprint = $this->postJson("$url/quick-order/review", ['items' => $items, ...$this->shipping()])
+            ->assertOk()->json('data.review_fingerprint');
+        $order = $this->postJson("$url/quick-order", [
+            ...$this->body($variant->id, $fingerprint), 'items' => $items,
+        ])->assertCreated()->json('data');
+        $this->getJson("$url/orders/{$order['id']}")->assertOk()
+            ->assertJsonPath('data.items.0.shipped_quantity', '0.000');
+
+        Sanctum::actingAs(User::factory()->admin()->create());
+        $this->postJson("/api/admin/sales-orders/{$order['id']}/fulfill", [
+            'operation_key' => (string) Str::uuid(),
+            'items' => [['item_id' => $order['items'][0]['id'], 'quantity' => '3']],
+        ])->assertOk()->assertJsonPath('data.items.0.reservation.consumed_quantity', '3.000');
+
+        Sanctum::actingAs($user);
+        $this->getJson("$url/orders/{$order['id']}")->assertOk()
+            ->assertJsonPath('data.items.0.quantity', '5.000')
+            ->assertJsonPath('data.items.0.shipped_quantity', '3.000');
+    }
+
     public function test_account_members_share_history_and_admin_can_fulfill_or_cancel_dealer_orders(): void
     {
         [$user, $account, $tier, $variant, $warehouse] = $this->fixture();

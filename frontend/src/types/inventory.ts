@@ -36,6 +36,20 @@ export type InventoryBalance = {
     last_movement_at: string | null;
 };
 
+export type InventoryProductSummary = {
+    id: number;
+    product_code: string;
+    name: string;
+    image_url: string | null;
+    variant_count: number;
+    on_hand_quantity: string;
+    reserved_quantity: string;
+    available_quantity: string;
+    low_stock_count: number;
+    last_movement_at: string | null;
+    balances: InventoryBalance[];
+};
+
 export type StockMovement = {
     id: number;
     warehouse_id: number;

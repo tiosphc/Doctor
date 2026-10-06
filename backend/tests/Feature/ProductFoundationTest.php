@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\Brand;
 use App\Models\PriceList;
+use App\Models\PriceListItem;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Services\RetailPricingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -26,6 +28,64 @@ class ProductFoundationTest extends TestCase
     private function admin(): void
     {
         Sanctum::actingAs(User::factory()->admin()->create());
+    }
+
+    public function test_admin_deletes_unreferenced_product_with_prices_and_images(): void
+    {
+        $this->admin();
+        Storage::fake('public');
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->for($product)->create();
+        $price = PriceListItem::factory()->for($variant, 'variant')->create();
+        Storage::disk('public')->put('products/delete-me.jpg', 'image');
+        ProductImage::factory()->for($product)->create(['path' => 'products/delete-me.jpg']);
+
+        $this->deleteJson("/api/admin/products/{$product->id}")->assertNoContent();
+
+        $this->assertDatabaseMissing('products', ['id' => $product->id]);
+        $this->assertDatabaseMissing('product_variants', ['id' => $variant->id]);
+        $this->assertDatabaseMissing('price_list_items', ['id' => $price->id]);
+        Storage::disk('public')->assertMissing('products/delete-me.jpg');
+        $this->assertDatabaseHas('audit_logs', [
+            'module' => 'PRODUCT', 'action' => 'DELETE', 'target_id' => $product->id,
+        ]);
+    }
+
+    public function test_admin_cannot_delete_product_with_inventory_balance(): void
+    {
+        $this->admin();
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->for($product)->create();
+        $price = PriceListItem::factory()->for($variant, 'variant')->create();
+        $warehouse = Warehouse::factory()->create();
+        DB::table('inventory_balances')->insert([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $variant->id,
+            'on_hand_quantity' => 0,
+            'reserved_quantity' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->deleteJson("/api/admin/products/{$product->id}")->assertConflict();
+
+        $this->assertDatabaseHas('products', ['id' => $product->id]);
+        $this->assertDatabaseHas('product_variants', ['id' => $variant->id]);
+        $this->assertDatabaseHas('price_list_items', ['id' => $price->id]);
+        $this->assertDatabaseMissing('audit_logs', [
+            'module' => 'PRODUCT', 'action' => 'DELETE', 'target_id' => $product->id,
+        ]);
+    }
+
+    public function test_only_admin_can_delete_product(): void
+    {
+        $product = Product::factory()->create();
+
+        $this->deleteJson("/api/admin/products/{$product->id}")->assertUnauthorized();
+        Sanctum::actingAs(User::factory()->customer()->create());
+        $this->deleteJson("/api/admin/products/{$product->id}")->assertForbidden();
+
+        $this->assertDatabaseHas('products', ['id' => $product->id]);
     }
 
     public function test_public_product_filters_return_only_active_categories_and_brands(): void
@@ -70,6 +130,9 @@ class ProductFoundationTest extends TestCase
             'default_unit_id' => $unit->id,
         ])->assertCreated();
         $id = $response->json('data.id');
+        $response->assertJsonPath('data.status', 'active');
+        $this->patchJson("/api/admin/products/{$id}", ['status' => 'draft'])
+            ->assertUnprocessable()->assertJsonValidationErrors('status');
         $response->assertJsonPath('data.track_inventory', true)
             ->assertJsonPath('data.variants.0.track_inventory', true);
         $this->assertSame('PRD'.str_pad((string) $id, 6, '0', STR_PAD_LEFT), $response->json('data.product_code'));

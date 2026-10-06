@@ -114,17 +114,11 @@ export const productApi = {
         }),
     createProduct: (body: Record<string, unknown>) =>
         apiRequest<ResourceResponse<Product>>("/api/admin/products", { method: "POST", body }),
-    wizardDrafts: () => apiRequest<RawPage<Product>>("/api/admin/product-wizard/drafts"),
     wizardDraft: (id: number) =>
         apiRequest<ResourceResponse<Product>>(`/api/admin/product-wizard/drafts/${id}`),
     createWizardDraft: (body: Record<string, unknown>) =>
         apiRequest<ResourceResponse<Product>>("/api/admin/product-wizard/drafts", {
             method: "POST",
-            body,
-        }),
-    updateWizardDraft: (id: number, body: Record<string, unknown>) =>
-        apiRequest<ResourceResponse<Product>>(`/api/admin/product-wizard/drafts/${id}`, {
-            method: "PATCH",
             body,
         }),
     completeWizard: (id: number, body: Record<string, unknown>) =>
@@ -174,6 +168,8 @@ export const productApi = {
             method: "PATCH",
             body,
         }),
+    deleteProduct: (id: number) =>
+        apiRequest<void>(`/api/admin/products/${id}`, { method: "DELETE" }),
     createVariant: (productId: number, body: Record<string, unknown>) =>
         apiRequest<ResourceResponse<ProductVariant>>(`/api/admin/products/${productId}/variants`, {
             method: "POST",

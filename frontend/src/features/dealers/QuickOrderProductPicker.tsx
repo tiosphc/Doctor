@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { toast } from "sonner";
 import {
     Dialog,
@@ -55,6 +55,7 @@ export function QuickOrderProductPicker({
     const [debouncedModalSearch, setDebouncedModalSearch] = useState("");
     const [page, setPage] = useState(1);
     const [staged, setStaged] = useState<Record<number, QuickOrderRow>>({});
+    const [expandedProductId, setExpandedProductId] = useState<number | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -92,9 +93,27 @@ export function QuickOrderProductPicker({
         retry: false,
     });
     const suggestions = catalogRows(inline.data, debouncedSearch).slice(0, 8);
-    const modalItems = catalogRows(modal.data, debouncedModalSearch);
+    const modalProducts =
+        modal.data?.data.filter(
+            (product) => matchingVariants(product, debouncedModalSearch).length > 0,
+        ) ?? [];
     const stagedItems = Object.values(staged);
+    const stagedQuantity = stagedItems.reduce(
+        (total, row) => total + (Number(row.quantity) || 0),
+        0,
+    );
     const isSearching = search.trim() !== debouncedSearch;
+
+    useEffect(() => {
+        const term = debouncedModalSearch.toLocaleLowerCase();
+        if (!term) return;
+        const match = modal.data?.data.find(
+            (product) =>
+                !`${product.name} ${product.product_code}`.toLocaleLowerCase().includes(term) &&
+                matchingVariants(product, term).length > 0,
+        );
+        if (match) setExpandedProductId(match.id);
+    }, [debouncedModalSearch, modal.data]);
 
     const chooseSuggestion = (row: QuickOrderRow) => {
         onAdd(row);
@@ -262,13 +281,15 @@ export function QuickOrderProductPicker({
                 onOpenChange={(open) => {
                     setModalOpen(open);
                     if (!open) setStaged({});
+                    else setExpandedProductId(null);
                 }}
             >
                 <DialogContent className="flex max-h-[92vh] w-[calc(100%-2rem)] max-w-[1360px] flex-col gap-4 overflow-hidden p-4 sm:w-[90vw] sm:p-6">
                     <DialogHeader>
                         <DialogTitle className="dealer-modal-title">Chọn sản phẩm</DialogTitle>
                         <DialogDescription>
-                            Chọn nhiều sản phẩm và kiểm tra số lượng trước khi thêm vào đơn.
+                            Mở sản phẩm để chọn biến thể và kiểm tra số lượng trước khi thêm vào
+                            đơn.
                         </DialogDescription>
                     </DialogHeader>
                     <label className="grid gap-2 text-sm font-medium">
@@ -302,143 +323,269 @@ export function QuickOrderProductPicker({
                                     Thử lại
                                 </button>
                             </div>
-                        ) : modalItems.length === 0 ? (
+                        ) : modalProducts.length === 0 ? (
                             <p className="p-4 text-sm text-muted-foreground">
                                 Không tìm thấy sản phẩm phù hợp.
                             </p>
                         ) : (
-                            modalItems.map((row) => {
-                                const stagedRow = staged[row.product_variant_id];
-                                const alreadyAdded = selectedIds.includes(row.product_variant_id);
+                            modalProducts.map((product) => {
+                                const rows = matchingVariants(product, debouncedModalSearch).map(
+                                    (variant) => catalogRow(product, variant),
+                                );
+                                const prices = product.variants
+                                    .filter((variant) => variant.dealer_price.unit_price !== null)
+                                    .map((variant) => Number(variant.dealer_price.unit_price))
+                                    .filter(Number.isFinite);
+                                const minPrice = Math.min(...prices);
+                                const maxPrice = Math.max(...prices);
+                                const selectedCount = product.variants.filter(
+                                    (variant) =>
+                                        Boolean(staged[variant.id]) ||
+                                        selectedIds.includes(variant.id),
+                                ).length;
+                                const expanded = expandedProductId === product.id;
+                                const image =
+                                    product.images.find((item) => item.is_primary) ??
+                                    product.images[0];
                                 return (
-                                    <div
-                                        key={row.product_variant_id}
-                                        className="grid gap-3 rounded-lg border p-4 text-sm md:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] md:items-center"
+                                    <section
+                                        key={product.id}
+                                        className="overflow-hidden rounded-xl border bg-card text-sm"
                                     >
-                                        <DealerProductThumbnail
-                                            src={row.image_url}
-                                            name={row.product_name}
-                                        />
-                                        <div className="min-w-0">
-                                            <strong className="block text-base text-primary">
-                                                {row.product_name}
-                                            </strong>
-                                            <span>{row.variant_name}</span>
-                                            <span className="dealer-meta block text-muted-foreground">
-                                                SKU: {row.sku}
-                                            </span>
-                                        </div>
-                                        <div className="md:text-right">
-                                            <strong>{money(row.unit_price!)}</strong>
-                                            <span className="dealer-meta block text-muted-foreground">
-                                                {tierName} · MOQ{" "}
-                                                {formatProductQuantity(row.minimum_quantity)}
-                                            </span>
-                                        </div>
-                                        <div className="grid gap-1">
-                                            <span>Số lượng</span>
-                                            <span className="flex items-center">
-                                                <button
-                                                    type="button"
-                                                    aria-label={`Giảm số lượng ${row.product_name}`}
-                                                    disabled={
-                                                        !stagedRow ||
-                                                        !Number.isSafeInteger(
-                                                            Number(stagedRow.quantity),
-                                                        ) ||
-                                                        Number(stagedRow.quantity) <=
-                                                            Number(row.minimum_quantity)
-                                                    }
-                                                    className="min-h-10 rounded-l-md border px-3 disabled:opacity-40"
-                                                    onClick={() =>
-                                                        setStaged((current) => ({
-                                                            ...current,
-                                                            [row.product_variant_id]: {
-                                                                ...current[row.product_variant_id]!,
-                                                                quantity: String(
-                                                                    Number(
-                                                                        current[
-                                                                            row.product_variant_id
-                                                                        ]!.quantity,
-                                                                    ) - 1,
-                                                                ),
-                                                            },
-                                                        }))
-                                                    }
-                                                >
-                                                    −
-                                                </button>
-                                                <input
-                                                    aria-label={`Số lượng ${row.product_name}`}
-                                                    type="number"
-                                                    min={Number(row.minimum_quantity)}
-                                                    step={1}
-                                                    disabled={
-                                                        !stagedRow ||
-                                                        !Number.isSafeInteger(
-                                                            Number(stagedRow.quantity),
-                                                        )
-                                                    }
-                                                    className="min-h-10 w-16 border-y bg-background px-1 text-center disabled:opacity-50"
-                                                    value={stagedRow?.quantity ?? row.quantity}
-                                                    onChange={(event) =>
-                                                        setStaged((current) => ({
-                                                            ...current,
-                                                            [row.product_variant_id]: {
-                                                                ...(current[
-                                                                    row.product_variant_id
-                                                                ] ?? row),
-                                                                quantity: event.target.value,
-                                                            },
-                                                        }))
-                                                    }
-                                                />
-                                                <button
-                                                    type="button"
-                                                    aria-label={`Tăng số lượng ${row.product_name}`}
-                                                    disabled={!stagedRow}
-                                                    className="min-h-10 rounded-r-md border px-3 disabled:opacity-40"
-                                                    onClick={() =>
-                                                        setStaged((current) => ({
-                                                            ...current,
-                                                            [row.product_variant_id]: {
-                                                                ...current[row.product_variant_id]!,
-                                                                quantity: String(
-                                                                    Number(
-                                                                        current[
-                                                                            row.product_variant_id
-                                                                        ]!.quantity,
-                                                                    ) + 1,
-                                                                ),
-                                                            },
-                                                        }))
-                                                    }
-                                                >
-                                                    +
-                                                </button>
-                                            </span>
-                                            {stagedRow && rowQuantityError(stagedRow) && (
-                                                <span
-                                                    role="alert"
-                                                    className="dealer-meta text-red-700"
-                                                >
-                                                    {rowQuantityError(stagedRow)}
-                                                </span>
-                                            )}
-                                        </div>
                                         <button
                                             type="button"
-                                            disabled={alreadyAdded}
-                                            className="dealer-action rounded-md border px-3 text-primary disabled:opacity-50"
-                                            onClick={() => toggleStage(row)}
+                                            aria-expanded={expanded}
+                                            aria-controls={`quick-order-variants-${product.id}`}
+                                            className="relative flex w-full flex-wrap items-center gap-3 p-3 pr-9 text-left hover:bg-accent sm:flex-nowrap sm:gap-4 sm:p-4"
+                                            onClick={() =>
+                                                setExpandedProductId(expanded ? null : product.id)
+                                            }
                                         >
-                                            {alreadyAdded
-                                                ? "Đã trong đơn"
-                                                : stagedRow
-                                                  ? "Bỏ chọn"
-                                                  : "Thêm"}
+                                            <DealerProductThumbnail
+                                                src={image?.url ?? null}
+                                                name={product.name}
+                                            />
+                                            <span className="min-w-0 flex-1">
+                                                <strong className="block text-base text-primary">
+                                                    {product.name}
+                                                </strong>
+                                                <span className="dealer-meta block text-muted-foreground">
+                                                    {product.product_code} ·{" "}
+                                                    {product.variants.length} biến thể
+                                                </span>
+                                                {selectedCount > 0 && (
+                                                    <span className="dealer-meta text-primary">
+                                                        Đã chọn {selectedCount} SKU
+                                                    </span>
+                                                )}
+                                            </span>
+                                            <span className="min-w-0 basis-full text-right font-semibold text-primary sm:basis-auto">
+                                                {prices.length ? money(String(minPrice)) : "—"}
+                                                {prices.length && maxPrice !== minPrice
+                                                    ? ` – ${money(String(maxPrice))}`
+                                                    : ""}
+                                                <span className="dealer-meta block font-normal text-muted-foreground">
+                                                    Giá {tierName}
+                                                </span>
+                                            </span>
+                                            <ChevronDown
+                                                size={18}
+                                                className={`absolute right-3 top-4 shrink-0 transition-transform sm:static ${expanded ? "rotate-180" : ""}`}
+                                                aria-hidden="true"
+                                            />
                                         </button>
-                                    </div>
+                                        {expanded && (
+                                            <div
+                                                id={`quick-order-variants-${product.id}`}
+                                                className="space-y-2 border-t bg-muted/20 p-2 sm:p-3"
+                                            >
+                                                {rows.map((row) => {
+                                                    const stagedRow =
+                                                        staged[row.product_variant_id];
+                                                    const alreadyAdded = selectedIds.includes(
+                                                        row.product_variant_id,
+                                                    );
+                                                    return (
+                                                        <div
+                                                            key={row.product_variant_id}
+                                                            className="grid gap-3 rounded-lg border bg-background p-3 text-sm md:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] md:items-center"
+                                                        >
+                                                            <DealerProductThumbnail
+                                                                src={row.image_url}
+                                                                name={row.product_name}
+                                                            />
+                                                            <div className="min-w-0">
+                                                                <strong className="block text-base text-primary">
+                                                                    {row.variant_name}
+                                                                </strong>
+                                                                <span className="dealer-meta block text-muted-foreground">
+                                                                    SKU: {row.sku}
+                                                                </span>
+                                                            </div>
+                                                            <div className="md:text-right">
+                                                                <strong>
+                                                                    {money(row.unit_price!)}
+                                                                </strong>
+                                                                <span className="dealer-meta block text-muted-foreground">
+                                                                    {tierName} · MOQ{" "}
+                                                                    {formatProductQuantity(
+                                                                        row.minimum_quantity,
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid gap-1">
+                                                                <span>Số lượng</span>
+                                                                <span className="flex items-center">
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label={`Giảm số lượng ${row.product_name}`}
+                                                                        disabled={
+                                                                            !stagedRow ||
+                                                                            !Number.isSafeInteger(
+                                                                                Number(
+                                                                                    stagedRow.quantity,
+                                                                                ),
+                                                                            ) ||
+                                                                            Number(
+                                                                                stagedRow.quantity,
+                                                                            ) <=
+                                                                                Number(
+                                                                                    row.minimum_quantity,
+                                                                                )
+                                                                        }
+                                                                        className="min-h-10 rounded-l-md border px-3 disabled:opacity-40"
+                                                                        onClick={() =>
+                                                                            setStaged(
+                                                                                (current) => ({
+                                                                                    ...current,
+                                                                                    [row.product_variant_id]:
+                                                                                        {
+                                                                                            ...current[
+                                                                                                row
+                                                                                                    .product_variant_id
+                                                                                            ]!,
+                                                                                            quantity:
+                                                                                                String(
+                                                                                                    Number(
+                                                                                                        current[
+                                                                                                            row
+                                                                                                                .product_variant_id
+                                                                                                        ]!
+                                                                                                            .quantity,
+                                                                                                    ) -
+                                                                                                        1,
+                                                                                                ),
+                                                                                        },
+                                                                                }),
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        −
+                                                                    </button>
+                                                                    <input
+                                                                        aria-label={`Số lượng ${row.product_name}`}
+                                                                        type="number"
+                                                                        min={Number(
+                                                                            row.minimum_quantity,
+                                                                        )}
+                                                                        step={1}
+                                                                        disabled={
+                                                                            !stagedRow ||
+                                                                            !Number.isSafeInteger(
+                                                                                Number(
+                                                                                    stagedRow.quantity,
+                                                                                ),
+                                                                            )
+                                                                        }
+                                                                        className="min-h-10 w-16 border-y bg-background px-1 text-center disabled:opacity-50"
+                                                                        value={
+                                                                            stagedRow?.quantity ??
+                                                                            row.quantity
+                                                                        }
+                                                                        onChange={(event) =>
+                                                                            setStaged(
+                                                                                (current) => ({
+                                                                                    ...current,
+                                                                                    [row.product_variant_id]:
+                                                                                        {
+                                                                                            ...(current[
+                                                                                                row
+                                                                                                    .product_variant_id
+                                                                                            ] ??
+                                                                                                row),
+                                                                                            quantity:
+                                                                                                event
+                                                                                                    .target
+                                                                                                    .value,
+                                                                                        },
+                                                                                }),
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label={`Tăng số lượng ${row.product_name}`}
+                                                                        disabled={!stagedRow}
+                                                                        className="min-h-10 rounded-r-md border px-3 disabled:opacity-40"
+                                                                        onClick={() =>
+                                                                            setStaged(
+                                                                                (current) => ({
+                                                                                    ...current,
+                                                                                    [row.product_variant_id]:
+                                                                                        {
+                                                                                            ...current[
+                                                                                                row
+                                                                                                    .product_variant_id
+                                                                                            ]!,
+                                                                                            quantity:
+                                                                                                String(
+                                                                                                    Number(
+                                                                                                        current[
+                                                                                                            row
+                                                                                                                .product_variant_id
+                                                                                                        ]!
+                                                                                                            .quantity,
+                                                                                                    ) +
+                                                                                                        1,
+                                                                                                ),
+                                                                                        },
+                                                                                }),
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        +
+                                                                    </button>
+                                                                </span>
+                                                                {stagedRow &&
+                                                                    rowQuantityError(stagedRow) && (
+                                                                        <span
+                                                                            role="alert"
+                                                                            className="dealer-meta text-red-700"
+                                                                        >
+                                                                            {rowQuantityError(
+                                                                                stagedRow,
+                                                                            )}
+                                                                        </span>
+                                                                    )}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                disabled={alreadyAdded}
+                                                                className="dealer-action rounded-md border px-3 text-primary disabled:opacity-50"
+                                                                onClick={() => toggleStage(row)}
+                                                            >
+                                                                {alreadyAdded
+                                                                    ? "Đã trong đơn"
+                                                                    : stagedRow
+                                                                      ? "Bỏ chọn"
+                                                                      : "Thêm"}
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </section>
                                 );
                             })
                         )}
@@ -468,7 +615,8 @@ export function QuickOrderProductPicker({
                     )}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-background pt-4 text-sm">
                         <span>
-                            Đã chọn: <strong>{stagedItems.length} sản phẩm</strong>
+                            Đã chọn: <strong>{stagedItems.length} biến thể</strong> · Tổng SL:{" "}
+                            <strong>{formatProductQuantity(stagedQuantity)}</strong>
                         </span>
                         <div className="flex gap-2">
                             <button
@@ -490,7 +638,7 @@ export function QuickOrderProductPicker({
                                 className="dealer-action rounded-md bg-primary px-4 text-primary-foreground disabled:opacity-50"
                                 onClick={apply}
                             >
-                                Thêm {stagedItems.length} sản phẩm vào đơn
+                                Thêm {stagedItems.length} biến thể vào đơn
                             </button>
                         </div>
                     </div>

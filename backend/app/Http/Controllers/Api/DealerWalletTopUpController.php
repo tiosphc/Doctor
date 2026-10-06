@@ -25,6 +25,7 @@ class DealerWalletTopUpController extends Controller
     public function store(Request $request, DealerAccount $dealer, DealerContextService $context, DealerWalletTopUpService $topUps): JsonResponse
     {
         $context->resolve($request->user(), $dealer);
+        abort_unless(config('services.payos.top_up_creation_enabled'), 410, 'PAYOS_TOP_UP_CREATION_DISABLED');
         $data = $request->validate([
             'amount' => ['required', 'integer', 'between:2000,1000000000'],
             'operation_key' => ['required', 'uuid'],

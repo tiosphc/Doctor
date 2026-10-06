@@ -41,6 +41,7 @@ return [
         'checksum_key' => env('PAYOS_CHECKSUM_KEY'),
         'frontend_url' => env('FRONTEND_URL', 'http://localhost:8080'),
         'top_up_ttl_minutes' => (int) env('PAYOS_TOP_UP_TTL_MINUTES', 30),
+        'top_up_creation_enabled' => false,
     ],
 
 ];

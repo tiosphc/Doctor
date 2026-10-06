@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { adminFormLayout } from "@/components/admin/AdminFormLayout";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Ellipsis, Eye, Filter, Pencil, Power, Tag } from "lucide-react";
+import { Ellipsis, Eye, Filter, Pencil, Power, Tag, Trash2 } from "lucide-react";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
 import { errorMessage, firstFieldErrors } from "@/services/api";
 import { formatProductQuantity, isNonNegativeProductQuantity } from "@/lib/productQuantity";
@@ -126,6 +126,7 @@ function AdminProductCard({
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [statusConfirmationOpen, setStatusConfirmationOpen] = useState(false);
+    const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
     const image =
         product.images.find((img) => img.is_primary) ||
         product.images.find((img) => img.product_variant_id === null) ||
@@ -155,8 +156,22 @@ function AdminProductCard({
         },
         onError: (reason) => toast.error(errorMessage(reason)),
     });
+    const deleteProduct = useMutation({
+        mutationFn: () => productApi.deleteProduct(product.id),
+        onSuccess: () => {
+            setDeleteConfirmationOpen(false);
+            toast.success("Đã xóa sản phẩm.");
+            void queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+            void queryClient.invalidateQueries({ queryKey: ["products"] });
+        },
+        onError: (reason) => toast.error(errorMessage(reason)),
+    });
 
     const goToDetail = () => {
+        if (product.status === "draft") {
+            navigate({ to: "/admin/products/new", search: { draft: product.id } });
+            return;
+        }
         navigate({ to: "/admin/products/$id", params: { id: String(product.id) } });
     };
 
@@ -248,60 +263,81 @@ function AdminProductCard({
 
             {/* Actions footer */}
             <div className="flex items-center gap-2 border-t px-3 py-2">
-                <Link
-                    to="/admin/products/$id"
-                    params={{ id: String(product.id) }}
-                    className="inline-flex grow items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-navy-deep"
-                >
-                    <Pencil size={13} />
-                    Chỉnh sửa
-                </Link>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <button
-                            type="button"
-                            className="inline-flex items-center justify-center rounded-md border px-2 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                            aria-label="Thêm thao tác"
-                        >
-                            <Ellipsis size={16} />
-                        </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem className="cursor-pointer" onSelect={goToDetail}>
-                            <Eye size={14} />
-                            Xem chi tiết
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer" onSelect={goToDetail}>
-                            <Pencil size={14} />
-                            Chỉnh sửa
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            className="cursor-pointer"
-                            onSelect={() =>
-                                navigate({
-                                    to: "/admin/products/$id",
-                                    params: { id: String(product.id) },
-                                })
-                            }
-                        >
-                            <Tag size={14} />
-                            Quản lý giá
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            className={`cursor-pointer ${
-                                product.status === "active"
-                                    ? "text-red-600 focus:text-red-600"
-                                    : "text-green-600 focus:text-green-600"
-                            }`}
-                            onSelect={() => setStatusConfirmationOpen(true)}
-                            disabled={toggleStatus.isPending || product.status === "draft"}
-                        >
-                            <Power size={14} />
-                            {product.status === "active" ? "Ngừng hoạt động" : "Kích hoạt"}
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                {product.status === "draft" ? (
+                    <button
+                        type="button"
+                        className="inline-flex grow items-center justify-center gap-1.5 rounded-md bg-red-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-800"
+                        onClick={() => setDeleteConfirmationOpen(true)}
+                    >
+                        <Trash2 size={13} />
+                        Xóa bản nháp
+                    </button>
+                ) : (
+                    <Link
+                        to="/admin/products/$id"
+                        params={{ id: String(product.id) }}
+                        className="inline-flex grow items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-navy-deep"
+                    >
+                        <Pencil size={13} />
+                        Chỉnh sửa
+                    </Link>
+                )}
+                {product.status !== "draft" && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                type="button"
+                                className="inline-flex items-center justify-center rounded-md border px-2 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                aria-label="Thêm thao tác"
+                            >
+                                <Ellipsis size={16} />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem className="cursor-pointer" onSelect={goToDetail}>
+                                <Eye size={14} />
+                                Xem chi tiết
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onSelect={goToDetail}>
+                                <Pencil size={14} />
+                                Chỉnh sửa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                onSelect={() =>
+                                    navigate({
+                                        to: "/admin/products/$id",
+                                        params: { id: String(product.id) },
+                                    })
+                                }
+                            >
+                                <Tag size={14} />
+                                Quản lý giá
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                className={`cursor-pointer ${
+                                    product.status === "active"
+                                        ? "text-red-600 focus:text-red-600"
+                                        : "text-green-600 focus:text-green-600"
+                                }`}
+                                onSelect={() => setStatusConfirmationOpen(true)}
+                                disabled={toggleStatus.isPending}
+                            >
+                                <Power size={14} />
+                                {product.status === "active" ? "Ngừng hoạt động" : "Kích hoạt"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                className="cursor-pointer text-red-600 focus:text-red-600"
+                                onSelect={() => setDeleteConfirmationOpen(true)}
+                            >
+                                <Trash2 size={14} />
+                                Xóa sản phẩm
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
             </div>
             <AlertDialog
                 open={statusConfirmationOpen}
@@ -343,6 +379,39 @@ function AdminProductCard({
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <AlertDialog
+                open={deleteConfirmationOpen}
+                onOpenChange={(open) => {
+                    if (!open && deleteProduct.isPending) return;
+                    setDeleteConfirmationOpen(open);
+                }}
+            >
+                <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md rounded-xl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Xóa sản phẩm?</AlertDialogTitle>
+                        <AlertDialogDescription className="leading-6">
+                            Xóa vĩnh viễn{" "}
+                            <strong className="font-semibold text-foreground">
+                                {product.name}
+                            </strong>
+                            ? Sản phẩm có lịch sử giao dịch hoặc tồn kho sẽ không thể xóa.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-2">
+                        <AlertDialogCancel disabled={deleteProduct.isPending}>
+                            Hủy
+                        </AlertDialogCancel>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={deleteProduct.isPending}
+                            onClick={() => deleteProduct.mutate()}
+                        >
+                            {deleteProduct.isPending ? "Đang xóa..." : "Xác nhận xóa"}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
@@ -377,10 +446,6 @@ export function AdminProductsPage() {
     const query = useQuery({
         queryKey: productKeys.admin(filters),
         queryFn: () => productApi.adminProducts(filters),
-    });
-    const drafts = useQuery({
-        queryKey: ["product-wizard-drafts"],
-        queryFn: productApi.wizardDrafts,
     });
 
     const hasActiveFilters = category || brand || giftFilter !== "all" || statusFilter;
@@ -445,7 +510,6 @@ export function AdminProductsPage() {
                 <option value="">Tất cả trạng thái</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
-                <option value="draft">Draft</option>
             </select>
         </>
     );
@@ -465,24 +529,6 @@ export function AdminProductsPage() {
                         Thêm sản phẩm
                     </Link>
                 </div>
-                {drafts.data && drafts.data.data.length > 0 && (
-                    <section className="rounded-xl border bg-card p-4">
-                        <h2 className="text-lg text-primary">Bản nháp đang làm</h2>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {drafts.data.data.map((item) => (
-                                <Link
-                                    key={item.id}
-                                    to="/admin/products/new"
-                                    search={{ draft: item.id }}
-                                    className={secondaryButtonClass}
-                                >
-                                    {item.name || "Sản phẩm chưa đặt tên"} · #{item.id}
-                                </Link>
-                            ))}
-                        </div>
-                    </section>
-                )}
-
                 {/* Filter toolbar */}
                 <div className="rounded-xl border bg-card p-4">
                     {/* Search + mobile filter toggle */}
@@ -795,7 +841,6 @@ function ProductEditor({ product }: { product: Product }) {
                                 })
                             }
                         >
-                            <option value="draft">Bản nháp</option>
                             <option value="active">Hoạt động</option>
                             <option value="inactive">Ngừng hoạt động</option>
                         </select>

@@ -1,7 +1,13 @@
 import { apiRequest } from "./api";
 import type { ResourceResponse } from "@/types";
 import type { RawPage } from "@/types/product";
-import type { InventoryBalance, Reconciliation, StockMovement, Warehouse } from "@/types/inventory";
+import type {
+    InventoryBalance,
+    InventoryProductSummary,
+    Reconciliation,
+    StockMovement,
+    Warehouse,
+} from "@/types/inventory";
 
 export type InventoryFilters = {
     warehouse_id?: number | undefined;
@@ -37,6 +43,7 @@ export type InventoryOperation = {
 export const inventoryKeys = {
     warehouses: (filters: object) => ["warehouses", filters] as const,
     balances: (filters: InventoryFilters) => ["inventory-balances", filters] as const,
+    productBalances: (filters: InventoryFilters) => ["inventory-products", filters] as const,
     movements: (filters: MovementFilters) => ["stock-movements", filters] as const,
     reconciliation: (warehouseId?: number) => ["inventory-reconciliation", warehouseId] as const,
 };
@@ -54,6 +61,10 @@ export const inventoryApi = {
         }),
     balances: (filters: InventoryFilters = {}) =>
         apiRequest<RawPage<InventoryBalance>>("/api/admin/inventory", { query: filters }),
+    productBalances: (filters: InventoryFilters = {}) =>
+        apiRequest<RawPage<InventoryProductSummary>>("/api/admin/inventory", {
+            query: { ...filters, group_by: "product" },
+        }),
     movements: (filters: MovementFilters = {}) =>
         apiRequest<RawPage<StockMovement>>("/api/admin/stock-movements", { query: filters }),
     reconciliation: (warehouseId?: number) =>

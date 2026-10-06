@@ -31,7 +31,7 @@ class SaveProductRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:20000'],
             'product_category_id' => [$required, 'integer', Rule::exists('product_categories', 'id')->where('status', 'active')],
             'brand_id' => ['nullable', 'integer', Rule::exists('brands', 'id')->where('status', 'active')],
-            'status' => ['sometimes', Rule::in(['draft', 'active', 'inactive'])],
+            'status' => ['sometimes', Rule::in(['active', 'inactive'])],
             'track_inventory' => ['sometimes', 'boolean'],
             'can_be_gift' => ['sometimes', 'boolean'],
             'gift_only' => ['sometimes', 'boolean'],

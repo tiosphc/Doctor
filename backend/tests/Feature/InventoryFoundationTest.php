@@ -19,6 +19,48 @@ class InventoryFoundationTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    public function test_grouped_inventory_paginates_products_and_summarizes_all_variants_in_selected_warehouse(): void
+    {
+        $this->admin();
+        $firstWarehouse = Warehouse::factory()->create();
+        $secondWarehouse = Warehouse::factory()->create();
+        $product = Product::factory()->create(['track_inventory' => true, 'default_low_stock_threshold' => '3']);
+        $unit = Unit::factory()->create();
+        $firstVariant = ProductVariant::factory()->for($product)->create(['unit_id' => $unit->id, 'track_inventory' => true]);
+        $secondVariant = ProductVariant::factory()->for($product)->create(['unit_id' => $unit->id, 'track_inventory' => true]);
+        $otherVariant = $this->trackedVariant();
+        $this->postJson('/api/admin/inventory/receipts', $this->operation($firstWarehouse, $firstVariant, '10'))->assertOk();
+        $this->postJson('/api/admin/inventory/receipts', $this->operation($firstWarehouse, $secondVariant, '2'))->assertOk();
+        $this->postJson('/api/admin/inventory/receipts', $this->operation($secondWarehouse, $firstVariant, '4'))->assertOk();
+        $this->postJson('/api/admin/inventory/receipts', $this->operation($firstWarehouse, $otherVariant, '7'))->assertOk();
+        DB::table('inventory_balances')->where('warehouse_id', $firstWarehouse->id)
+            ->where('product_variant_id', $firstVariant->id)->update(['reserved_quantity' => '3.000']);
+
+        $this->getJson("/api/admin/inventory?group_by=product&warehouse_id={$firstWarehouse->id}&per_page=1")
+            ->assertOk()->assertJsonPath('total', 2)
+            ->assertJsonPath('last_page', 2)
+            ->assertJsonPath('data.0.id', $product->id)
+            ->assertJsonPath('data.0.variant_count', 2)
+            ->assertJsonPath('data.0.on_hand_quantity', '12.000')
+            ->assertJsonPath('data.0.reserved_quantity', '3.000')
+            ->assertJsonPath('data.0.available_quantity', '9.000')
+            ->assertJsonPath('data.0.low_stock_count', 1)
+            ->assertJsonCount(2, 'data.0.balances');
+        $this->getJson("/api/admin/inventory?group_by=product&warehouse_id={$firstWarehouse->id}&per_page=1&page=2")
+            ->assertOk()->assertJsonPath('data.0.id', $otherVariant->product_id);
+        $this->getJson('/api/admin/inventory?group_by=product&search='.$secondVariant->sku)
+            ->assertOk()->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.variant_count', 2)
+            ->assertJsonPath('data.0.on_hand_quantity', '16.000')
+            ->assertJsonPath('data.0.reserved_quantity', '3.000')
+            ->assertJsonPath('data.0.available_quantity', '13.000')
+            ->assertJsonCount(3, 'data.0.balances');
+        $this->getJson("/api/admin/inventory?group_by=product&warehouse_id={$firstWarehouse->id}&low_stock=1")
+            ->assertOk()->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.id', $product->id)
+            ->assertJsonCount(2, 'data.0.balances');
+    }
+
     public function test_balance_search_matches_variant_name_and_product_code_with_warehouse_and_low_stock(): void
     {
         $this->admin();

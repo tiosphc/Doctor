@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdministrativeWard;
 use App\Models\DealerAccount;
 use App\Models\DealerAccountUser;
 use App\Models\DealerTier;
@@ -10,6 +11,7 @@ use App\Models\PriceListItem;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Models\WarehouseServiceArea;
 use App\Services\DealerWalletService;
 use App\Services\InventoryService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -129,6 +131,7 @@ class DealerWalletTest extends TestCase
         [$user, $account, $admin] = $this->fixture();
         $variant = ProductVariant::factory()->create(['sellable_dealer' => true, 'track_inventory' => true]);
         $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
+        WarehouseServiceArea::query()->create(['warehouse_id' => $warehouse->id, 'province_code' => '79']);
         $list = PriceList::factory()->create(['pricing_context' => 'dealer', 'scope_type' => 'tier', 'dealer_tier_id' => $account->current_tier_id, 'currency' => 'VND']);
         PriceListItem::factory()->create(['price_list_id' => $list->id, 'product_variant_id' => $variant->id, 'unit_price' => '100.00', 'minimum_quantity' => '2']);
         app(InventoryService::class)->receive(['warehouse_id' => $warehouse->id, 'product_variant_id' => $variant->id, 'quantity' => '10', 'operation_key' => (string) Str::uuid()], $admin->id);
@@ -136,8 +139,10 @@ class DealerWalletTest extends TestCase
         Sanctum::actingAs($user);
         $url = "/api/dealer/accounts/{$account->id}/quick-order";
         $items = [['product_variant_id' => $variant->id, 'quantity' => '2']];
-        $review = $this->postJson("$url/review", ['items' => $items])->assertJsonPath('data.wallet_sufficient', true)->json('data');
-        $body = ['operation_key' => (string) Str::uuid(), 'review_fingerprint' => $review['review_fingerprint'], 'items' => $items, 'recipient_name' => 'Receiver', 'recipient_phone' => '0900000000', 'shipping_address_line1' => 'Street', 'shipping_city' => 'HCM', 'shipping_province' => 'HCM', 'shipping_country' => 'VN'];
+        $ward = AdministrativeWard::query()->where('province_code', '79')->firstOrFail();
+        $shipping = ['recipient_name' => 'Receiver', 'recipient_phone' => '0900000000', 'shipping_address_line1' => 'Street', 'shipping_province_code' => '79', 'shipping_ward_code' => $ward->code];
+        $review = $this->postJson("$url/review", ['items' => $items, ...$shipping])->assertJsonPath('data.wallet_sufficient', true)->json('data');
+        $body = ['operation_key' => (string) Str::uuid(), 'review_fingerprint' => $review['review_fingerprint'], 'items' => $items, ...$shipping];
         $order = $this->postJson($url, $body)->assertCreated()->assertJsonPath('data.payment_status', 'paid')->json('data');
         $this->assertDatabaseHas('payments', ['payment_method' => 'dealer_wallet', 'status' => 'settled']);
         $this->assertDatabaseHas('payment_allocations', ['allocated_amount' => '200.00']);

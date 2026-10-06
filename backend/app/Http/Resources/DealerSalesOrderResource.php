@@ -117,6 +117,8 @@ class DealerSalesOrderResource extends JsonResource
                 'unit_code' => $item->unit_code_snapshot,
                 'unit_name' => $item->unit_name_snapshot,
                 'quantity' => $item->quantity,
+                'shipped_quantity' => $item->relationLoaded('reservation')
+                    ? ($item->reservation?->consumed_quantity ?? '0.000') : null,
                 'is_gift' => $item->is_gift,
                 'source_promotion_id' => $item->source_promotion_id,
                 'unit_price' => $item->unit_price_snapshot,

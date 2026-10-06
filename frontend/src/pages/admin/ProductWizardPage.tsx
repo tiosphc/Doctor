@@ -38,7 +38,6 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
     const [step, setStep] = useState(0);
     const [errors, setErrors] = useState<WizardErrors>({});
     const [images, setImages] = useState<ProductImage[]>([]);
-    const [draftId, setDraftId] = useState<number | null>(draft ?? null);
     const draftIdRef = useRef<number | null>(draft ?? null);
     const hydrated = useRef<number | null>(null);
     const wizardKey = useRef<string>(globalThis.crypto.randomUUID());
@@ -97,7 +96,6 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
         setImages(product.images || []);
         wizardKey.current = product.wizard_key || wizardKey.current;
         draftIdRef.current = product.id;
-        setDraftId(product.id);
         hydrated.current = draft;
         setDirty(false);
     }, [draft, draftQuery.data]);
@@ -176,24 +174,9 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
         const id = result.data.id;
         draftIdRef.current = id;
         hydrated.current = id;
-        setDraftId(id);
         await navigate({ to: "/admin/products/new", search: { draft: id }, replace: true });
         return id;
     };
-    const saveDraft = () =>
-        void run("Đang lưu nháp...", async () => {
-            const wasExisting = Boolean(draftIdRef.current);
-            const id = await ensureDraft();
-            if (wasExisting)
-                await productApi.updateWizardDraft(id, {
-                    wizard_key: wizardKey.current,
-                    data: payload(dataRef.current),
-                });
-            setDirty(false);
-            setNotice("Đã lưu bản nháp. Bạn có thể tiếp tục sau.");
-            toast.success("Đã lưu bản nháp.");
-            await client.invalidateQueries({ queryKey: ["product-wizard-drafts"] });
-        });
     const uploadImages: StepProps["uploadImages"] = async (files) => {
         await run("Đang tải ảnh...", async () => {
             const selected = Array.from(files);
@@ -301,8 +284,25 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
             setSuccessId(result.data.id);
             toast.success("Tạo sản phẩm thành công.");
             await client.invalidateQueries({ queryKey: ["admin-products"] });
-            await client.invalidateQueries({ queryKey: ["product-wizard-drafts"] });
         });
+
+    const leaveWizard = () => {
+        if (
+            (dirty || draftIdRef.current) &&
+            !window.confirm("Rời trang và bỏ sản phẩm chưa hoàn tất?")
+        ) {
+            return;
+        }
+
+        void run("Đang rời trang...", async () => {
+            if (draftIdRef.current) {
+                await productApi.deleteProduct(draftIdRef.current);
+                draftIdRef.current = null;
+            }
+            setDirty(false);
+            await navigate({ to: "/admin/products" });
+        });
+    };
 
     const props: StepProps = {
         data,
@@ -352,24 +352,17 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
                             <p className="label-luxury">Product Master</p>
                             <h1 className="admin-page-title mt-2 text-primary">Thêm sản phẩm</h1>
                             <p className="mt-2 text-sm text-muted-foreground">
-                                {draftId ? `Bản nháp #${draftId}` : "Wizard tạo sản phẩm"}
+                                Hoàn tất các bước để tạo sản phẩm.
                             </p>
                         </div>
-                        <Link
-                            to="/admin/products"
+                        <button
+                            type="button"
                             className={secondaryButtonClass}
-                            onClick={(event) => {
-                                if (
-                                    dirty &&
-                                    !window.confirm(
-                                        "Bạn có thay đổi chưa được lưu. Bạn có chắc muốn rời khỏi trang?",
-                                    )
-                                )
-                                    event.preventDefault();
-                            }}
+                            disabled={Boolean(busy)}
+                            onClick={leaveWizard}
                         >
                             Về danh sách
-                        </Link>
+                        </button>
                     </div>
                     <nav
                         aria-label="Các bước tạo sản phẩm"
@@ -418,14 +411,6 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
                             )}
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            <button
-                                type="button"
-                                className={secondaryButtonClass}
-                                disabled={Boolean(busy)}
-                                onClick={saveDraft}
-                            >
-                                {busy === "Đang lưu nháp..." ? busy : "Lưu nháp"}
-                            </button>
                             <button
                                 type="button"
                                 className={buttonClass}
