@@ -3,16 +3,20 @@ import { Award, ShieldCheck, Phone, ArrowRight, ShoppingBag, Sparkles } from "lu
 import hero from "@/assets/clinic-hero.jpg";
 import treatment from "@/assets/treatment.jpg";
 import { reviews, results } from "@/data/content";
-import { serviceApi } from "@/services/serviceApi";
+import { productApi, productKeys } from "@/services/productApi";
 import { doctorApi } from "@/services/doctorApi";
 import { blogApi } from "@/services/blogApi";
 import { Container, SectionHeading } from "@/components/common/Container";
 import { ButtonLink } from "@/components/common/Button";
-import { ServiceCard, DoctorCard, CheckFeature, BlogCard } from "@/components/cards/Cards";
+import { DoctorCard, CheckFeature, BlogCard } from "@/components/cards/Cards";
+import { RetailProductCard } from "@/components/retail/RetailProductCard";
+
+const homeProductFilters = { page: 1, sort: "newest" as const };
+
 export function HomePage() {
-    const servicesQuery = useQuery({
-        queryKey: ["services", { featured: true }],
-        queryFn: () => serviceApi.list(),
+    const productsQuery = useQuery({
+        queryKey: productKeys.catalog(homeProductFilters),
+        queryFn: () => productApi.catalog(homeProductFilters),
     });
     const doctorsQuery = useQuery({
         queryKey: ["doctors", { featured: true }],
@@ -22,7 +26,7 @@ export function HomePage() {
         queryKey: ["blogs", { featured: true }],
         queryFn: () => blogApi.list({ per_page: 3 }),
     });
-    const services = servicesQuery.data?.data ?? [];
+    const products = productsQuery.data?.data ?? [];
     const doctors = doctorsQuery.data?.data ?? [];
     return (
         <>
@@ -157,30 +161,32 @@ export function HomePage() {
             <section className="section-space bg-card">
                 <Container>
                     <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-                        <SectionHeading eyebrow="Liệu trình y khoa" title="Dịch vụ nổi bật" />
+                        <SectionHeading eyebrow="Junie Retail" title="Sản phẩm nổi bật" />
                         <p className="max-w-md text-sm leading-6 text-muted-foreground">
-                            Khám phá các liệu trình y khoa được thiết kế phù hợp với từng nhu cầu và
-                            đặc điểm làn da.
+                            Khám phá sản phẩm chăm sóc da với thông tin và giá bán rõ ràng để lựa
+                            chọn phù hợp với nhu cầu của bạn.
                         </p>
                     </div>
-                    {servicesQuery.isPending ? (
-                        <p className="mt-10 text-sm text-muted-foreground">Đang tải dịch vụ...</p>
-                    ) : servicesQuery.isError ? (
-                        <p className="mt-10 text-sm text-red-700">Không thể tải dịch vụ lúc này.</p>
-                    ) : services.length === 0 ? (
+                    {productsQuery.isPending ? (
+                        <p className="mt-10 text-sm text-muted-foreground">Đang tải sản phẩm...</p>
+                    ) : productsQuery.isError ? (
+                        <p className="mt-10 text-sm text-red-700">
+                            Không thể tải sản phẩm lúc này.
+                        </p>
+                    ) : products.length === 0 ? (
                         <p className="mt-10 text-sm text-muted-foreground">
-                            Chưa có dịch vụ đang hoạt động.
+                            Chưa có sản phẩm đang bán.
                         </p>
                     ) : (
-                        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                            {services.slice(0, 4).map((s) => (
-                                <ServiceCard key={s.id} service={s} />
+                        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                            {products.slice(0, 3).map((product) => (
+                                <RetailProductCard key={product.id} product={product} />
                             ))}
                         </div>
                     )}
                     <div className="mt-8 text-center">
-                        <ButtonLink to="/services" variant="ghost">
-                            Xem tất cả dịch vụ <ArrowRight size={16} />
+                        <ButtonLink to="/products" variant="ghost">
+                            Xem tất cả sản phẩm <ArrowRight size={16} />
                         </ButtonLink>
                     </div>
                 </Container>
