@@ -151,6 +151,30 @@ class ErpReportTest extends TestCase
             ->assertJsonPath('summary.on_hand', '3.000');
     }
 
+    public function test_inventory_low_stock_summary_ignores_products_and_variants_without_tracking(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Sanctum::actingAs($admin);
+        $warehouse = Warehouse::factory()->create();
+        $variant = ProductVariant::factory()->create(['track_inventory' => true]);
+        $variant->product->update(['track_inventory' => true, 'default_low_stock_threshold' => '10']);
+        app(InventoryService::class)->receive([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $variant->id,
+            'quantity' => '5',
+            'operation_key' => (string) Str::uuid(),
+        ], $admin->id);
+        $date = now('Asia/Ho_Chi_Minh')->toDateString();
+        $url = "/api/admin/reports/inventory?from={$date}&to={$date}&warehouse_id={$warehouse->id}";
+
+        $this->getJson($url)->assertOk()->assertJsonPath('summary.low_stock_rows', 1);
+        $variant->product->update(['track_inventory' => false]);
+        $this->getJson($url)->assertOk()->assertJsonPath('summary.low_stock_rows', 0);
+        $variant->product->update(['track_inventory' => true]);
+        $variant->update(['track_inventory' => false]);
+        $this->getJson($url)->assertOk()->assertJsonPath('summary.low_stock_rows', 0);
+    }
+
     public function test_sales_period_uses_settlement_and_refund_dates_independently_of_order_creation(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-09-10 10:00:00', 'Asia/Ho_Chi_Minh'));

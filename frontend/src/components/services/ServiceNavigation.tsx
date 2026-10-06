@@ -25,7 +25,7 @@ export function ServiceMegaMenu({ inverted = false }: { inverted?: boolean }) {
                 Dịch vụ
                 <ChevronDown size={14} aria-hidden="true" />
             </Link>
-            <div className="pointer-events-none invisible absolute left-1/2 top-full z-50 w-[min(92vw,1240px)] -translate-x-1/2 -translate-y-2 pt-5 opacity-0 transition duration-200 ease-out group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 motion-reduce:transition-none">
+            <div className="pointer-events-none invisible fixed left-1/2 top-14 z-50 w-[min(92vw,1240px)] -translate-x-1/2 -translate-y-2 pt-6 opacity-0 transition duration-200 ease-out group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 motion-reduce:transition-none">
                 <div className="rounded-b-xl border bg-card p-6 text-foreground shadow-2xl md:p-8">
                     <div className="mb-6 flex items-end justify-between gap-4 border-b pb-5">
                         <div>

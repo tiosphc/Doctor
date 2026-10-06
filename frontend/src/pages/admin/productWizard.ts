@@ -61,7 +61,7 @@ export const emptyWizard: WizardData = {
     retail_price: "",
     retail_breaks: [],
     dealer_rules: [],
-    track_inventory: false,
+    track_inventory: true,
     warehouse_id: null,
     initial_stock: "",
     low_stock_threshold: "",
@@ -77,7 +77,7 @@ export const steps = [
     "Hình ảnh",
     "Biến thể",
     "Giá",
-    "Kho & vận chuyển",
+    "Kho & tồn kho",
     "Hướng dẫn sử dụng",
 ] as const;
 export type WizardErrors = Record<string, string>;

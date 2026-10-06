@@ -92,6 +92,7 @@ class ProductController extends Controller
     public function store(SaveProductRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $data['track_inventory'] ??= true;
         $unitId = $data['default_unit_id'];
         unset($data['default_unit_id']);
         $product = DB::transaction(function () use ($data, $unitId): Product {
@@ -101,6 +102,7 @@ class ProductController extends Controller
                 'sku' => $product->product_code.'-DEFAULT',
                 'variant_name' => 'Default',
                 'unit_id' => $unitId,
+                'track_inventory' => $data['track_inventory'],
                 'status' => 'active',
             ]);
 

@@ -1,11 +1,15 @@
 ﻿import { expect, test } from "bun:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { formatProductQuantity, isPositiveProductQuantity } from "./src/lib/productQuantity";
+import { StockStep } from "./src/pages/admin/ProductWizardSteps";
 import {
     emptyWizard,
     generateVariantSku,
     parseDealerCsv,
     payload,
     stepForField,
+    steps,
     validateStep,
     type WizardData,
 } from "./src/pages/admin/productWizard";
@@ -17,6 +21,37 @@ const ready = (): WizardData => ({
     product_category_id: 1,
     unit_id: 1,
     retail_price: "120000",
+});
+
+test("new products track inventory by default and the stock step hides shipping inputs", () => {
+    expect(emptyWizard.track_inventory).toBe(true);
+    expect(steps[4]).toBe("Kho & tồn kho");
+    const props = {
+        data: ready(),
+        update: () => {},
+        errors: {},
+        categories: [],
+        brands: [],
+        units: [],
+        warehouses: [],
+        tiers: [],
+        images: [],
+        busy: false,
+        uploadImages: async () => {},
+        removeImage: async () => {},
+        updateImage: async () => {},
+    };
+    const html = renderToStaticMarkup(createElement(StockStep, props));
+    expect(html).toContain("Quản lý kho");
+    expect(html).toContain("Bật theo dõi tồn kho");
+    expect(html).toMatch(/type="checkbox"[^>]*checked=""/);
+    const untrackedHtml = renderToStaticMarkup(
+        createElement(StockStep, { ...props, data: { ...props.data, track_inventory: false } }),
+    );
+    expect(untrackedHtml).not.toMatch(/type="checkbox"[^>]*checked=""/);
+    expect(html).not.toContain("Đóng gói / vận chuyển");
+    expect(html).not.toContain('id="weight"');
+    expect(payload({ ...ready(), weight: "0.125" })["weight"]).toBe("0.125");
 });
 
 test("basic step reports required name, SKU, category, unit and channel", () => {
@@ -167,7 +202,12 @@ test("dealer CSV import parses quoted values and rejects malformed headers", () 
 });
 
 test("product quantities reject decimals while physical measurements retain precision", () => {
-    const errors = validateStep(4, { ...ready(), initial_stock: "1.5", weight: "0.125" }, 1, 3);
+    const errors = validateStep(
+        4,
+        { ...ready(), track_inventory: false, initial_stock: "1.5", weight: "0.125" },
+        1,
+        3,
+    );
     expect(errors["initial_stock"]).toBeDefined();
     expect(errors["weight"]).toBeUndefined();
     expect(["1", "2", "50"].every(isPositiveProductQuantity)).toBe(true);

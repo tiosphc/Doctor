@@ -102,12 +102,20 @@ class ProductWizardTest extends TestCase
     {
         $this->admin();
         $data = $this->data();
+        $data['weight'] = '0.125';
+        $data['length'] = '12';
+        $data['width'] = '4';
+        $data['height'] = '3';
         $id = $this->draft(['name' => $data['name']]);
         $this->image($id);
         $response = $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $data])
             ->assertOk()->assertJsonPath('data.status', 'active')->assertJsonPath('data.variants.0.sku', 'SERUM-WIZ');
         $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $data])->assertOk()->assertJsonPath('data.id', $id);
         $this->assertDatabaseCount('product_variants', 1);
+        $this->assertDatabaseHas('product_variants', [
+            'id' => $response->json('data.variants.0.id'),
+            'weight' => '0.125', 'length' => '12.000', 'width' => '4.000', 'height' => '3.000',
+        ]);
         $this->assertDatabaseCount('price_lists', 1);
         $this->assertDatabaseCount('price_list_items', 1);
         $this->assertSame('120000.00', app(RetailPricingService::class)->resolve(ProductVariant::findOrFail($response->json('data.variants.0.id')))['unit_price']);

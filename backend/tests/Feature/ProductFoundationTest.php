@@ -70,6 +70,8 @@ class ProductFoundationTest extends TestCase
             'default_unit_id' => $unit->id,
         ])->assertCreated();
         $id = $response->json('data.id');
+        $response->assertJsonPath('data.track_inventory', true)
+            ->assertJsonPath('data.variants.0.track_inventory', true);
         $this->assertSame('PRD'.str_pad((string) $id, 6, '0', STR_PAD_LEFT), $response->json('data.product_code'));
         $this->assertSame($response->json('data.product_code').'-DEFAULT', $response->json('data.variants.0.sku'));
         $this->patchJson("/api/admin/products/{$id}", ['product_code' => 'MUTATED', 'status' => 'active'])->assertOk()->assertJsonPath('data.status', 'active');
@@ -81,6 +83,22 @@ class ProductFoundationTest extends TestCase
             ->assertOk()->assertJsonPath('data.sku', 'SERUM-30ML');
         $this->postJson("/api/admin/products/{$id}/variants", ['sku' => 'SeRuM-30ML', 'variant_name' => 'Duplicate', 'unit_id' => $unit->id])
             ->assertUnprocessable()->assertJsonValidationErrors('sku');
+    }
+
+    public function test_explicit_untracked_product_remains_untracked_when_edited(): void
+    {
+        $this->admin();
+        $category = ProductCategory::factory()->create();
+        $unit = Unit::factory()->create();
+        $id = $this->postJson('/api/admin/products', [
+            'name' => 'Legacy serum', 'slug' => 'legacy-serum', 'product_category_id' => $category->id,
+            'default_unit_id' => $unit->id, 'track_inventory' => false,
+        ])->assertCreated()->assertJsonPath('data.track_inventory', false)
+            ->assertJsonPath('data.variants.0.track_inventory', false)->json('data.id');
+
+        $this->patchJson("/api/admin/products/{$id}", ['name' => 'Legacy serum updated'])
+            ->assertOk()->assertJsonPath('data.track_inventory', false);
+        $this->assertDatabaseHas('products', ['id' => $id, 'track_inventory' => false]);
     }
 
     public function test_new_variant_generates_sku_and_inherits_product_unit_and_channels(): void

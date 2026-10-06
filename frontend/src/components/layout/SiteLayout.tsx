@@ -47,7 +47,6 @@ import {
     PanelLeft,
     type LucideIcon,
 } from "lucide-react";
-import { ButtonLink } from "@/components/common/Button";
 import { Container } from "@/components/common/Container";
 import { useAuth } from "@/contexts/AuthContext";
 import { MobileServiceMenu, ServiceMegaMenu } from "@/components/services/ServiceNavigation";
@@ -70,7 +69,6 @@ const nav = [
     ["Ưu đãi", "/promotions"],
     ["Dịch vụ", "/services"],
     ["Bác sĩ", "/doctors"],
-    ["Kiến thức", "/blogs"],
 ] as const;
 
 function initials(name: string): string {
@@ -176,7 +174,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                         </span>
                     </Link>
                     <nav
-                        className="hidden items-center justify-center gap-3 xl:flex 2xl:gap-5"
+                        className="hidden items-center justify-center gap-4 lg:flex xl:gap-5"
                         aria-label="Điều hướng chính"
                     >
                         {nav.map(([name, to]) =>
@@ -238,7 +236,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                                     <span className="grid size-9 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                                         {initials(user.name)}
                                     </span>
-                                    <span className="grid gap-0.5 text-left xl:hidden">
+                                    <span className="grid gap-0.5 text-left lg:hidden xl:grid">
                                         <span className="max-w-36 truncate text-xs font-semibold lg:max-w-44">
                                             {user.name}
                                         </span>
@@ -258,37 +256,18 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                             ) : (
                                 <Link
                                     to="/login"
-                                    className={`focus-premium hidden text-sm font-medium md:block ${transparentHeader ? "text-white" : "text-primary"}`}
+                                    className={`focus-premium hidden min-h-10 shrink-0 items-center justify-center rounded-full border px-5 text-sm font-semibold transition-colors md:inline-flex ${transparentHeader ? "border-white/70 bg-white/10 text-white hover:bg-white/20" : "border-primary bg-primary text-primary-foreground hover:bg-navy-deep"}`}
                                 >
                                     Đăng nhập
                                 </Link>
                             ))}
                         {!isLoading && user && <NotificationBell inverted={transparentHeader} />}
-                        {!isLoading && user?.role !== "admin" && user?.role !== "doctor" && (
-                            <ButtonLink
-                                to="/my-orders"
-                                variant="outline"
-                                className={`hidden min-h-9 shrink-0 rounded-full px-2.5 text-xs xl:inline-flex 2xl:px-3 ${transparentHeader ? "border-white/60 text-white hover:bg-white/10" : ""}`}
-                            >
-                                <Package size={14} />
-                                <span>Tra cứu đơn</span>
-                            </ButtonLink>
-                        )}
-                        {!isLoading && user?.role !== "admin" && user?.role !== "doctor" && (
-                            <ButtonLink
-                                to="/products"
-                                className="hidden min-h-9 shrink-0 rounded-full px-5 text-xs uppercase tracking-[.08em] sm:inline-flex"
-                            >
-                                <ShoppingBag size={14} />
-                                Mua sản phẩm
-                            </ButtonLink>
-                        )}
                         <button
                             aria-label="Mở menu điều hướng"
                             aria-expanded={open}
                             aria-controls="mobile-navigation"
                             onClick={() => setOpen(true)}
-                            className={`focus-premium grid size-10 place-items-center rounded-full xl:hidden ${transparentHeader ? "text-white" : "text-primary"}`}
+                            className={`focus-premium grid size-10 place-items-center rounded-full lg:hidden ${transparentHeader ? "text-white" : "text-primary"}`}
                         >
                             <Menu />
                         </button>
@@ -297,7 +276,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
             </header>
             {open && (
                 <div
-                    className="fixed inset-0 z-[60] bg-navy-deep/45 xl:hidden"
+                    className="fixed inset-0 z-[60] bg-navy-deep/45 lg:hidden"
                     onClick={() => setOpen(false)}
                 >
                     <aside
@@ -349,16 +328,6 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                             >
                                 Về chúng tôi
                             </a>
-                            {!isLoading && (
-                                <Link
-                                    to="/my-orders"
-                                    onClick={() => setOpen(false)}
-                                    className="focus-premium flex items-center gap-2 border-b py-4 font-medium text-primary"
-                                >
-                                    <Package size={18} />
-                                    Tra cứu đơn
-                                </Link>
-                            )}
                             {canLookupAppointments && (
                                 <Link
                                     to="/appointment-lookup"
@@ -411,22 +380,12 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                                 <Link
                                     to="/login"
                                     onClick={() => setOpen(false)}
-                                    className="focus-premium border-b py-4 font-medium text-primary"
+                                    className="focus-premium mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-primary bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-navy-deep"
                                 >
                                     Đăng nhập
                                 </Link>
                             )}
                         </nav>
-                        {!isLoading && user?.role !== "admin" && user?.role !== "doctor" && (
-                            <Link
-                                to="/products"
-                                onClick={() => setOpen(false)}
-                                className="focus-premium inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-navy-deep bg-primary px-5 text-sm font-semibold uppercase text-primary-foreground transition-colors hover:bg-navy-deep"
-                            >
-                                <ShoppingBag size={16} />
-                                Mua sản phẩm
-                            </Link>
-                        )}
                     </aside>
                 </div>
             )}

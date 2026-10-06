@@ -45,6 +45,7 @@ class InventoryFoundationTest extends TestCase
     private function trackedVariant(?Unit $unit = null): ProductVariant
     {
         return ProductVariant::factory()->create([
+            'product_id' => Product::factory()->create(['track_inventory' => true])->id,
             'unit_id' => ($unit ?? Unit::factory()->create())->id,
             'track_inventory' => true,
         ]);
@@ -346,6 +347,54 @@ class InventoryFoundationTest extends TestCase
         $this->getJson("/api/admin/stock-movements?from={$today}&to={$today}&warehouse_id={$warehouse->id}")
             ->assertOk()->assertJsonPath('total', 1);
         $this->getJson('/api/admin/stock-movements?reference=COUNT-2026')->assertOk()->assertJsonPath('total', 1);
+    }
+
+    public function test_low_stock_flag_and_filter_use_tracked_available_stock_per_warehouse(): void
+    {
+        $this->admin();
+        $firstWarehouse = Warehouse::factory()->create();
+        $secondWarehouse = Warehouse::factory()->create();
+        $variant = $this->trackedVariant();
+        $variant->product->update(['default_low_stock_threshold' => '10']);
+        $this->postJson('/api/admin/inventory/receipts', $this->operation($firstWarehouse, $variant, '20'))->assertOk();
+        $this->postJson('/api/admin/inventory/receipts', $this->operation($secondWarehouse, $variant, '5'))->assertOk();
+
+        $this->getJson("/api/admin/inventory?warehouse_id={$firstWarehouse->id}")
+            ->assertOk()->assertJsonPath('data.0.available_quantity', '20.000')
+            ->assertJsonPath('data.0.low_stock', false);
+        $this->getJson("/api/admin/inventory?warehouse_id={$secondWarehouse->id}")
+            ->assertOk()->assertJsonPath('data.0.available_quantity', '5.000')
+            ->assertJsonPath('data.0.low_stock', true);
+        $this->getJson('/api/admin/inventory?low_stock=1')->assertOk()->assertJsonPath('total', 1);
+
+        $this->postJson('/api/admin/inventory/adjustments', [
+            ...$this->operation($firstWarehouse, $variant, '-10'), 'reason_code' => 'COUNT_CORRECTION',
+        ])->assertOk();
+        $this->getJson("/api/admin/inventory?warehouse_id={$firstWarehouse->id}")
+            ->assertOk()->assertJsonPath('data.0.available_quantity', '10.000')
+            ->assertJsonPath('data.0.low_stock', true);
+
+        $this->postJson('/api/admin/inventory/adjustments', [
+            ...$this->operation($firstWarehouse, $variant, '-5'), 'reason_code' => 'COUNT_CORRECTION',
+        ])->assertOk();
+        $this->getJson("/api/admin/inventory?warehouse_id={$firstWarehouse->id}")
+            ->assertOk()->assertJsonPath('data.0.available_quantity', '5.000')
+            ->assertJsonPath('data.0.low_stock', true);
+
+        $variant->product->update(['track_inventory' => false]);
+        $this->getJson('/api/admin/inventory')->assertOk()->assertJsonPath('data.0.low_stock', false)
+            ->assertJsonPath('data.1.low_stock', false);
+        $this->getJson('/api/admin/inventory?low_stock=1')->assertOk()->assertJsonPath('total', 0);
+
+        $variant->product->update(['track_inventory' => true]);
+        $variant->update(['track_inventory' => false]);
+        $this->getJson('/api/admin/inventory?low_stock=1')->assertOk()->assertJsonPath('total', 0);
+
+        $variant->update(['track_inventory' => true]);
+        $variant->product->update(['default_low_stock_threshold' => null]);
+        $this->getJson("/api/admin/inventory?warehouse_id={$firstWarehouse->id}")
+            ->assertOk()->assertJsonPath('data.0.low_stock', false);
+        $this->getJson('/api/admin/inventory?low_stock=1')->assertOk()->assertJsonPath('total', 0);
     }
 
     public function test_reconciliation_reports_missing_balance_without_recreating_it(): void

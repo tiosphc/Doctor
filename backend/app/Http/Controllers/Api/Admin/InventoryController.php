@@ -32,7 +32,7 @@ class InventoryController extends Controller
                 ->whereColumn('product_variant_id', 'inventory_balances.product_variant_id')
                 ->latest('occurred_at')->latest('id')->limit(1)])
             ->with(['warehouse:id,code,name,status', 'variant:id,product_id,unit_id,sku,variant_name,status,track_inventory',
-                'variant.product:id,product_code,name,status,default_low_stock_threshold', 'variant.unit:id,name,symbol,decimal_precision']);
+                'variant.product:id,product_code,name,status,track_inventory,default_low_stock_threshold', 'variant.unit:id,name,symbol,decimal_precision']);
         foreach (['warehouse_id', 'product_variant_id'] as $column) {
             if (isset($data[$column])) {
                 $query->where('inventory_balances.'.$column, $data[$column]);
@@ -51,9 +51,10 @@ class InventoryController extends Controller
                     ->orWhere('product_code', 'like', '%'.$data['search'].'%')));
         }
         if ($data['low_stock'] ?? false) {
-            $query->whereHas('variant.product', fn ($builder) => $builder
-                ->whereNotNull('default_low_stock_threshold')
-                ->whereRaw('(inventory_balances.on_hand_quantity - inventory_balances.reserved_quantity) <= products.default_low_stock_threshold'));
+            $query->whereHas('variant', fn ($builder) => $builder->where('track_inventory', true)
+                ->whereHas('product', fn ($product) => $product->where('track_inventory', true)
+                    ->whereNotNull('default_low_stock_threshold')
+                    ->whereRaw('(inventory_balances.on_hand_quantity - inventory_balances.reserved_quantity) <= products.default_low_stock_threshold')));
         }
 
         return response()->json($query->orderBy('inventory_balances.warehouse_id')
@@ -109,7 +110,8 @@ class InventoryController extends Controller
             'on_hand_quantity' => $balance->on_hand_quantity,
             'reserved_quantity' => $balance->reserved_quantity,
             'available_quantity' => $balance->available_quantity,
-            'low_stock' => $threshold !== null && bccomp($balance->available_quantity, $threshold, 3) <= 0,
+            'low_stock' => $variant->track_inventory && $variant->product->track_inventory
+                && $threshold !== null && bccomp($balance->available_quantity, $threshold, 3) <= 0,
             'last_movement_at' => $balance->last_movement_at,
         ];
     }

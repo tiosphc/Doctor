@@ -1058,31 +1058,6 @@ export function StockStep({ data, update, errors, warehouses }: StepProps) {
                     {data.has_variants && "Tồn kho ban đầu nhập theo từng biến thể ở bước này."}
                 </p>
             </section>
-            <section className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
-                <h2 className="admin-section-title text-primary sm:col-span-2">
-                    Đóng gói / vận chuyển
-                </h2>
-                {(
-                    [
-                        ["weight", "Trọng lượng (kg)"],
-                        ["length", "Chiều dài (cm)"],
-                        ["width", "Chiều rộng (cm)"],
-                        ["height", "Chiều cao (cm)"],
-                    ] as const
-                ).map(([key, label]) => (
-                    <Field key={key} name={key} label={label} error={errors[key]}>
-                        <input
-                            id={key}
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            className={`${input(errors[key])} max-w-40`}
-                            value={data[key]}
-                            onChange={(e) => update({ [key]: e.target.value })}
-                        />
-                    </Field>
-                ))}
-            </section>
         </div>
     );
 }

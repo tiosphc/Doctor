@@ -48,7 +48,7 @@ class SaveProductRequest extends FormRequest
             $product = $this->route('product');
             $giftOnly = $this->has('gift_only') ? $this->boolean('gift_only') : ($product?->gift_only ?? false);
             $canBeGift = $this->has('can_be_gift') ? $this->boolean('can_be_gift') : ($product?->can_be_gift ?? false);
-            $trackInventory = $this->has('track_inventory') ? $this->boolean('track_inventory') : ($product?->track_inventory ?? false);
+            $trackInventory = $this->has('track_inventory') ? $this->boolean('track_inventory') : ($product?->track_inventory ?? $this->isMethod('post'));
             if ($giftOnly && ! $canBeGift) {
                 $validator->errors()->add('can_be_gift', 'Gift-only Product must be enabled for gifts.');
             }

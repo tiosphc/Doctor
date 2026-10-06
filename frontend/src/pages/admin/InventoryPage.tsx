@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/common/AsyncState";
+import { Badge } from "@/components/common/Status";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -229,11 +230,6 @@ export function InventoryPage() {
                                                         <span className="block text-muted-foreground">
                                                             {row.product.name}
                                                         </span>
-                                                        {row.low_stock && (
-                                                            <span className="text-xs text-amber-700">
-                                                                Tồn thấp
-                                                            </span>
-                                                        )}
                                                     </td>
                                                     <td className="p-3">{row.warehouse.name}</td>
                                                     <td className="p-3">{row.unit.symbol}</td>
@@ -247,10 +243,19 @@ export function InventoryPage() {
                                                             row.reserved_quantity,
                                                         )}
                                                     </td>
-                                                    <td className="p-3 tabular-nums">
-                                                        {formatProductQuantity(
-                                                            row.available_quantity,
-                                                        )}
+                                                    <td className="p-3">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="tabular-nums">
+                                                                {formatProductQuantity(
+                                                                    row.available_quantity,
+                                                                )}
+                                                            </span>
+                                                            {row.low_stock && (
+                                                                <Badge tone="warning">
+                                                                    Tồn kho thấp
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="p-3">
                                                         {when(row.last_movement_at)}

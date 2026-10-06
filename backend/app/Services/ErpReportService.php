@@ -212,7 +212,7 @@ class ErpReportService
             ->selectRaw('COALESCE(SUM(b.on_hand_quantity), 0) as on_hand, COALESCE(SUM(b.reserved_quantity), 0) as reserved')
             ->selectRaw('COALESCE(SUM(b.on_hand_quantity - b.reserved_quantity), 0) as available')
             ->selectRaw('SUM(CASE WHEN b.on_hand_quantity - b.reserved_quantity <= 0 THEN 1 ELSE 0 END) as out_of_stock')
-            ->selectRaw('SUM(CASE WHEN p.default_low_stock_threshold IS NOT NULL AND b.on_hand_quantity - b.reserved_quantity > 0 AND b.on_hand_quantity - b.reserved_quantity <= p.default_low_stock_threshold THEN 1 ELSE 0 END) as low_stock')
+            ->selectRaw('SUM(CASE WHEN p.track_inventory = 1 AND v.track_inventory = 1 AND p.default_low_stock_threshold IS NOT NULL AND b.on_hand_quantity - b.reserved_quantity > 0 AND b.on_hand_quantity - b.reserved_quantity <= p.default_low_stock_threshold THEN 1 ELSE 0 END) as low_stock')
             ->first();
         $warehouses = (clone $balances)->select(['w.id', 'w.code', 'w.name'])
             ->selectRaw('SUM(b.on_hand_quantity) as on_hand, SUM(b.reserved_quantity) as reserved, SUM(b.on_hand_quantity - b.reserved_quantity) as available')
