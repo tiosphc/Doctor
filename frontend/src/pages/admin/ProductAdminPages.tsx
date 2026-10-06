@@ -44,6 +44,11 @@ import {
 const money = (value: string) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value));
 
+const temporarilyHiddenAdminProducts: Record<string, string> = {
+    PRD000017: "Cica Repair Cream",
+    PRD000019: "Sữa rửa mặt Ceramide dịu nhẹ",
+};
+
 function getRetailPriceSummary(product: Product): string | null {
     if (product.gift_only) {
         return null;
@@ -447,6 +452,10 @@ export function AdminProductsPage() {
         queryKey: productKeys.admin(filters),
         queryFn: () => productApi.adminProducts(filters),
     });
+    const visibleProducts =
+        query.data?.data.filter(
+            (product) => temporarilyHiddenAdminProducts[product.product_code] !== product.name,
+        ) ?? [];
 
     const hasActiveFilters = category || brand || giftFilter !== "all" || statusFilter;
 
@@ -567,18 +576,27 @@ export function AdminProductsPage() {
                     <SkeletonGrid />
                 ) : query.isError ? (
                     <ErrorState message={errorMessage(query.error)} retry={() => query.refetch()} />
-                ) : query.data.data.length === 0 ? (
-                    <EmptyState
-                        message={
-                            search || hasActiveFilters
-                                ? "Không tìm thấy sản phẩm phù hợp với bộ lọc."
-                                : "Chưa có sản phẩm nào."
-                        }
-                    />
+                ) : visibleProducts.length === 0 ? (
+                    <>
+                        <EmptyState
+                            message={
+                                search || hasActiveFilters
+                                    ? "Không tìm thấy sản phẩm phù hợp với bộ lọc."
+                                    : "Chưa có sản phẩm nào hiển thị trên trang này."
+                            }
+                        />
+                        {query.data.last_page > 1 && (
+                            <Pagination
+                                current={query.data.current_page}
+                                last={query.data.last_page}
+                                onPage={setPage}
+                            />
+                        )}
+                    </>
                 ) : (
                     <>
                         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {query.data.data.map((item) => (
+                            {visibleProducts.map((item) => (
                                 <AdminProductCard
                                     key={item.id}
                                     product={item}
