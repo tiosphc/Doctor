@@ -164,6 +164,42 @@ class ProductWizardTest extends TestCase
         $this->assertSame(0, DB::table('inventory_balances')->where('on_hand_quantity', '<', 0)->count());
     }
 
+    public function test_named_variants_use_product_unit_and_keep_prices_and_opening_stock(): void
+    {
+        $this->admin();
+        $data = $this->data();
+        $warehouse = Warehouse::factory()->create();
+        $data['sku'] = 'SERUM-LO';
+        $data['has_variants'] = true;
+        $data['variants'] = [
+            ['sku' => 'SERUM-LO-5ML', 'variant_name' => '5ml', 'specifications' => [], 'initial_stock' => '2'],
+            ['sku' => 'SERUM-LO-10ML', 'variant_name' => '10ml', 'specifications' => [], 'initial_stock' => '3', 'retail_price_override' => '150000'],
+        ];
+        $data['track_inventory'] = true;
+        $data['warehouse_id'] = $warehouse->id;
+        $id = $this->draft($data);
+        $this->image($id);
+
+        $duplicateName = $data;
+        $duplicateName['variants'][1]['variant_name'] = '5ML';
+        $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $duplicateName])
+            ->assertUnprocessable()->assertJsonValidationErrors('data.variants.1.variant_name');
+
+        $this->postJson("/api/admin/product-wizard/drafts/{$id}/complete", ['data' => $data])
+            ->assertOk()->assertJsonCount(2, 'data.variants');
+
+        $first = ProductVariant::where('sku', 'SERUM-LO-5ML')->firstOrFail();
+        $second = ProductVariant::where('sku', 'SERUM-LO-10ML')->firstOrFail();
+        $this->assertSame('5ml', $first->variant_name);
+        $this->assertSame('10ml', $second->variant_name);
+        $this->assertSame($data['unit_id'], $first->unit_id);
+        $this->assertSame($data['unit_id'], $second->unit_id);
+        $this->assertSame('120000.00', app(RetailPricingService::class)->resolve($first)['unit_price']);
+        $this->assertSame('150000.00', app(RetailPricingService::class)->resolve($second)['unit_price']);
+        $this->assertDatabaseHas('inventory_balances', ['warehouse_id' => $warehouse->id, 'product_variant_id' => $first->id, 'on_hand_quantity' => '2.000']);
+        $this->assertDatabaseHas('inventory_balances', ['warehouse_id' => $warehouse->id, 'product_variant_id' => $second->id, 'on_hand_quantity' => '3.000']);
+    }
+
     public function test_duplicate_sku_and_duplicate_variant_value_are_rejected(): void
     {
         $this->admin();

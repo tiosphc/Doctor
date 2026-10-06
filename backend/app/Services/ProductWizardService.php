@@ -79,7 +79,7 @@ class ProductWizardService
             $specifications = $row['specifications'] ?? [];
             $variant = $product->variants()->create([
                 'sku' => $row['sku'],
-                'variant_name' => $specifications === [] ? 'Default' : implode(' / ', array_values($specifications)),
+                'variant_name' => $row['variant_name'] ?? ($specifications === [] ? 'Default' : implode(' / ', array_values($specifications))),
                 'unit_id' => $data['unit_id'],
                 'specifications' => $specifications === [] ? null : $specifications,
                 'sellable_retail' => $data['sellable_retail'] && ! ($data['gift_only'] ?? false),

@@ -1,6 +1,7 @@
 export type Attribute = { name: string; values: string[] };
 export type WizardVariant = {
     sku: string;
+    variant_name?: string;
     specifications: Record<string, string>;
     image_id: number | null;
     retail_price_override: string;
@@ -86,6 +87,16 @@ const quantityPattern = /^(?:0|[1-9]\d*)$/;
 const measurementPattern = /^(?:0|[1-9]\d*)(?:\.\d{1,3})?$/;
 const pricePattern = /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
 export const normalizeSku = (value: string) => value.trim().toUpperCase();
+export const generateVariantSku = (productSku: string, variantName: string) => {
+    const suffix = variantName
+        .replace(/[đĐ]/g, "d")
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Za-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toUpperCase();
+    return suffix ? `${normalizeSku(productSku).slice(0, 60)}-${suffix.slice(0, 39)}` : "";
+};
 export const validMoney = (value: string) => pricePattern.test(value);
 export const validPositiveMoney = (value: string) => validMoney(value) && Number(value) > 0;
 const validQuantity = (value: string) => quantityPattern.test(value);
@@ -156,44 +167,6 @@ export function validYouTube(value: string): boolean {
     }
 }
 
-export function combinations(attributes: Attribute[]): Record<string, string>[] {
-    return attributes.reduce<Record<string, string>[]>(
-        (rows, attribute) =>
-            rows.flatMap((row) =>
-                attribute.values.map((value) => ({
-                    ...row,
-                    [attribute.name.trim()]: value.trim(),
-                })),
-            ),
-        [{}],
-    );
-}
-
-export function generateVariants(data: WizardData): WizardVariant[] {
-    const existing = new Map(
-        data.variants.map((variant) => [JSON.stringify(variant.specifications), variant]),
-    );
-    return combinations(data.attributes).map((specifications) => {
-        const key = JSON.stringify(specifications);
-        const suffix = Object.values(specifications)
-            .join("-")
-            .normalize("NFKD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^A-Za-z0-9]+/g, "-")
-            .replace(/^-|-$/g, "")
-            .toUpperCase();
-        return (
-            existing.get(key) ?? {
-                sku: `${normalizeSku(data.sku)}-${suffix}`.slice(0, 100),
-                specifications,
-                image_id: null,
-                retail_price_override: "",
-                initial_stock: "",
-            }
-        );
-    });
-}
-
 export function validateStep(
     step: number,
     data: WizardData,
@@ -220,43 +193,19 @@ export function validateStep(
         });
     }
     if (step === 2 && data.has_variants) {
-        if (!data.attributes.length) errors["attributes"] = "Thêm ít nhất một thuộc tính biến thể.";
+        if (!data.variants.length) errors["variants"] = "Thêm ít nhất một biến thể.";
+        if (data.variants.length > 100) errors["variants"] = "Tối đa 100 biến thể.";
         const names = new Set<string>();
-        data.attributes.forEach((attribute, index) => {
-            const name = attribute.name.trim().toLocaleLowerCase();
-            if (!name) errors[`attributes.${index}.name`] = "Tên thuộc tính là bắt buộc.";
-            else if (names.has(name))
-                errors[`attributes.${index}.name`] = "Tên thuộc tính biến thể bị trùng.";
-            names.add(name);
-            if (!attribute.values.length)
-                errors[`attributes.${index}.values`] = "Thêm ít nhất một giá trị.";
-            const values = new Set<string>();
-            attribute.values.forEach((value, valueIndex) => {
-                const key = value.trim().toLocaleLowerCase();
-                if (!key)
-                    errors[`attributes.${index}.values.${valueIndex}`] = "Giá trị là bắt buộc.";
-                else if (values.has(key))
-                    errors[`attributes.${index}.values.${valueIndex}`] =
-                        "Giá trị biến thể bị trùng.";
-                values.add(key);
-            });
-        });
-        const expected = combinations(data.attributes);
-        if (expected.length > 100) errors["variants"] = "Tối đa 100 biến thể.";
-        else if (
-            data.variants.length !== expected.length ||
-            !expected.every((row) =>
-                data.variants.some(
-                    (variant) => JSON.stringify(variant.specifications) === JSON.stringify(row),
-                ),
-            )
-        )
-            errors["variants"] = "Hãy tạo đầy đủ các tổ hợp biến thể.";
         const skus = new Set([normalizeSku(data.sku)]);
         data.variants.forEach((variant, index) => {
+            const name = variant.variant_name?.trim() ?? "";
+            if (!name) errors[`variants.${index}.variant_name`] = "Tên biến thể là bắt buộc.";
+            else if (names.has(name.toLocaleLowerCase()))
+                errors[`variants.${index}.variant_name`] = "Tên biến thể bị trùng.";
+            names.add(name.toLocaleLowerCase());
             const sku = normalizeSku(variant.sku);
-            if (!skuPattern.test(sku) || variant.sku.length > 100)
-                errors[`variants.${index}.sku`] = "SKU biến thể không hợp lệ.";
+            if (!sku || !skuPattern.test(sku) || variant.sku.length > 100)
+                errors[`variants.${index}.sku`] = "Không thể tạo SKU từ tên biến thể.";
             else if (skus.has(sku)) errors[`variants.${index}.sku`] = "SKU này đã tồn tại.";
             skus.add(sku);
         });
@@ -333,6 +282,7 @@ export function validateStep(
 export function payload(data: WizardData): Record<string, unknown> {
     return {
         ...data,
+        attributes: [],
         retail_breaks: [],
         name: data.name.trim(),
         sku: normalizeSku(data.sku),
@@ -345,9 +295,11 @@ export function payload(data: WizardData): Record<string, unknown> {
         length: data.length || null,
         width: data.width || null,
         height: data.height || null,
-        variants: data.variants.map((variant) => ({
+        variants: (data.has_variants ? data.variants : []).map((variant) => ({
             ...variant,
             sku: normalizeSku(variant.sku),
+            variant_name:
+                variant.variant_name?.trim() || Object.values(variant.specifications).join(" / "),
             image_id: variant.image_id || null,
             retail_price_override: variant.retail_price_override || null,
             initial_stock: variant.initial_stock || null,
@@ -358,7 +310,8 @@ export function payload(data: WizardData): Record<string, unknown> {
 export function stepForField(field: string): number {
     if (/^(name|sku|product_category_id|brand_id|unit_id|channels)/.test(field)) return 0;
     if (/^(images|youtube_videos)/.test(field)) return 1;
-    if (/^attributes|^variants\.\d+\.(sku|specifications)/.test(field)) return 2;
+    if (/^attributes|^variants\.\d+\.(sku|variant_name|specifications|image_id)/.test(field))
+        return 2;
     if (
         /^(retail_price|retail_breaks|dealer_rules)|^variants\.\d+\.retail_price_override/.test(
             field,

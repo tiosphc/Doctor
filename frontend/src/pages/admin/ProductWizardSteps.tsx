@@ -6,8 +6,7 @@ import type { Warehouse } from "@/types/inventory";
 import { buttonClass, fieldClass, secondaryButtonClass } from "./ProductAdminShared";
 import { DealerPriceImportDialog } from "./DealerPriceImportDialog";
 import {
-    combinations,
-    generateVariants,
+    generateVariantSku,
     normalizeSku,
     validPositiveMoney,
     type WizardData,
@@ -66,6 +65,25 @@ const input = (error?: string) =>
     `${fieldClass} ${error ? "border-red-600 focus-visible:outline-red-600" : ""}`;
 
 export function BasicStep({ data, update, errors, categories, brands, units }: StepProps) {
+    const changeProductSku = (sku: string) => {
+        const skuChanges = new Map(
+            data.variants.map((variant) => [
+                variant.sku,
+                generateVariantSku(sku, variant.variant_name ?? ""),
+            ]),
+        );
+        update({
+            sku,
+            variants: data.variants.map((variant) => ({
+                ...variant,
+                sku: skuChanges.get(variant.sku) ?? variant.sku,
+            })),
+            dealer_rules: data.dealer_rules.map((rule) => ({
+                ...rule,
+                sku: skuChanges.get(rule.sku) ?? rule.sku,
+            })),
+        });
+    };
     const selectedCategory = categories.find(
         (category) => category.id === data.product_category_id,
     );
@@ -90,21 +108,21 @@ export function BasicStep({ data, update, errors, categories, brands, units }: S
                             value={data.sku}
                             maxLength={100}
                             className={`${input(errors["sku"])} h-10 min-w-0`}
-                            onChange={(e) => update({ sku: e.target.value })}
+                            onChange={(e) => changeProductSku(e.target.value)}
                         />
                         <button
                             type="button"
                             className={`${secondaryButtonClass} h-10 shrink-0 whitespace-nowrap`}
                             onClick={() =>
-                                update({
-                                    sku: normalizeSku(
+                                changeProductSku(
+                                    normalizeSku(
                                         data.name
                                             .normalize("NFKD")
                                             .replace(/[\u0300-\u036f]/g, "")
                                             .replace(/[^A-Za-z0-9]+/g, "-")
                                             .replace(/^-|-$/g, ""),
                                     ),
-                                })
+                                )
                             }
                         >
                             Tự tạo
@@ -455,259 +473,167 @@ export function ImagesStep({
     );
 }
 
-export function VariantsStep({ data, update, errors, images }: StepProps) {
-    const changeAttribute = (index: number, patch: Partial<WizardData["attributes"][number]>) =>
-        update({
-            attributes: data.attributes.map((attribute, position) =>
-                position === index ? { ...attribute, ...patch } : attribute,
-            ),
-            variants: [],
-        });
+export function VariantsStep({ data, update, errors, images, units }: StepProps) {
+    const unit = units.find((item) => item.id === data.unit_id);
     const changeVariant = (index: number, patch: Partial<WizardData["variants"][number]>) =>
         update({
             variants: data.variants.map((variant, position) =>
                 position === index ? { ...variant, ...patch } : variant,
             ),
         });
+    const renameVariant = (index: number, name: string) => {
+        const previousSku = data.variants[index]?.sku;
+        const sku = generateVariantSku(data.sku, name);
+        update({
+            variants: data.variants.map((variant, position) =>
+                position === index
+                    ? { ...variant, variant_name: name, sku, specifications: {} }
+                    : variant,
+            ),
+            dealer_rules: data.dealer_rules.map((rule) =>
+                rule.sku === previousSku ? { ...rule, sku } : rule,
+            ),
+        });
+    };
     return (
         <section className="space-y-5 rounded-xl border bg-card p-5">
             <div>
                 <h2 className="admin-section-title text-primary">Biến thể sản phẩm</h2>
                 <p className="text-sm text-muted-foreground">
-                    Sản phẩm không có biến thể sẽ dùng SKU chính.
+                    Nếu sản phẩm chỉ có một quy cách, SKU chính sẽ được dùng để bán. Khi có nhiều
+                    quy cách, nhập từng tên như 5ml, 10ml; SKU sẽ tự tạo và tất cả dùng đơn vị{" "}
+                    {unit?.name || "của sản phẩm"}.
                 </p>
             </div>
             <label className="flex items-center gap-2 text-sm">
                 <input
                     type="checkbox"
                     checked={data.has_variants}
-                    onChange={(e) => update({ has_variants: e.target.checked })}
+                    onChange={(event) =>
+                        update({
+                            has_variants: event.target.checked,
+                            variants:
+                                event.target.checked && !data.variants.length
+                                    ? [
+                                          {
+                                              variant_name: "",
+                                              sku: "",
+                                              specifications: {},
+                                              image_id: null,
+                                              retail_price_override: "",
+                                              initial_stock: "",
+                                          },
+                                      ]
+                                    : data.variants,
+                        })
+                    }
                 />
-                Sản phẩm có biến thể
+                Sản phẩm có nhiều quy cách
             </label>
             {data.has_variants && (
-                <>
-                    <div className="space-y-4">
-                        {data.attributes.map((attribute, index) => (
-                            <div key={index} className="rounded-lg border p-4">
-                                <div className="flex items-end gap-3">
-                                    <div className="flex-1">
-                                        <Field
-                                            name={`attributes.${index}.name`}
-                                            label={`Tên thuộc tính ${index + 1} *`}
-                                            error={errors[`attributes.${index}.name`]}
-                                        >
-                                            <input
-                                                id={`attributes.${index}.name`}
-                                                className={input(
-                                                    errors[`attributes.${index}.name`],
-                                                )}
-                                                placeholder="Size, Màu..."
-                                                value={attribute.name}
-                                                onChange={(e) =>
-                                                    changeAttribute(index, { name: e.target.value })
-                                                }
-                                            />
-                                        </Field>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className={`${secondaryButtonClass} mb-6`}
-                                        onClick={() =>
-                                            update({
-                                                attributes: data.attributes.filter(
-                                                    (_, position) => position !== index,
-                                                ),
-                                                variants: [],
-                                            })
+                <div className="grid gap-4">
+                    {data.variants.map((variant, index) => (
+                        <div key={index} className="rounded-lg border p-4">
+                            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start">
+                                <Field
+                                    name={`variants.${index}.variant_name`}
+                                    label={`Tên biến thể ${index + 1} *`}
+                                    error={errors[`variants.${index}.variant_name`]}
+                                >
+                                    <input
+                                        id={`variants.${index}.variant_name`}
+                                        className={input(errors[`variants.${index}.variant_name`])}
+                                        placeholder="Ví dụ: 5ml"
+                                        value={variant.variant_name ?? ""}
+                                        onChange={(event) =>
+                                            renameVariant(index, event.target.value)
                                         }
-                                    >
-                                        Xóa
-                                    </button>
-                                </div>
-                                <div className="grid gap-2 sm:grid-cols-3">
-                                    {attribute.values.map((value, valueIndex) => (
-                                        <Field
-                                            key={valueIndex}
-                                            name={`attributes.${index}.values.${valueIndex}`}
-                                            label={`Giá trị ${valueIndex + 1} *`}
-                                            error={
-                                                errors[`attributes.${index}.values.${valueIndex}`]
-                                            }
-                                        >
-                                            <div className="flex gap-1">
-                                                <input
-                                                    id={`attributes.${index}.values.${valueIndex}`}
-                                                    className={input(
-                                                        errors[
-                                                            `attributes.${index}.values.${valueIndex}`
-                                                        ],
-                                                    )}
-                                                    value={value}
-                                                    onChange={(e) =>
-                                                        changeAttribute(index, {
-                                                            values: attribute.values.map(
-                                                                (item, position) =>
-                                                                    position === valueIndex
-                                                                        ? e.target.value
-                                                                        : item,
-                                                            ),
-                                                        })
-                                                    }
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className="text-red-700"
-                                                    aria-label="Xóa giá trị"
-                                                    onClick={() =>
-                                                        changeAttribute(index, {
-                                                            values: attribute.values.filter(
-                                                                (_, position) =>
-                                                                    position !== valueIndex,
-                                                            ),
-                                                        })
-                                                    }
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        </Field>
-                                    ))}
+                                    />
+                                </Field>
+                                <div
+                                    data-field={`variants.${index}.sku`}
+                                    className="grid min-w-0 gap-1.5"
+                                >
+                                    <span className="admin-form-label">SKU tự tạo</span>
+                                    <span className="flex min-h-10 items-center break-all rounded-md border bg-muted px-3 text-sm font-mono text-primary">
+                                        {variant.sku || "Nhập tên biến thể"}
+                                    </span>
+                                    {errors[`variants.${index}.sku`] && (
+                                        <p className="text-xs text-red-700">
+                                            {errors[`variants.${index}.sku`]}
+                                        </p>
+                                    )}
                                 </div>
                                 <button
                                     type="button"
-                                    className={secondaryButtonClass}
+                                    className={`${secondaryButtonClass} sm:mt-6`}
                                     onClick={() =>
-                                        changeAttribute(index, {
-                                            values: [...attribute.values, ""],
+                                        update({
+                                            variants: data.variants.filter(
+                                                (_, position) => position !== index,
+                                            ),
                                         })
                                     }
                                 >
-                                    + Thêm giá trị
+                                    Xóa
                                 </button>
-                                <p className="text-xs text-red-700">
-                                    {errors[`attributes.${index}.values`]}
-                                </p>
                             </div>
-                        ))}
-                    </div>
+                            <details className="mt-2 text-sm">
+                                <summary className="cursor-pointer text-muted-foreground">
+                                    Ảnh riêng (tùy chọn)
+                                </summary>
+                                <div className="mt-3">
+                                    <label className="admin-form-field admin-form-label">
+                                        Ảnh riêng
+                                        <select
+                                            className={fieldClass}
+                                            value={variant.image_id ?? ""}
+                                            onChange={(event) =>
+                                                changeVariant(index, {
+                                                    image_id: Number(event.target.value) || null,
+                                                })
+                                            }
+                                        >
+                                            <option value="">Ảnh sản phẩm chung</option>
+                                            {images.map((image, position) => (
+                                                <option key={image.id} value={image.id}>
+                                                    Ảnh #{position + 1}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                </div>
+                            </details>
+                        </div>
+                    ))}
                     <button
                         type="button"
-                        className={secondaryButtonClass}
+                        className={`${secondaryButtonClass} justify-self-start`}
+                        disabled={data.variants.length >= 100}
                         onClick={() =>
                             update({
-                                attributes: [...data.attributes, { name: "", values: [""] }],
-                                variants: [],
+                                variants: [
+                                    ...data.variants,
+                                    {
+                                        variant_name: "",
+                                        sku: "",
+                                        specifications: {},
+                                        image_id: null,
+                                        retail_price_override: "",
+                                        initial_stock: "",
+                                    },
+                                ],
                             })
                         }
                     >
-                        + Thêm thuộc tính
+                        + Thêm biến thể
                     </button>
-                    <p data-field="attributes" className="text-sm text-red-700">
-                        {errors["attributes"]}
-                    </p>
-                    <div>
-                        <button
-                            type="button"
-                            className={buttonClass}
-                            onClick={() => update({ variants: generateVariants(data) })}
-                            disabled={
-                                !data.attributes.length ||
-                                combinations(data.attributes).length > 100
-                            }
-                        >
-                            Tạo biến thể (
-                            {data.attributes.length ? combinations(data.attributes).length : 0})
-                        </button>
-                        <p data-field="variants" className="mt-1 text-sm text-red-700">
+                    {errors["variants"] && (
+                        <p data-field="variants" className="text-sm text-red-700">
                             {errors["variants"]}
                         </p>
-                    </div>
-                    {!!data.variants.length && (
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[720px] text-left text-sm">
-                                <thead>
-                                    <tr className="border-b">
-                                        <th className="p-2">Biến thể</th>
-                                        <th className="p-2">SKU *</th>
-                                        <th className="p-2">Tồn đầu kỳ</th>
-                                        <th className="p-2">Ảnh</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data.variants.map((variant, index) => (
-                                        <tr
-                                            key={JSON.stringify(variant.specifications)}
-                                            className="border-b align-top"
-                                        >
-                                            <td className="p-2">
-                                                {Object.values(variant.specifications).join(" / ")}
-                                            </td>
-                                            <td className="p-2">
-                                                <Field
-                                                    name={`variants.${index}.sku`}
-                                                    label=""
-                                                    error={errors[`variants.${index}.sku`]}
-                                                >
-                                                    <input
-                                                        id={`variants.${index}.sku`}
-                                                        value={variant.sku}
-                                                        className={input(
-                                                            errors[`variants.${index}.sku`],
-                                                        )}
-                                                        onChange={(e) =>
-                                                            changeVariant(index, {
-                                                                sku: e.target.value,
-                                                            })
-                                                        }
-                                                    />
-                                                </Field>
-                                            </td>
-                                            <td className="p-2">
-                                                <input
-                                                    aria-label={`Tồn đầu kỳ ${index + 1}`}
-                                                    type="number"
-                                                    min="0"
-                                                    step="1"
-                                                    value={variant.initial_stock}
-                                                    className={`${fieldClass} max-w-32`}
-                                                    onChange={(e) =>
-                                                        changeVariant(index, {
-                                                            initial_stock: e.target.value,
-                                                        })
-                                                    }
-                                                />
-                                                <p className="text-xs text-red-700">
-                                                    {errors[`variants.${index}.initial_stock`]}
-                                                </p>
-                                            </td>
-                                            <td className="p-2">
-                                                <select
-                                                    aria-label={`Ảnh biến thể ${index + 1}`}
-                                                    className={fieldClass}
-                                                    value={variant.image_id ?? ""}
-                                                    onChange={(e) =>
-                                                        changeVariant(index, {
-                                                            image_id:
-                                                                Number(e.target.value) || null,
-                                                        })
-                                                    }
-                                                >
-                                                    <option value="">Ảnh sản phẩm chung</option>
-                                                    {images.map((image, position) => (
-                                                        <option key={image.id} value={image.id}>
-                                                            Ảnh #{position + 1}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
                     )}
-                </>
+                </div>
             )}
         </section>
     );
@@ -723,7 +649,10 @@ export function PricesStep({
     const skuOptions = data.has_variants
         ? data.variants.map((variant) => ({
               sku: normalizeSku(variant.sku),
-              name: Object.values(variant.specifications).join(" / ") || variant.sku,
+              name:
+                  variant.variant_name ||
+                  Object.values(variant.specifications).join(" / ") ||
+                  variant.sku,
           }))
         : [{ sku: normalizeSku(data.sku), name: "Sản phẩm chính" }];
     const formatPrice = (value: string) =>
@@ -1079,6 +1008,36 @@ export function StockStep({ data, update, errors, warehouses }: StepProps) {
                         />
                     </Field>
                 )}
+                {data.has_variants && (
+                    <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+                        {data.variants.map((variant, index) => (
+                            <Field
+                                key={index}
+                                name={`variants.${index}.initial_stock`}
+                                label={`Tồn đầu kỳ: ${variant.variant_name || `Biến thể ${index + 1}`}`}
+                                error={errors[`variants.${index}.initial_stock`]}
+                            >
+                                <input
+                                    id={`variants.${index}.initial_stock`}
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    className={`${input(errors[`variants.${index}.initial_stock`])} max-w-40`}
+                                    value={variant.initial_stock}
+                                    onChange={(event) =>
+                                        update({
+                                            variants: data.variants.map((item, position) =>
+                                                position === index
+                                                    ? { ...item, initial_stock: event.target.value }
+                                                    : item,
+                                            ),
+                                        })
+                                    }
+                                />
+                            </Field>
+                        ))}
+                    </div>
+                )}
                 <Field
                     name="low_stock_threshold"
                     label="Ngưỡng cảnh báo tồn"
@@ -1096,7 +1055,7 @@ export function StockStep({ data, update, errors, warehouses }: StepProps) {
                 </Field>
                 <p className="sm:col-span-2 text-xs text-muted-foreground">
                     Số lượng tồn kho sử dụng số nguyên.{" "}
-                    {data.has_variants && "Tồn kho ban đầu nhập theo từng biến thể ở bước trước."}
+                    {data.has_variants && "Tồn kho ban đầu nhập theo từng biến thể ở bước này."}
                 </p>
             </section>
             <section className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">

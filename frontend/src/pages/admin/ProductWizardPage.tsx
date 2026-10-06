@@ -20,6 +20,7 @@ import {
 } from "./ProductWizardSteps";
 import {
     emptyWizard,
+    generateVariantSku,
     normalizeSku,
     payload,
     stepForField,
@@ -73,7 +74,24 @@ export function ProductWizardPage({ draft }: { draft?: number }) {
     useEffect(() => {
         if (!draft || !draftQuery.data || hydrated.current === draft) return;
         const product = draftQuery.data.data;
-        const restored = { ...emptyWizard, ...(product.wizard_data || {}) } as WizardData;
+        const saved = { ...emptyWizard, ...(product.wizard_data || {}) } as WizardData;
+        const skuChanges = new Map<string, string>();
+        const variants = saved.variants.map((variant) => {
+            const variant_name =
+                variant.variant_name || Object.values(variant.specifications ?? {}).join(" / ");
+            const sku = generateVariantSku(saved.sku, variant_name);
+            skuChanges.set(variant.sku, sku);
+            return { ...variant, variant_name, sku, specifications: {} };
+        });
+        const restored: WizardData = {
+            ...saved,
+            attributes: [],
+            variants,
+            dealer_rules: saved.dealer_rules.map((rule) => ({
+                ...rule,
+                sku: skuChanges.get(rule.sku) ?? rule.sku,
+            })),
+        };
         dataRef.current = restored;
         setData(restored);
         setImages(product.images || []);

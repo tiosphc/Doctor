@@ -8,7 +8,7 @@ import { EmptyState, ErrorState, LoadingState, Pagination } from "@/components/c
 import { errorMessage, firstFieldErrors } from "@/services/api";
 import { formatProductQuantity, isNonNegativeProductQuantity } from "@/lib/productQuantity";
 import { productApi, productKeys, type ProductPricingData } from "@/services/productApi";
-import type { Master, Product, ProductVariant } from "@/types/product";
+import type { Product, ProductVariant } from "@/types/product";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -27,7 +27,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { PricesStep } from "./ProductWizardSteps";
-import { emptyWizard, validateStep, type WizardData, type WizardErrors } from "./productWizard";
+import {
+    emptyWizard,
+    generateVariantSku,
+    validateStep,
+    type WizardData,
+    type WizardErrors,
+} from "./productWizard";
 import {
     ProductAdminGuard,
     buttonClass,
@@ -570,6 +576,8 @@ export function AdminProductDetailPage({ id }: { id: number }) {
 
 function ProductEditor({ product }: { product: Product }) {
     const client = useQueryClient();
+    const productUnit = [...product.variants].sort((first, second) => first.id - second.id)[0]?.unit
+        ?.name;
     const [tab, setTab] = useState<"general" | "variants" | "images" | "pricing">("general");
     const [form, setForm] = useState({
         name: product.name,
@@ -587,14 +595,7 @@ function ProductEditor({ product }: { product: Product }) {
             ? formatProductQuantity(product.default_low_stock_threshold)
             : "",
     });
-    const [variant, setVariant] = useState({
-        sku: "",
-        variant_name: "",
-        unit_id: "",
-        sellable_retail: false,
-        sellable_dealer: false,
-        clinic_material: false,
-    });
+    const [variantName, setVariantName] = useState("");
     const [file, setFile] = useState<File | null>(null);
     const [primary, setPrimary] = useState(false);
     const [imageVariantId, setImageVariantId] = useState("");
@@ -611,10 +612,6 @@ function ProductEditor({ product }: { product: Product }) {
     const brands = useQuery({
         queryKey: productKeys.masters("brands"),
         queryFn: () => productApi.masters("brands"),
-    });
-    const units = useQuery({
-        queryKey: productKeys.masters("units"),
-        queryFn: () => productApi.masters("units"),
     });
     const refresh = async () => {
         await client.invalidateQueries({ queryKey: ["admin-product", product.id] });
@@ -635,7 +632,7 @@ function ProductEditor({ product }: { product: Product }) {
     });
     const addVariant = useMutation({
         mutationFn: () =>
-            productApi.createVariant(product.id, { ...variant, unit_id: Number(variant.unit_id) }),
+            productApi.createVariant(product.id, { variant_name: variantName.trim() }),
         onSuccess: refresh,
     });
     const upload = useMutation({
@@ -902,13 +899,17 @@ function ProductEditor({ product }: { product: Product }) {
             )}
             {tab === "variants" && (
                 <div className="space-y-5">
+                    <p className="text-sm text-muted-foreground">
+                        Đơn vị của sản phẩm: {productUnit || "Chưa có đơn vị"}. Biến thể mới sẽ dùng
+                        cùng đơn vị này. Sau khi thêm, thiết lập giá ở tab Giá và nhập tồn kho nếu
+                        cần.
+                    </p>
                     <div className="grid gap-3">
                         {product.variants.map((item) => (
                             <VariantRow
                                 key={item.id}
                                 item={item}
                                 productId={product.id}
-                                units={units.data?.data || []}
                                 onSaved={refresh}
                             />
                         ))}
@@ -919,87 +920,44 @@ function ProductEditor({ product }: { product: Product }) {
                             event.preventDefault();
                             void run(async () => {
                                 await addVariant.mutateAsync();
-                                setVariant({
-                                    sku: "",
-                                    variant_name: "",
-                                    unit_id: "",
-                                    sellable_retail: false,
-                                    sellable_dealer: false,
-                                    clinic_material: false,
-                                });
-                            }, "Thêm SKU thành công.");
+                                setVariantName("");
+                            }, "Thêm biến thể thành công.");
                         }}
                     >
-                        <h2 className="sm:col-span-2 text-xl text-primary">Thêm SKU</h2>
-                        <label className="admin-form-field admin-form-label">
-                            SKU
-                            <input
-                                required
-                                className={fieldClass}
-                                value={variant.sku}
-                                onChange={(event) =>
-                                    setVariant({ ...variant, sku: event.target.value })
-                                }
-                            />
-                            {errors["sku"] && <span className="text-red-700">{errors["sku"]}</span>}
-                        </label>
+                        <h2 className="admin-section-title text-primary sm:col-span-2">
+                            Thêm biến thể
+                        </h2>
                         <label className="admin-form-field admin-form-label">
                             Tên biến thể
                             <input
                                 required
                                 className={fieldClass}
-                                value={variant.variant_name}
-                                onChange={(event) =>
-                                    setVariant({ ...variant, variant_name: event.target.value })
-                                }
+                                placeholder="Ví dụ: 5ml"
+                                value={variantName}
+                                onChange={(event) => setVariantName(event.target.value)}
                             />
+                            {errors["variant_name"] && (
+                                <span className="text-red-700">{errors["variant_name"]}</span>
+                            )}
                         </label>
-                        <label className="admin-form-field admin-form-label">
-                            Đơn vị
-                            <select
-                                required
-                                className={`${fieldClass} admin-field-medium`}
-                                value={variant.unit_id}
-                                onChange={(event) =>
-                                    setVariant({ ...variant, unit_id: event.target.value })
-                                }
-                            >
-                                <option value="">Chọn đơn vị</option>
-                                {units.data?.data.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <div className="sm:col-span-2 flex flex-wrap gap-4 text-sm">
-                            {(
-                                ["sellable_retail", "sellable_dealer", "clinic_material"] as const
-                            ).map((key) => (
-                                <label key={key} className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={variant[key]}
-                                        onChange={(event) =>
-                                            setVariant({ ...variant, [key]: event.target.checked })
-                                        }
-                                    />
-                                    {
-                                        {
-                                            sellable_retail: "Bán Retail",
-                                            sellable_dealer: "Sẵn sàng Dealer",
-                                            clinic_material: "Vật tư phòng khám",
-                                        }[key]
-                                    }
-                                </label>
-                            ))}
+                        <div className="grid content-start gap-1.5">
+                            <span className="admin-form-label">SKU tự tạo</span>
+                            <span className="flex min-h-10 items-center break-all rounded-md border bg-muted px-3 font-mono text-sm text-primary">
+                                {generateVariantSku(
+                                    product.base_sku || product.product_code,
+                                    variantName,
+                                ) || "Nhập tên biến thể"}
+                            </span>
+                            {errors["sku"] && (
+                                <span className="text-xs text-red-700">{errors["sku"]}</span>
+                            )}
                         </div>
                         <div className="flex justify-end sm:col-span-2">
                             <button
                                 disabled={addVariant.isPending || running}
                                 className={buttonClass}
                             >
-                                {addVariant.isPending || running ? "Đang thêm..." : "Thêm SKU"}
+                                {addVariant.isPending || running ? "Đang thêm..." : "Thêm biến thể"}
                             </button>
                         </div>
                     </form>
@@ -1291,20 +1249,16 @@ function ProductPricingForm({
 function VariantRow({
     item,
     productId,
-    units,
     onSaved,
 }: {
     item: ProductVariant;
     productId: number;
-    units: Master[];
     onSaved: () => Promise<void>;
 }) {
     const [error, setError] = useState("");
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState({
-        sku: item.sku,
         variant_name: item.variant_name,
-        unit_id: String(item.unit_id),
         track_inventory: item.track_inventory || false,
         track_batch: item.track_batch || false,
         track_expiry: item.track_expiry || false,
@@ -1338,16 +1292,14 @@ function VariantRow({
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <p className="font-mono text-sm font-semibold">{item.sku}</p>
-                    <p className="text-sm text-muted-foreground">
-                        {item.variant_name} · {item.unit?.name}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{item.variant_name}</p>
                 </div>
                 <button
                     type="button"
                     className={secondaryButtonClass}
                     onClick={() => setEditing(!editing)}
                 >
-                    {editing ? "Đóng" : "Sửa SKU"}
+                    {editing ? "Đóng" : "Sửa biến thể"}
                 </button>
                 <label className="admin-form-field admin-form-label w-full sm:w-40">
                     Trạng thái
@@ -1376,16 +1328,12 @@ function VariantRow({
                     className="mt-4 grid gap-3 sm:grid-cols-3"
                     onSubmit={async (event) => {
                         event.preventDefault();
-                        if (await change({ ...form, unit_id: Number(form.unit_id) })) {
+                        if (await change(form)) {
                             setEditing(false);
                         }
                     }}
                 >
-                    <label className="admin-form-field admin-form-label">
-                        SKU
-                        <input className={fieldClass} value={form.sku} disabled />
-                    </label>
-                    <label className="admin-form-field admin-form-label">
+                    <label className="admin-form-field admin-form-label sm:col-span-3">
                         Tên biến thể
                         <input
                             className={fieldClass}
@@ -1395,20 +1343,6 @@ function VariantRow({
                             }
                             required
                         />
-                    </label>
-                    <label className="admin-form-field admin-form-label">
-                        Đơn vị
-                        <select
-                            className={fieldClass}
-                            value={form.unit_id}
-                            onChange={(event) => setForm({ ...form, unit_id: event.target.value })}
-                        >
-                            {units.map((unit) => (
-                                <option key={unit.id} value={unit.id}>
-                                    {unit.name}
-                                </option>
-                            ))}
-                        </select>
                     </label>
                     <div className="sm:col-span-3 flex flex-wrap gap-4 text-sm">
                         {(["track_inventory", "track_batch", "track_expiry"] as const).map(
@@ -1434,7 +1368,7 @@ function VariantRow({
                     </div>
                     <div className="flex justify-end sm:col-span-3">
                         <button className={buttonClass} disabled={update.isPending}>
-                            Lưu SKU
+                            Lưu biến thể
                         </button>
                     </div>
                 </form>

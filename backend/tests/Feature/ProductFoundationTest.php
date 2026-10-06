@@ -83,6 +83,37 @@ class ProductFoundationTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('sku');
     }
 
+    public function test_new_variant_generates_sku_and_inherits_product_unit_and_channels(): void
+    {
+        $this->admin();
+        $product = Product::factory()->create(['base_sku' => 'SERUM', 'track_inventory' => true]);
+        $unit = Unit::factory()->create();
+        ProductVariant::factory()->for($product)->create([
+            'sku' => 'SERUM-DEFAULT',
+            'unit_id' => $unit->id,
+            'sellable_retail' => true,
+            'track_inventory' => true,
+        ]);
+
+        $response = $this->postJson("/api/admin/products/{$product->id}/variants", [
+            'variant_name' => '5ml',
+        ])->assertCreated()->assertJsonPath('data.sku', 'SERUM-5ML')
+            ->assertJsonPath('data.unit_id', $unit->id);
+
+        $this->assertDatabaseHas('product_variants', [
+            'id' => $response->json('data.id'),
+            'unit_id' => $unit->id,
+            'sellable_retail' => true,
+            'track_inventory' => true,
+        ]);
+        $this->postJson("/api/admin/products/{$product->id}/variants", [
+            'variant_name' => 'Lọ 10ml',
+        ])->assertCreated()->assertJsonPath('data.sku', 'SERUM-LO-10ML');
+        $this->postJson("/api/admin/products/{$product->id}/variants", [
+            'variant_name' => '5ml',
+        ])->assertUnprocessable()->assertJsonValidationErrors('sku');
+    }
+
     public function test_retail_price_resolution_dates_and_ambiguity(): void
     {
         $this->admin();

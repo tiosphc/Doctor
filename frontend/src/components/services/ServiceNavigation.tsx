@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight } from "lucide-react";
 import { LoadingState } from "@/components/common/AsyncState";
 import { categoryPath, servicePath } from "./ServiceExplorer";
 import { useServiceCategories } from "./serviceQueries";
@@ -34,12 +34,21 @@ export function ServiceMegaMenu({ inverted = false }: { inverted?: boolean }) {
                                 Chăm sóc theo nhu cầu của bạn
                             </p>
                         </div>
-                        <Link
-                            to="/services"
-                            className="focus-premium hidden shrink-0 text-sm font-semibold text-primary sm:inline-flex sm:items-center sm:gap-2"
-                        >
-                            Xem toàn bộ dịch vụ <ChevronRight size={15} aria-hidden="true" />
-                        </Link>
+                        <div className="hidden shrink-0 items-center gap-6 sm:flex">
+                            <Link
+                                to="/booking"
+                                className="focus-premium inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-secondary"
+                            >
+                                <CalendarDays size={15} aria-hidden="true" />
+                                Đặt lịch tư vấn
+                            </Link>
+                            <Link
+                                to="/services"
+                                className="focus-premium inline-flex items-center gap-2 text-sm font-semibold text-primary"
+                            >
+                                Xem toàn bộ dịch vụ <ChevronRight size={15} aria-hidden="true" />
+                            </Link>
+                        </div>
                     </div>
                     {categories.isPending ? (
                         <LoadingState label="Đang tải danh mục..." />
@@ -141,6 +150,14 @@ export function MobileServiceMenu({ onNavigate }: { onNavigate: () => void }) {
             </div>
             {expanded && (
                 <div id="mobile-service-categories" className="grid gap-2 pb-4 pl-3">
+                    <Link
+                        to="/booking"
+                        onClick={onNavigate}
+                        className="focus-premium inline-flex items-center gap-2 py-2 text-sm font-semibold text-primary"
+                    >
+                        <CalendarDays size={16} aria-hidden="true" />
+                        Đặt lịch tư vấn
+                    </Link>
                     {categories.isPending ? (
                         <LoadingState label="Đang tải danh mục..." />
                     ) : categories.isError ? (

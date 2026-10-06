@@ -2,7 +2,7 @@
 import { formatProductQuantity, isPositiveProductQuantity } from "./src/lib/productQuantity";
 import {
     emptyWizard,
-    generateVariants,
+    generateVariantSku,
     parseDealerCsv,
     payload,
     stepForField,
@@ -41,37 +41,58 @@ test("image and YouTube validation stay on media step", () => {
     expect(errors["youtube_videos.0"]).toBeDefined();
 });
 
-test("simple product needs no variant and generated variants preserve entered state", () => {
+test("simple product needs no variant and named variants get predictable SKUs", () => {
     expect(validateStep(2, ready(), 1)).toEqual({});
     const data: WizardData = {
         ...ready(),
         has_variants: true,
-        attributes: [{ name: "Size", values: ["S", "M"] }],
         variants: [],
     };
     expect(validateStep(2, data, 1)["variants"]).toBeDefined();
-    const variants = generateVariants(data);
-    expect(variants.map((variant) => variant.sku)).toEqual(["SERUM-1-S", "SERUM-1-M"]);
-    expect(
-        generateVariants({ ...data, variants: [{ ...variants[0]!, initial_stock: "5" }] })[0]
-            ?.initial_stock,
-    ).toBe("5");
+    const variants = ["5ml", "10ml"].map((variant_name) => ({
+        variant_name,
+        sku: generateVariantSku(data.sku, variant_name),
+        specifications: {},
+        image_id: null,
+        retail_price_override: "",
+        initial_stock: "",
+    }));
+    expect(variants.map((variant) => variant.sku)).toEqual(["SERUM-1-5ML", "SERUM-1-10ML"]);
+    expect(generateVariantSku("SERUM-1", "Lọ 5ml")).toBe("SERUM-1-LO-5ML");
     expect(validateStep(2, { ...data, variants }, 1)).toEqual({});
 });
 
-test("variant attribute names and values must be unique and nonempty", () => {
+test("variant names and generated SKUs must be unique and nonempty", () => {
     const data = {
         ...ready(),
         has_variants: true,
-        attributes: [
-            { name: "Size", values: ["S", "s"] },
-            { name: "size", values: [] },
+        variants: [
+            {
+                sku: "SERUM-1-5ML",
+                variant_name: "5ml",
+                specifications: {},
+                image_id: null,
+                retail_price_override: "",
+                initial_stock: "",
+            },
+            {
+                sku: "SERUM-1-5ML",
+                variant_name: "5ML",
+                specifications: {},
+                image_id: null,
+                retail_price_override: "",
+                initial_stock: "",
+            },
         ],
     };
     const errors = validateStep(2, data, 1);
-    expect(errors["attributes.0.values.1"]).toBeDefined();
-    expect(errors["attributes.1.name"]).toBeDefined();
-    expect(errors["attributes.1.values"]).toBeDefined();
+    expect(errors["variants.1.variant_name"]).toBeDefined();
+    expect(errors["variants.1.sku"]).toBeDefined();
+    expect(
+        validateStep(2, { ...data, variants: [{ ...data.variants[0]!, variant_name: "" }] }, 1)[
+            "variants.0.variant_name"
+        ],
+    ).toBeDefined();
 });
 
 test("retail accepts zero and removes historical quantity breaks from a new submission", () => {

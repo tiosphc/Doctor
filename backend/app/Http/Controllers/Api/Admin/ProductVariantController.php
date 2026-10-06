@@ -14,7 +14,17 @@ class ProductVariantController extends Controller
 {
     public function store(SaveProductVariantRequest $request, Product $product): JsonResponse
     {
-        $variant = $product->variants()->create($request->validated());
+        $data = $request->validated();
+        $firstVariant = $product->variants()->orderBy('id')->first();
+        if ($firstVariant !== null) {
+            foreach (['sellable_retail', 'sellable_dealer', 'clinic_material'] as $field) {
+                $data[$field] ??= $firstVariant->{$field};
+            }
+        }
+        foreach (['track_inventory', 'track_batch', 'track_expiry'] as $field) {
+            $data[$field] ??= $product->{$field};
+        }
+        $variant = $product->variants()->create($data);
 
         return response()->json(['data' => $variant->load('unit')], 201);
     }

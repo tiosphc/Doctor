@@ -705,7 +705,7 @@ export function MyOrdersPage() {
     });
     return (
         <RetailGuard returnTo="/my-orders">
-            <Container className="py-12 md:py-16">
+            <div>
                 <PageHeading eyebrow="Junie Retail" title="Đơn hàng của tôi" />
                 {query.isPending ? (
                     <LoadingState />
@@ -733,7 +733,7 @@ export function MyOrdersPage() {
                         />
                     </>
                 )}
-            </Container>
+            </div>
         </RetailGuard>
     );
 }
@@ -749,7 +749,7 @@ export function OrderDetailPage({ orderId }: { orderId: number }) {
     const order = query.data?.data;
     return (
         <RetailGuard returnTo={`/my-orders/${orderId}`}>
-            <Container className="py-12 md:py-16">
+            <div>
                 <Link to="/my-orders" className="text-sm text-primary underline">
                     ← Đơn hàng của tôi
                 </Link>
@@ -919,7 +919,7 @@ export function OrderDetailPage({ orderId }: { orderId: number }) {
                         </>
                     )
                 )}
-            </Container>
+            </div>
         </RetailGuard>
     );
 }

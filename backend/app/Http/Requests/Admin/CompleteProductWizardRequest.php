@@ -31,6 +31,7 @@ class CompleteProductWizardRequest extends FormRequest
         $retail = is_array($data) && ($data['sellable_retail'] ?? false) === true && ! ($data['gift_only'] ?? false);
         $dealer = is_array($data) && ($data['sellable_dealer'] ?? false) === true && ! ($data['gift_only'] ?? false);
         $variants = is_array($data) && ($data['has_variants'] ?? false) === true;
+        $usesAttributes = $variants && ! empty($data['attributes']);
 
         return [
             'data' => ['required', 'array'],
@@ -47,13 +48,14 @@ class CompleteProductWizardRequest extends FormRequest
             'data.youtube_videos' => ['sometimes', 'array', 'max:10'],
             'data.youtube_videos.*' => ['required', 'url', 'max:500'],
             'data.has_variants' => ['required', 'boolean'],
-            'data.attributes' => [$variants ? 'required' : 'sometimes', 'array', 'max:3'],
-            'data.attributes.*.name' => [$variants ? 'required' : 'nullable', 'string', 'max:80'],
-            'data.attributes.*.values' => [$variants ? 'required' : 'sometimes', 'array', 'max:20'],
+            'data.attributes' => ['sometimes', 'array', 'max:3'],
+            'data.attributes.*.name' => [$usesAttributes ? 'required' : 'nullable', 'string', 'max:80'],
+            'data.attributes.*.values' => [$usesAttributes ? 'required' : 'sometimes', 'array', 'max:20'],
             'data.attributes.*.values.*' => ['required', 'string', 'max:80'],
             'data.variants' => [$variants ? 'required' : 'sometimes', 'array', 'max:100'],
             'data.variants.*.sku' => [$variants ? 'required' : 'nullable', 'string', 'max:100', 'regex:/^[A-Z0-9][A-Z0-9._-]*$/'],
-            'data.variants.*.specifications' => [$variants ? 'required' : 'sometimes', 'array'],
+            'data.variants.*.variant_name' => [$variants && ! $usesAttributes ? 'required' : 'sometimes', 'string', 'max:255', 'not_regex:/^\s*$/u'],
+            'data.variants.*.specifications' => [$usesAttributes ? 'required' : 'sometimes', 'array'],
             'data.variants.*.image_id' => ['nullable', 'integer'],
             'data.variants.*.retail_price_override' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
             'data.variants.*.initial_stock' => ['nullable', 'integer', 'min:0'],
@@ -155,6 +157,40 @@ class CompleteProductWizardRequest extends FormRequest
             return;
         }
         $attributes = $data['attributes'] ?? [];
+        if (is_array($attributes) && $attributes === []) {
+            $variants = $data['variants'] ?? [];
+            if (! is_array($variants) || $variants === []) {
+                $validator->errors()->add('data.variants', 'Thêm ít nhất một biến thể.');
+
+                return;
+            }
+            $seenNames = [];
+            $seenSkus = [];
+            foreach ($variants as $index => $variant) {
+                if (! is_array($variant)) {
+                    continue;
+                }
+                $name = is_string($variant['variant_name'] ?? null) ? trim($variant['variant_name']) : '';
+                $nameKey = mb_strtolower($name);
+                if ($name !== '' && isset($seenNames[$nameKey])) {
+                    $validator->errors()->add("data.variants.$index.variant_name", 'Tên biến thể bị trùng.');
+                }
+                $seenNames[$nameKey] = true;
+                $sku = $variant['sku'] ?? '';
+                if (! is_string($sku) || $sku === '') {
+                    continue;
+                }
+                if ($name !== '' && $sku !== Sku::fromVariantName((string) ($data['sku'] ?? ''), $name)) {
+                    $validator->errors()->add("data.variants.$index.sku", 'SKU phải được tạo từ tên biến thể.');
+                }
+                if (isset($seenSkus[$sku]) || $sku === ($data['sku'] ?? null) || DB::table('product_variants')->where('sku', $sku)->exists()) {
+                    $validator->errors()->add("data.variants.$index.sku", 'SKU này đã tồn tại.');
+                }
+                $seenSkus[$sku] = true;
+            }
+
+            return;
+        }
         if (! is_array($attributes) || $attributes === []) {
             $validator->errors()->add('data.attributes', 'Thêm ít nhất một thuộc tính biến thể.');
 
