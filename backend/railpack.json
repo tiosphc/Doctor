@@ -20,9 +20,6 @@
         }
     },
     "deploy": {
-        "startCommand": "echo 'Clearing Laravel caches before FrankenPHP' && php artisan optimize:clear --no-interaction && php artisan storage:link --no-interaction && exec docker-php-entrypoint --config /Caddyfile --adapter caddyfile",
-        "variables": {
-            "RAILPACK_SKIP_MIGRATIONS": "true"
-        }
+        "startCommand": "echo 'Running Laravel production migrations' && php artisan migrate --force --no-interaction && echo 'Clearing Laravel caches before FrankenPHP' && php artisan optimize:clear --no-interaction && php artisan storage:link --no-interaction && exec docker-php-entrypoint --config /Caddyfile --adapter caddyfile"
     }
 }
