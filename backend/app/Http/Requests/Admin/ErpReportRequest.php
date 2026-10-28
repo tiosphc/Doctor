@@ -20,9 +20,9 @@ class ErpReportRequest extends FormRequest
             'from' => ['sometimes', 'date_format:Y-m-d'],
             'to' => ['sometimes', 'date_format:Y-m-d'],
             'channel' => ['sometimes', Rule::in(['all', 'retail', 'dealer'])],
-            'warehouse_id' => ['sometimes', 'integer', 'min:1', 'exists:warehouses,id'],
-            'supplier_id' => ['sometimes', 'integer', 'min:1', 'exists:suppliers,id'],
-            'dealer_id' => ['sometimes', 'integer', 'min:1', 'exists:dealer_accounts,id'],
+            'warehouse_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:warehouses,id'],
+            'supplier_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:suppliers,id'],
+            'dealer_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:dealer_accounts,id'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ];

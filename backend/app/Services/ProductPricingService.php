@@ -19,14 +19,19 @@ class ProductPricingService
     /** @return array<string, mixed> */
     public function show(Product $product): array
     {
-        $variants = $product->variants()->orderBy('id')->get();
-        $retail = $variants->mapWithKeys(fn (ProductVariant $variant): array => [$variant->id => $this->currentItem($variant, 'retail')]);
-        $default = $retail->first(fn (?PriceListItem $item): bool => $item !== null)?->unit_price;
+        $variants = $product->relationLoaded('variants')
+            ? $product->variants->sortBy('id')->values()
+            : $product->variants()->orderBy('id')->get();
+        $variantIds = $variants->pluck('id')->all();
+        $retail = $this->currentItemsFor($variantIds, 'retail');
+        $dealer = $this->currentItemsFor($variantIds, 'dealer');
+        $firstRetailVariantId = $variants->first(fn (ProductVariant $variant): bool => isset($retail[$variant->id]))?->id;
+        $default = $firstRetailVariantId === null ? null : $retail[$firstRetailVariantId]->unit_price;
         $tiers = DealerTier::query()->where('status', 'active')->orderBy('id')->get();
         $dealerRules = [];
         foreach ($variants as $variant) {
             foreach ($tiers as $tier) {
-                $item = $this->currentItem($variant, 'dealer', $tier->id);
+                $item = $dealer[$variant->id.':'.$tier->id] ?? null;
                 if ($item !== null) {
                     $dealerRules[] = [
                         'tier_id' => $tier->id, 'sku' => $variant->sku,
@@ -43,7 +48,7 @@ class ProductPricingService
             'retail_price' => $default,
             'variant_retail_prices' => $variants->map(fn (ProductVariant $variant): array => [
                 'sku' => $variant->sku,
-                'unit_price' => $retail->get($variant->id)?->unit_price === $default ? null : $retail->get($variant->id)?->unit_price,
+                'unit_price' => ($retail[$variant->id] ?? null)?->unit_price === $default ? null : ($retail[$variant->id] ?? null)?->unit_price,
             ])->all(),
             'dealer_rules' => $dealerRules,
         ];
@@ -71,6 +76,9 @@ class ProductPricingService
                 ->orWhere('variant_name', 'like', '%'.$search.'%')
                 ->orWhereHas('product', fn ($product) => $product->where('name', 'like', '%'.$search.'%')
                     ->orWhere('product_code', 'like', '%'.$search.'%')));
+        }
+        if (! empty($filters['product_id'])) {
+            $query->where('product_id', $filters['product_id']);
         }
         if (! empty($filters['status'])) {
             $sellableColumn = $context === 'retail' ? 'sellable_retail' : 'sellable_dealer';
@@ -105,6 +113,9 @@ class ProductPricingService
             }
         }
         $page = $query->orderBy('id')->paginate($filters['per_page'] ?? 20);
+        $variantIds = collect($page->items())->pluck('id')->all();
+        $retailItems = $this->currentItemsFor($variantIds, 'retail');
+        $dealerItems = $context === 'dealer' ? $this->currentItemsFor($variantIds, 'dealer') : [];
         $balances = isset($filters['warehouse_id']) && $context === 'retail'
             ? DB::table('inventory_balances')
                 ->where('warehouse_id', $filters['warehouse_id'])
@@ -117,12 +128,12 @@ class ProductPricingService
                 $balance = $balances->get($variant->id);
                 $available = $balance === null ? '0.000'
                     : bcsub((string) $balance->on_hand_quantity, (string) $balance->reserved_quantity, 3);
-                $rows[] = $this->catalogRow($variant, 'retail', availableQuantity: isset($filters['warehouse_id'])
+                $rows[] = $this->catalogRow($variant, 'retail', $retailItems[$variant->id] ?? null, availableQuantity: isset($filters['warehouse_id'])
                     ? (bccomp($available, '0', 3) < 0 ? '0.000' : $available) : null);
             } else {
-                $retailReference = $this->currentItem($variant, 'retail')?->unit_price;
+                $retailReference = ($retailItems[$variant->id] ?? null)?->unit_price;
                 foreach ($tiers as $tier) {
-                    $rows[] = $this->catalogRow($variant, 'dealer', $tier, $retailReference);
+                    $rows[] = $this->catalogRow($variant, 'dealer', $dealerItems[$variant->id.':'.$tier->id] ?? null, $tier, $retailReference);
                 }
             }
         }
@@ -132,10 +143,8 @@ class ProductPricingService
     }
 
     /** @return array<string, mixed> */
-    private function catalogRow(ProductVariant $variant, string $context, ?DealerTier $tier = null, ?string $retailReference = null, ?string $availableQuantity = null): array
+    private function catalogRow(ProductVariant $variant, string $context, ?PriceListItem $item = null, ?DealerTier $tier = null, ?string $retailReference = null, ?string $availableQuantity = null): array
     {
-        $item = $this->currentItem($variant, $context, $tier?->id);
-
         return [
             'variant_id' => $variant->id,
             'product_id' => $variant->product_id,
@@ -156,6 +165,27 @@ class ProductPricingService
             'minimum_quantity' => $item === null ? null : (int) $item->minimum_quantity,
             'retail_reference_price' => $retailReference,
         ];
+    }
+
+    /** @param list<int> $variantIds @return array<int|string, PriceListItem> */
+    private function currentItemsFor(array $variantIds, string $context): array
+    {
+        if ($variantIds === []) {
+            return [];
+        }
+        $items = $this->currentItemsScope(
+            PriceListItem::query()->with('priceList')->whereIn('product_variant_id', $variantIds),
+            $context,
+            null,
+            now()->toDateTimeString(),
+        )->get()->sort(fn (PriceListItem $left, PriceListItem $right): int => $right->priceList->priority <=> $left->priceList->priority ?: $right->id <=> $left->id);
+        $selected = [];
+        foreach ($items as $item) {
+            $key = $context === 'retail' ? $item->product_variant_id : $item->product_variant_id.':'.$item->priceList->dealer_tier_id;
+            $selected[$key] ??= $item;
+        }
+
+        return $selected;
     }
 
     public function currentItem(ProductVariant $variant, string $context, ?int $tierId = null): ?PriceListItem

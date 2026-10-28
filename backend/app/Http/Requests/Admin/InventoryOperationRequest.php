@@ -23,8 +23,8 @@ class InventoryOperationRequest extends FormRequest
      */
     public function rules(): array
     {
-        $adjustment = $this->routeIs('admin.inventory.adjustments');
-        $opening = $this->routeIs('admin.inventory.opening-stock');
+        $adjustment = $this->routeIs('admin.inventory.adjustments', 'admin.web.inventory.adjustment.store');
+        $opening = $this->routeIs('admin.inventory.opening-stock', 'admin.web.inventory.opening.store');
 
         return [
             'warehouse_id' => ['required', 'integer', Rule::exists('warehouses', 'id')],

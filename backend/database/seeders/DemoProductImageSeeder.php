@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Product;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
@@ -11,8 +12,17 @@ class DemoProductImageSeeder extends Seeder
 {
     public function run(): void
     {
-        if (! app()->environment(['local', 'testing'])) {
-            throw new RuntimeException('Demo image seeding is restricted to local and testing.');
+        if (! app()->environment(['local', 'testing', 'blade_qa'])) {
+            throw new RuntimeException('Demo image seeding is restricted to local, testing and blade_qa.');
+        }
+        if (app()->environment('blade_qa') && (
+            config('database.default') !== 'mysql'
+            || config('database.connections.mysql.host') !== '127.0.0.1'
+            || config('database.connections.mysql.database') !== 'aesthetic_clinic_blade_qa'
+            || config('database.connections.mysql.username') !== 'doctor_blade_qa'
+            || DB::connection()->getDatabaseName() !== 'aesthetic_clinic_blade_qa'
+        )) {
+            throw new RuntimeException('Blade QA image seeding requires the isolated QA database and QA user.');
         }
 
         $assetDirectory = database_path('seeders/assets/products');

@@ -5,12 +5,11 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveWarehouseRequest;
 use App\Models\Warehouse;
-use App\Services\AuditLogger;
+use App\Services\WarehouseWriteService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class WarehouseController extends Controller
 {
@@ -39,15 +38,10 @@ class WarehouseController extends Controller
         return response()->json($query->orderBy('id')->paginate($data['per_page'] ?? 20));
     }
 
-    public function store(SaveWarehouseRequest $request, AuditLogger $auditLogger): JsonResponse
+    public function store(SaveWarehouseRequest $request, WarehouseWriteService $writer): JsonResponse
     {
         try {
-            $warehouse = DB::transaction(function () use ($request, $auditLogger): Warehouse {
-                $warehouse = Warehouse::create($request->validated());
-                $auditLogger->log(AuditLogger::ACTION_CREATE, AuditLogger::MODULE_WAREHOUSE, $warehouse, 'Warehouse created', [], $warehouse->only(['code', 'name', 'status', 'is_default_sales', 'is_default_clinic']));
-
-                return $warehouse;
-            });
+            $warehouse = $writer->create($request->validated());
         } catch (QueryException $exception) {
             $this->rethrowWarehouseConflict($exception);
         }
@@ -60,26 +54,10 @@ class WarehouseController extends Controller
         return response()->json(['data' => $warehouse]);
     }
 
-    public function update(SaveWarehouseRequest $request, Warehouse $warehouse, AuditLogger $auditLogger): JsonResponse
+    public function update(SaveWarehouseRequest $request, Warehouse $warehouse, WarehouseWriteService $writer): JsonResponse
     {
         try {
-            $warehouse = DB::transaction(function () use ($request, $warehouse, $auditLogger): Warehouse {
-                $warehouse = Warehouse::query()->lockForUpdate()->findOrFail($warehouse->id);
-                $data = $request->validated();
-                if (isset($data['code']) && $data['code'] !== $warehouse->code
-                    && ($warehouse->balances()->exists() || $warehouse->movements()->exists())) {
-                    throw new HttpResponseException(response()->json(['code' => 'WAREHOUSE_CODE_IMMUTABLE', 'message' => 'WAREHOUSE_CODE_IMMUTABLE'], 409));
-                }
-                $before = $warehouse->only(['code', 'name', 'status', 'is_default_sales', 'is_default_clinic']);
-                $warehouse->update($data);
-                $after = $warehouse->only(['code', 'name', 'status', 'is_default_sales', 'is_default_clinic']);
-                $auditLogger->log($before['status'] === 'active' && $after['status'] === 'inactive'
-                    ? AuditLogger::ACTION_DEACTIVATE
-                    : ($before['status'] === 'inactive' && $after['status'] === 'active' ? AuditLogger::ACTION_ACTIVATE : AuditLogger::ACTION_UPDATE),
-                    AuditLogger::MODULE_WAREHOUSE, $warehouse, 'Warehouse updated', $before, $after);
-
-                return $warehouse;
-            });
+            $warehouse = $writer->update($warehouse, $request->validated());
         } catch (QueryException $exception) {
             $this->rethrowWarehouseConflict($exception);
         }

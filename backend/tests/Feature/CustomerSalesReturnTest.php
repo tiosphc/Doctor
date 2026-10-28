@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdministrativeWard;
 use App\Models\DealerAccount;
 use App\Models\DealerAccountUser;
 use App\Models\DealerTier;
@@ -213,15 +214,20 @@ class CustomerSalesReturnTest extends TestCase
             'operation_key' => (string) Str::uuid()], $admin->id);
         Sanctum::actingAs($customer);
         $base = "/api/dealer/accounts/{$account->id}";
+        $ward = AdministrativeWard::query()->where('province_code', '79')->firstOrFail();
+        $shipping = [
+            'recipient_name' => 'Dealer buyer', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => '1 Main Street',
+            'shipping_province_code' => '79', 'shipping_ward_code' => $ward->code,
+        ];
         $review = $this->postJson("{$base}/quick-order/review", [
             'items' => [['product_variant_id' => $variant->id, 'quantity' => '2']],
+            ...$shipping,
         ])->assertOk()->json('data');
         $orderId = $this->postJson("{$base}/quick-order", [
             'operation_key' => (string) Str::uuid(), 'review_fingerprint' => $review['review_fingerprint'],
             'items' => [['product_variant_id' => $variant->id, 'quantity' => '2']],
-            'recipient_name' => 'Dealer buyer', 'recipient_phone' => '0900000000',
-            'shipping_address_line1' => '1 Main Street', 'shipping_city' => 'HCM',
-            'shipping_province' => 'HCM', 'shipping_country' => 'VN',
+            ...$shipping,
         ])->assertCreated()->json('data.id');
         $itemId = DB::table('sales_order_items')->where('sales_order_id', $orderId)->value('id');
         Sanctum::actingAs($admin);

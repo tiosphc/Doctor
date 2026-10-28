@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveProductRequest;
 use App\Models\PriceListItem;
 use App\Models\Product;
+use App\Services\AdminProductReadService;
+use App\Services\AdminProductWriteService;
 use App\Services\AuditLogger;
 use App\Services\SalesPromotionService;
 use Illuminate\Database\QueryException;
@@ -13,13 +15,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    public function index(Request $request, SalesPromotionService $promotions): JsonResponse
+    public function index(Request $request, SalesPromotionService $promotions, AdminProductReadService $products): JsonResponse
     {
         $data = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
@@ -35,36 +35,7 @@ class ProductController extends Controller
             'promotion_starts_at' => ['nullable', 'date'],
             'promotion_ends_at' => ['nullable', 'date'],
         ]);
-        $query = Product::query()->with(['category:id,code,name', 'brand:id,code,name', 'variants:id,product_id,unit_id,sku,variant_name,status,sellable_retail,track_inventory', 'variants.unit:id,name,symbol', 'images:id,product_id,path,is_primary,sort_order']);
-        if (! isset($data['search'])) {
-            $query->where('status', '!=', 'draft');
-        }
-        if (isset($data['search'])) {
-            $search = $data['search'];
-            $query->where(fn ($query) => $query->where('name', 'like', '%'.$search.'%')
-                ->orWhere('product_code', 'like', '%'.$search.'%')
-                ->orWhereHas('variants', fn ($query) => $query->where('sku', 'like', '%'.$search.'%')
-                    ->orWhere('variant_name', 'like', '%'.$search.'%')));
-        }
-        foreach (['status' => 'status', 'category' => 'product_category_id', 'brand' => 'brand_id'] as $key => $column) {
-            if (isset($data[$key])) {
-                $query->where($column, $data[$key]);
-            }
-        }
-        $giftFilter = $data['gift_filter'] ?? 'all';
-        if ($giftFilter !== 'all') {
-            if (! Schema::hasColumns('products', ['can_be_gift', 'gift_only'])) {
-                if ($giftFilter !== 'normal') {
-                    $query->whereKey(-1);
-                }
-            } elseif ($giftFilter === 'gift_capable') {
-                $query->where('can_be_gift', true);
-            } else {
-                $query->where('gift_only', $giftFilter === 'gift_only');
-            }
-        }
-
-        $page = $query->latest('id')->paginate($data['per_page'] ?? 20);
+        $page = $products->paginate($data);
         if ($data['discount_availability'] ?? false) {
             $productIds = $page->getCollection()->pluck('id')->all();
             $scope = $data['promotion_scope'] ?? 'retail';
@@ -97,26 +68,9 @@ class ProductController extends Controller
         return response()->json($page);
     }
 
-    public function store(SaveProductRequest $request): JsonResponse
+    public function store(SaveProductRequest $request, AdminProductWriteService $writer): JsonResponse
     {
-        $data = $request->validated();
-        $data['status'] ??= 'active';
-        $data['track_inventory'] ??= true;
-        $unitId = $data['default_unit_id'];
-        unset($data['default_unit_id']);
-        $product = DB::transaction(function () use ($data, $unitId): Product {
-            $product = Product::create([...$data, 'product_code' => 'TMP-'.Str::uuid()]);
-            $product->update(['product_code' => 'PRD'.str_pad((string) $product->id, 6, '0', STR_PAD_LEFT)]);
-            $product->variants()->create([
-                'sku' => $product->product_code.'-DEFAULT',
-                'variant_name' => 'Default',
-                'unit_id' => $unitId,
-                'track_inventory' => $data['track_inventory'],
-                'status' => 'active',
-            ]);
-
-            return $product;
-        });
+        $product = $writer->create($request->validated());
 
         return response()->json(['data' => $this->loaded($product)], 201);
     }
@@ -126,12 +80,12 @@ class ProductController extends Controller
         return response()->json(['data' => $this->loaded($product)]);
     }
 
-    public function update(SaveProductRequest $request, Product $product): JsonResponse
+    public function update(SaveProductRequest $request, Product $product, AdminProductWriteService $writer): JsonResponse
     {
         if ($product->wizard_key !== null && $product->status === 'draft') {
             return response()->json(['code' => 'WIZARD_DRAFT', 'message' => 'Complete this Product through the wizard.'], 409);
         }
-        $product->update($request->validated());
+        $writer->update($product, $request->validated());
 
         return response()->json(['data' => $this->loaded($product)]);
     }

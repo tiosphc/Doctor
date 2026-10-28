@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreGoodsReceiptRequest;
 use App\Models\GoodsReceipt;
 use App\Models\PurchaseOrder;
 use App\Services\ProcurementService;
@@ -25,17 +26,8 @@ class GoodsReceiptController extends Controller
         return response()->json(['data' => $procurement->receiptDetail($goodsReceipt)]);
     }
 
-    public function store(Request $request, PurchaseOrder $purchaseOrder, ProcurementService $procurement): JsonResponse
+    public function store(StoreGoodsReceiptRequest $request, PurchaseOrder $purchaseOrder, ProcurementService $procurement): JsonResponse
     {
-        $data = $request->validate([
-            'operation_key' => ['required', 'uuid'],
-            'supplier_reference' => ['nullable', 'string', 'max:100'],
-            'note' => ['nullable', 'string', 'max:2000'],
-            'items' => ['required', 'array', 'min:1', 'max:100'],
-            'items.*.purchase_order_item_id' => ['required', 'integer', 'distinct', 'exists:purchase_order_items,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-        ]);
-
-        return response()->json(['data' => $procurement->receive($purchaseOrder, $data, $request->user()->id)], 201);
+        return response()->json(['data' => $procurement->receive($purchaseOrder, $request->validated(), $request->user()->id)], 201);
     }
 }

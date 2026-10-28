@@ -10,6 +10,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Doctor;
 use App\Models\User;
 use App\Services\RegisteredCustomerService;
+use App\Services\UserProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -99,18 +100,11 @@ class AuthController extends Controller
 
     public function updateProfile(
         UpdateProfileRequest $request,
-        RegisteredCustomerService $customerService,
+        UserProfileService $profileService,
     ): JsonResponse {
-        $user = $request->user();
-        DB::transaction(function () use ($user, $request, $customerService): void {
-            $user->update($request->safe()->only(['name', 'phone']));
+        $user = $profileService->update($request->user(), $request->safe()->only(['name', 'phone']));
 
-            if ($user->isCustomer()) {
-                $customerService->synchronizeFromUser($user->refresh());
-            }
-        }, 3);
-
-        return (new UserResource($user->refresh()))
+        return (new UserResource($user))
             ->additional(['message' => 'Profile updated successfully.'])
             ->response();
     }

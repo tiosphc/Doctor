@@ -5,23 +5,15 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveSalesVoucherRequest;
 use App\Models\SalesVoucher;
-use App\Services\SalesVoucherService;
-use Illuminate\Database\QueryException;
+use App\Services\SalesVoucherWriteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 class SalesVoucherController extends Controller
 {
-    public function generateCode(): JsonResponse
+    public function generateCode(SalesVoucherWriteService $writer): JsonResponse
     {
-        do {
-            $code = 'VOUCHER'.Str::upper(Str::random(8));
-        } while (SalesVoucher::query()->where('normalized_code', $code)->exists());
-
-        return response()->json(['code' => $code]);
+        return response()->json(['code' => $writer->suggestCode()]);
     }
 
     public function index(Request $request): JsonResponse
@@ -59,52 +51,16 @@ class SalesVoucherController extends Controller
         return response()->json(['data' => $voucher]);
     }
 
-    public function store(SaveSalesVoucherRequest $request, SalesVoucherService $service): JsonResponse
+    public function store(SaveSalesVoucherRequest $request, SalesVoucherWriteService $writer): JsonResponse
     {
-        try {
-            $voucher = DB::transaction(function () use ($request, $service): SalesVoucher {
-                $data = $request->validated();
-                $normalized = $service->normalize($data['code']);
-                if (SalesVoucher::query()->where('normalized_code', $normalized)->exists()) {
-                    throw ValidationException::withMessages(['code' => 'Mã voucher đã tồn tại.']);
-                }
-
-                return SalesVoucher::create([...$data, 'normalized_code' => $normalized,
-                    'sales_scope' => 'retail', 'created_by_user_id' => $request->user()->id]);
-            }, 3);
-        } catch (QueryException $exception) {
-            if (($exception->errorInfo[1] ?? null) === 1062) {
-                throw ValidationException::withMessages(['code' => 'Mã voucher đã tồn tại.']);
-            }
-            throw $exception;
-        }
+        $voucher = $writer->create($request->validated(), $request->user());
 
         return response()->json(['data' => $voucher], 201);
     }
 
-    public function update(SaveSalesVoucherRequest $request, SalesVoucher $voucher, SalesVoucherService $service): JsonResponse
+    public function update(SaveSalesVoucherRequest $request, SalesVoucher $voucher, SalesVoucherWriteService $writer): JsonResponse
     {
-        try {
-            $voucher = DB::transaction(function () use ($request, $voucher, $service): SalesVoucher {
-                $locked = SalesVoucher::query()->lockForUpdate()->findOrFail($voucher->id);
-                $data = $request->validated();
-                $normalized = $service->normalize($data['code']);
-                if ($normalized !== $locked->normalized_code && $locked->redemptions()->exists()) {
-                    throw ValidationException::withMessages(['code' => 'Không thể đổi mã voucher đã được sử dụng.']);
-                }
-                if (SalesVoucher::query()->where('normalized_code', $normalized)->whereKeyNot($locked->id)->exists()) {
-                    throw ValidationException::withMessages(['code' => 'Mã voucher đã tồn tại.']);
-                }
-                $locked->update([...$data, 'normalized_code' => $normalized]);
-
-                return $locked;
-            }, 3);
-        } catch (QueryException $exception) {
-            if (($exception->errorInfo[1] ?? null) === 1062) {
-                throw ValidationException::withMessages(['code' => 'Mã voucher đã tồn tại.']);
-            }
-            throw $exception;
-        }
+        $voucher = $writer->update($voucher, $request->validated());
 
         return response()->json(['data' => $voucher]);
     }

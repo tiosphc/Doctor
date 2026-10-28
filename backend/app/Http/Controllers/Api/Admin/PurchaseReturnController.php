@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StorePurchaseReturnRequest;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseReturn;
 use App\Services\ProcurementService;
@@ -25,16 +26,8 @@ class PurchaseReturnController extends Controller
         return response()->json(['data' => $procurement->returnDetail($purchaseReturn)]);
     }
 
-    public function store(Request $request, PurchaseOrder $purchaseOrder, ProcurementService $procurement): JsonResponse
+    public function store(StorePurchaseReturnRequest $request, PurchaseOrder $purchaseOrder, ProcurementService $procurement): JsonResponse
     {
-        $data = $request->validate([
-            'operation_key' => ['required', 'uuid'],
-            'reason' => ['required', 'string', 'max:2000'],
-            'items' => ['required', 'array', 'min:1', 'max:100'],
-            'items.*.goods_receipt_item_id' => ['required', 'integer', 'distinct', 'exists:goods_receipt_items,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-        ]);
-
-        return response()->json(['data' => $procurement->returnGoods($purchaseOrder, $data, $request->user()->id)], 201);
+        return response()->json(['data' => $procurement->returnGoods($purchaseOrder, $request->validated(), $request->user()->id)], 201);
     }
 }

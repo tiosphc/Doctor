@@ -108,6 +108,39 @@ class DealerAutoTierConcurrencyTest extends TestCase
             .'["operation_key"=>"'.Str::uuid().'","amount"=>"'.$amount.'","refund_method"=>"cash","reason"=>"other"], '.$adminId.'); echo "ok";');
     }
 
+    /** @param array<int, Process> $processes */
+    private function startAtDatabaseLock(array $processes, string $table, array $rowIds): void
+    {
+        DB::transaction(function () use ($processes, $table, $rowIds): void {
+            DB::table($table)->whereIn('id', $rowIds)->orderBy('id')->lockForUpdate()->get();
+
+            foreach ($processes as $process) {
+                $process->start();
+            }
+
+            $deadline = microtime(true) + 10;
+            while (microtime(true) < $deadline) {
+                $queries = DB::select('SHOW FULL PROCESSLIST');
+                $waitingCount = collect($queries)->filter(fn (object $row): bool => $row->db === 'aesthetic_clinic_testing'
+                    && $row->Command === 'Execute'
+                    && str_contains(strtolower((string) $row->Info), $table)
+                    && str_contains(strtolower((string) $row->Info), 'for update'))->count();
+                if ($waitingCount >= count($processes)) {
+                    return;
+                }
+
+                if (collect($processes)->contains(fn (Process $process): bool => ! $process->isRunning())) {
+                    break;
+                }
+
+                usleep(10000);
+            }
+
+            $this->fail('Processes did not both wait for the '.$table.' row lock: '
+                .implode(' | ', array_map(fn (Process $process): string => $process->getErrorOutput().$process->getOutput(), $processes)));
+        });
+    }
+
     public function test_parallel_settled_payments_produce_one_upgrade(): void
     {
         [$account, $silver, $gold, $admin] = $this->fixture();
@@ -115,16 +148,25 @@ class DealerAutoTierConcurrencyTest extends TestCase
         $secondOrder = $this->order($account, $silver, '60.00');
         $first = $this->pay($firstOrder->id, $admin->id, '60.00');
         $second = $this->pay($secondOrder->id, $admin->id, '60.00');
-        $first->start();
-        $second->start();
+        $this->startAtDatabaseLock([$first, $second], 'sales_orders', [$firstOrder->id, $secondOrder->id]);
         $this->assertProcess($first);
         $this->assertProcess($second);
 
-        $this->assertSame($silver->id, $account->fresh()->current_tier_id);
-        $this->assertSame('120.00', app(DealerAutoTierService::class)->evaluate($account->id)['net_revenue']);
-        $this->assertTrue(app(DealerAutoTierService::class)->evaluate($account->id, true)['changed']);
         $this->assertSame($gold->id, $account->fresh()->current_tier_id);
-        $this->assertDatabaseCount('dealer_tier_histories', 1);
+        $this->assertSame('120.00', app(DealerAutoTierService::class)->evaluate($account->id)['net_revenue']);
+        $this->assertFalse(app(DealerAutoTierService::class)->evaluate($account->id, true)['changed']);
+        $this->assertSame($gold->id, $account->fresh()->current_tier_id);
+        $this->assertDatabaseHas('dealer_tier_histories', [
+            'dealer_account_id' => $account->id, 'previous_tier_id' => $silver->id,
+            'new_tier_id' => $gold->id, 'source' => 'automatic_upgrade',
+        ]);
+        $this->assertSame(1, $account->tierHistories()->count());
+        $this->assertDatabaseHas('dealer_tier_evaluations', [
+            'dealer_account_id' => $account->id, 'evaluation_period' => '2026-09',
+            'result' => 'unchanged', 'net_revenue' => '120.00',
+        ]);
+        $this->assertDatabaseCount('payments', 2);
+        $this->assertDatabaseCount('payment_allocations', 2);
         $this->assertSame($silver->id, $firstOrder->fresh()->effective_tier_id_snapshot);
     }
 
@@ -135,18 +177,35 @@ class DealerAutoTierConcurrencyTest extends TestCase
         app(PaymentService::class)->recordSettledPayment($oldOrder, [
             'operation_key' => (string) Str::uuid(), 'amount' => '100.00', 'payment_method' => 'cash',
         ], $admin->id);
-        $this->assertSame($silver->id, $account->fresh()->current_tier_id);
+        $this->assertSame($gold->id, $account->fresh()->current_tier_id);
         $newOrder = $this->order($account, $silver, '40.00');
         $pay = $this->pay($newOrder->id, $admin->id, '40.00');
         $refund = $this->refund($oldOrder->id, $admin->id, '100.00');
-        $pay->start();
-        $refund->start();
+        $this->startAtDatabaseLock([$pay, $refund], 'sales_orders', [$newOrder->id, $oldOrder->id]);
         $this->assertProcess($pay);
         $this->assertProcess($refund);
 
         $this->assertSame('40.00', app(DealerAutoTierService::class)->evaluate($account->id)['net_revenue']);
+        $this->assertSame($gold->id, $account->fresh()->current_tier_id);
+        $evaluation = app(DealerAutoTierService::class)->evaluate($account->id);
+        $this->assertSame('40.00', $evaluation['net_revenue']);
+        $this->assertSame('downgrade', $evaluation['direction']);
+        $this->assertTrue(app(DealerAutoTierService::class)->evaluate($account->id, true)['changed']);
         $this->assertSame($silver->id, $account->fresh()->current_tier_id);
-        $this->assertDatabaseCount('dealer_tier_histories', 0);
+        $history = $account->tierHistories()->orderBy('id')->get();
+        $this->assertCount(2, $history);
+        $this->assertSame('automatic_upgrade', $history[0]->source);
+        $this->assertSame($silver->id, $history[0]->previous_tier_id);
+        $this->assertSame($gold->id, $history[0]->new_tier_id);
+        $this->assertSame('automatic_monthly_evaluation', $history[1]->source);
+        $this->assertSame($gold->id, $history[1]->previous_tier_id);
+        $this->assertSame($silver->id, $history[1]->new_tier_id);
+        $this->assertDatabaseHas('dealer_tier_evaluations', [
+            'dealer_account_id' => $account->id, 'evaluation_period' => '2026-09',
+            'result' => 'changed', 'net_revenue' => '40.00',
+        ]);
+        $this->assertDatabaseCount('payments', 2);
+        $this->assertDatabaseCount('refunds', 1);
         $this->assertSame($silver->id, $newOrder->fresh()->effective_tier_id_snapshot);
     }
 
@@ -194,7 +253,7 @@ class DealerAutoTierConcurrencyTest extends TestCase
         $this->assertDatabaseCount('dealer_tier_overrides', 1);
     }
 
-    public function test_parallel_manual_and_automatic_changes_keep_a_valid_history_chain(): void
+    public function test_parallel_manual_change_is_blocked_during_auto_evaluation_and_history_stays_valid(): void
     {
         [$account, $silver, $gold, $admin] = $this->fixture();
         $bronze = DealerTier::factory()->create(['code' => 'BRONZE', 'sort_order' => 3,
@@ -208,16 +267,22 @@ class DealerAutoTierConcurrencyTest extends TestCase
         $auto = $this->process('$app->make(\App\Services\DealerAutoTierService::class)->evaluate('.$account->id.', true); echo "ok";');
         $manual = $this->process('$account=\App\Models\DealerAccount::findOrFail('.$account->id.'); '
             .'$tier=\App\Models\DealerTier::findOrFail('.$bronze->id.'); $admin=\App\Models\User::findOrFail('.$admin->id.'); '
-            .'$app->make(\App\Services\DealerTierService::class)->change($account, $tier, "Contract exception", "'.Str::uuid().'", $admin); echo "ok";');
-        $auto->start();
-        $manual->start();
+            .'try { $app->make(\App\Services\DealerTierService::class)->change($account, $tier, "Contract exception", "'.Str::uuid().'", $admin); echo "unexpected_success"; } '
+            .'catch (\Illuminate\Http\Exceptions\HttpResponseException $exception) { echo $exception->getResponse()->getData(true)["code"]; }');
+        $this->startAtDatabaseLock([$auto, $manual], 'dealer_accounts', [$account->id]);
         $this->assertProcess($auto);
-        $this->assertProcess($manual);
+        $manual->wait();
+        $this->assertTrue($manual->isSuccessful(), $manual->getErrorOutput());
+        $this->assertSame('AUTO_TIER_POLICY_ENABLED', trim($manual->getOutput()));
         $history = $account->tierHistories()->orderBy('id')->get();
-        $this->assertCount(2, $history);
+        $this->assertCount(1, $history);
         $this->assertSame($silver->id, $history[0]->previous_tier_id);
-        $this->assertSame($history[0]->new_tier_id, $history[1]->previous_tier_id);
-        $this->assertSame($history[1]->new_tier_id, $account->fresh()->current_tier_id);
-        $this->assertContains($account->fresh()->current_tier_id, [$bronze->id, $gold->id]);
+        $this->assertSame($gold->id, $history[0]->new_tier_id);
+        $this->assertSame('automatic_monthly_evaluation', $history[0]->source);
+        $this->assertSame($gold->id, $account->fresh()->current_tier_id);
+        $this->assertDatabaseHas('dealer_tier_evaluations', [
+            'dealer_account_id' => $account->id, 'evaluation_period' => '2026-09', 'result' => 'changed',
+        ]);
+        $this->assertDatabaseCount('dealer_tier_overrides', 0);
     }
 }

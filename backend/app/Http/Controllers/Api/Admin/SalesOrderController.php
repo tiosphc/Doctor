@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\CreateSalesOrderRequest;
 use App\Http\Requests\Admin\FulfillSalesOrderRequest;
 use App\Models\SalesOrder;
 use App\Models\User;
+use App\Services\AdminSalesOrderReadService;
 use App\Services\OrderPaymentSummaryService;
 use App\Services\RegisteredCustomerService;
 use App\Services\ReservationReconciliationService;
@@ -19,7 +20,7 @@ use Illuminate\Validation\Rule;
 
 class SalesOrderController extends Controller
 {
-    public function index(Request $request, OrderPaymentSummaryService $summaries): JsonResponse
+    public function index(Request $request, AdminSalesOrderReadService $orders): JsonResponse
     {
         $data = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
@@ -36,32 +37,8 @@ class SalesOrderController extends Controller
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
-        $query = $summaries->withSettledSum(SalesOrder::query()
-            ->with(['buyer:id,name,email', 'warehouse:id,code,name'])
-            ->withCount(['items as items_count' => fn ($builder) => $builder->where('is_gift', false)])
-            ->withSum(['items as total_quantity' => fn ($builder) => $builder->where('is_gift', false)], 'quantity'));
-        foreach (['buyer_user_id', 'warehouse_id', 'dealer_account_id', 'sales_channel', 'order_source', 'order_status', 'payment_status', 'payment_method', 'fulfillment_status'] as $field) {
-            if (isset($data[$field])) {
-                $query->where($field, $data[$field]);
-            }
-        }
-        if (isset($data['search'])) {
-            $query->where(fn ($builder) => $builder->where('order_code', 'like', '%'.$data['search'].'%')
-                ->orWhere('recipient_name', 'like', '%'.$data['search'].'%')
-                ->orWhere('recipient_phone', 'like', '%'.$data['search'].'%')
-                ->orWhere('external_reference', 'like', '%'.$data['search'].'%')
-                ->orWhere('dealer_code_snapshot', 'like', '%'.$data['search'].'%')
-                ->orWhere('dealer_name_snapshot', 'like', '%'.$data['search'].'%'));
-        }
-        if (isset($data['date_from'])) {
-            $query->whereDate('created_at', '>=', $data['date_from']);
-        }
-        if (isset($data['date_to'])) {
-            $query->whereDate('created_at', '<=', $data['date_to']);
-        }
 
-        return response()->json($query->latest('id')->paginate($data['per_page'] ?? 20)
-            ->through(fn (SalesOrder $order): SalesOrder => $summaries->attach($order)));
+        return response()->json($orders->paginate($data));
     }
 
     public function buyers(Request $request): JsonResponse

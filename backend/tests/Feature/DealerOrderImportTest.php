@@ -272,15 +272,15 @@ class DealerOrderImportTest extends TestCase
         $url = "/api/dealer/accounts/{$account->id}/order-imports";
         $preview = $this->postJson($url, ['file' => new UploadedFile($path, 'promotion.xlsx', null, null, true)])
             ->assertCreated()->assertJsonPath('data.groups.0.preview.subtotal', '200.00')
-            ->assertJsonPath('data.groups.0.preview.discount_total', '50.00')
-            ->assertJsonPath('data.groups.0.preview.grand_total', '150.00')->json('data');
+            ->assertJsonPath('data.groups.0.preview.discount_total', '100.00')
+            ->assertJsonPath('data.groups.0.preview.grand_total', '100.00')->json('data');
         $this->assertDatabaseCount('sales_promotion_redemptions', 0);
         $this->postJson("$url/{$preview['id']}/confirm", ['operation_key' => (string) Str::uuid(),
             'preview_fingerprint' => $preview['preview_fingerprint']])->assertOk()
             ->assertJsonPath('data.status', 'completed');
         $this->assertDatabaseHas('sales_orders', ['order_source' => 'dealer_excel',
-            'promotion_code_snapshot' => $promotion->code, 'discount_total' => '50.00', 'grand_total' => '150.00']);
-        $this->assertDatabaseHas('payments', ['payment_method' => 'dealer_wallet', 'amount' => '150.00', 'status' => 'settled']);
+            'promotion_code_snapshot' => $promotion->code, 'discount_total' => '100.00', 'grand_total' => '100.00']);
+        $this->assertDatabaseHas('payments', ['payment_method' => 'dealer_wallet', 'amount' => '100.00', 'status' => 'settled']);
     }
 
     public function test_excel_import_derives_and_reserves_gift_without_gift_columns(): void

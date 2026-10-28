@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdministrativeWard;
 use App\Models\DealerAccount;
 use App\Models\DealerAccountUser;
 use App\Models\DealerTier;
@@ -216,19 +217,20 @@ class PaymentSettlementTest extends TestCase
         Sanctum::actingAs($dealer);
         $base = "/api/dealer/accounts/{$account->id}";
         $items = [['product_variant_id' => $variant->id, 'quantity' => '1']];
-        $fingerprint = $this->postJson("{$base}/quick-order/review", ['items' => $items])
+        $shipping = ['recipient_name' => 'Dealer', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => '1 Street', 'shipping_province_code' => '79',
+            'shipping_ward_code' => AdministrativeWard::query()->where('province_code', '79')->firstOrFail()->code];
+        $fingerprint = $this->postJson("{$base}/quick-order/review", ['items' => $items, ...$shipping])
             ->assertOk()->json('data.review_fingerprint');
         $id = $this->postJson("{$base}/quick-order", [
             'operation_key' => (string) Str::uuid(), 'review_fingerprint' => $fingerprint,
-            'items' => $items, 'recipient_name' => 'Dealer', 'recipient_phone' => '0900000000',
-            'shipping_address_line1' => '1 Street', 'shipping_city' => 'HCM',
-            'shipping_province' => 'HCM', 'shipping_country' => 'VN',
+            'items' => $items, ...$shipping,
         ])->assertCreated()->json('data.id');
         Sanctum::actingAs($admin);
         $this->assertDatabaseHas('payments', ['dealer_account_id' => $account->id, 'payment_method' => 'dealer_wallet', 'status' => 'settled']);
         $this->postJson("/api/admin/sales-orders/{$id}/refunds", [
             'operation_key' => (string) Str::uuid(), 'amount' => '20.00',
-            'refund_method' => 'cash', 'reason' => 'service_recovery',
+            'refund_method' => 'dealer_wallet', 'reason' => 'service_recovery',
             'note' => 'Internal dealer note',
         ])->assertCreated();
         Sanctum::actingAs($dealer);

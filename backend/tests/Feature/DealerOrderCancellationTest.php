@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdministrativeWard;
 use App\Models\DealerAccount;
 use App\Models\DealerAccountUser;
 use App\Models\DealerTier;
@@ -45,12 +46,13 @@ class DealerOrderCancellationTest extends TestCase
         Sanctum::actingAs($user);
         $base = "/api/dealer/accounts/{$account->id}";
         $items = [['product_variant_id' => $variant->id, 'quantity' => '30']];
-        $review = $this->postJson("$base/quick-order/review", ['items' => $items])->assertOk()->json('data');
+        $shipping = ['recipient_name' => 'Receiving Manager', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => '1 Main Street', 'shipping_province_code' => '79',
+            'shipping_ward_code' => AdministrativeWard::query()->where('province_code', '79')->firstOrFail()->code];
+        $review = $this->postJson("$base/quick-order/review", ['items' => $items, ...$shipping])->assertOk()->json('data');
         $order = $this->postJson("$base/quick-order", [
             'operation_key' => (string) Str::uuid(), 'review_fingerprint' => $review['review_fingerprint'],
-            'items' => $items, 'recipient_name' => 'Receiving Manager', 'recipient_phone' => '0900000000',
-            'shipping_address_line1' => '1 Main Street', 'shipping_city' => 'HCM',
-            'shipping_province' => 'HCM', 'shipping_country' => 'VN',
+            'items' => $items, ...$shipping,
         ])->assertCreated()->assertJsonPath('data.grand_total', '6450000.00')->json('data');
 
         return [$user, $account, $variant, $warehouse, $order];

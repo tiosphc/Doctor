@@ -46,8 +46,18 @@ class DemoDataSeeder extends Seeder
 
     public function run(): void
     {
-        if (! app()->environment(['local', 'testing'])) {
-            throw new RuntimeException('Demo seeding is restricted to local and testing.');
+        if (! app()->environment(['local', 'testing', 'blade_qa'])) {
+            throw new RuntimeException('Demo seeding is restricted to local, testing and blade_qa.');
+        }
+        if (app()->environment('blade_qa') && (
+            config('database.default') !== 'mysql'
+            || config('database.connections.mysql.host') !== '127.0.0.1'
+            || config('database.connections.mysql.database') !== 'aesthetic_clinic_blade_qa'
+            || config('database.connections.mysql.username') !== 'doctor_blade_qa'
+            || DB::connection()->getDatabaseName() !== 'aesthetic_clinic_blade_qa'
+            || ! env('DEMO_ADMIN_PASSWORD')
+        )) {
+            throw new RuntimeException('Blade QA seeding requires the isolated QA database, QA user and a demo password.');
         }
         Notification::fake();
         $users = $this->users();

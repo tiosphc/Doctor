@@ -75,13 +75,23 @@ class RetailCustomerPurchaseService
         ];
     }
 
-    public function products(Customer $customer, int $page): LengthAwarePaginator
+    public function products(Customer $customer, int $page, string $pageName = 'page'): LengthAwarePaginator
     {
         if ($customer->user_id === null) {
-            return DB::table('sales_order_items')->whereRaw('1 = 0')->paginate(20, ['*'], 'page', $page);
+            return DB::table('sales_order_items')->whereRaw('1 = 0')->paginate(20, ['*'], $pageName, $page);
         }
 
-        return $this->productsQuery($customer)->orderByDesc('last_purchased_at')->orderBy('sku')->orderBy('product_variant_id')->paginate(20, ['*'], 'page', $page);
+        return $this->productsQuery($customer)->orderByDesc('last_purchased_at')->orderBy('sku')->orderBy('product_variant_id')->paginate(20, ['*'], $pageName, $page);
+    }
+
+    public function history(Customer $customer, int $page): LengthAwarePaginator
+    {
+        $orders = $this->orders($customer);
+        if ($customer->user_id === null) {
+            $orders->whereRaw('1 = 0');
+        }
+
+        return $orders->orderByDesc('created_at')->orderByDesc('id')->paginate(10, ['*'], 'orders_page', $page);
     }
 
     private function orders(Customer $customer): EloquentBuilder

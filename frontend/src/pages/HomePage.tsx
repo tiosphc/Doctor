@@ -1,181 +1,298 @@
 import { useQuery } from "@tanstack/react-query";
-import { Award, ShieldCheck, Phone, ArrowRight, ShoppingBag, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock3, Sparkles } from "lucide-react";
 import hero from "@/assets/clinic-hero.jpg";
 import treatment from "@/assets/treatment.jpg";
-import { reviews, results } from "@/data/content";
-import { productApi, productKeys } from "@/services/productApi";
-import { doctorApi } from "@/services/doctorApi";
-import { blogApi } from "@/services/blogApi";
 import { Container, SectionHeading } from "@/components/common/Container";
 import { ButtonLink } from "@/components/common/Button";
-import { DoctorCard, CheckFeature, BlogCard } from "@/components/cards/Cards";
+import { money } from "@/components/cards/Cards";
+import { servicePath } from "@/components/services/ServiceExplorer";
 import { RetailProductCard } from "@/components/retail/RetailProductCard";
+import { serviceApi } from "@/services/serviceApi";
+import { doctorApi } from "@/services/doctorApi";
+import { productApi, productKeys } from "@/services/productApi";
+import type { Doctor, Service } from "@/types";
 
-const homeProductFilters = { page: 1, sort: "newest" as const };
+const productFilters = { page: 1, sort: "newest" as const };
 
 export function HomePage() {
-    const productsQuery = useQuery({
-        queryKey: productKeys.catalog(homeProductFilters),
-        queryFn: () => productApi.catalog(homeProductFilters),
+    const servicesQuery = useQuery({
+        queryKey: ["services", { home: true }],
+        queryFn: () => serviceApi.list(),
     });
     const doctorsQuery = useQuery({
         queryKey: ["doctors", { featured: true }],
         queryFn: () => doctorApi.list(),
     });
-    const blogsQuery = useQuery({
-        queryKey: ["blogs", { featured: true }],
-        queryFn: () => blogApi.list({ per_page: 3 }),
+    const productsQuery = useQuery({
+        queryKey: productKeys.catalog(productFilters),
+        queryFn: () => productApi.catalog(productFilters),
     });
-    const products = productsQuery.data?.data ?? [];
+    const services = servicesQuery.data?.data ?? [];
     const doctors = doctorsQuery.data?.data ?? [];
+    const products = productsQuery.data?.data ?? [];
+
     return (
         <>
-            <section className="relative isolate min-h-screen overflow-hidden bg-navy-deep text-white">
+            <section className="relative isolate flex min-h-[700px] items-center overflow-hidden bg-[#302d29] text-white lg:min-h-[760px]">
                 <img
                     src={hero}
-                    alt="Không gian phòng khám Junie"
-                    className="absolute inset-0 -z-30 h-full w-full object-cover object-center"
+                    alt="Hình minh họa không gian phòng khám"
+                    fetchPriority="high"
+                    className="absolute inset-0 -z-30 h-full w-full object-cover"
                 />
-
-                <div className="absolute inset-0 -z-20 bg-black/20" />
-                <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,12,20,0.9)_0%,rgba(3,14,24,0.72)_48%,rgba(3,14,24,0.48)_100%)]" />
-                <div className="absolute inset-x-0 bottom-0 -z-10 h-52 bg-gradient-to-t from-[#03111d]/70 to-transparent" />
-
-                <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col justify-center gap-10 px-5 pb-12 pt-28 sm:px-8 lg:gap-14 lg:px-12 lg:pb-14 lg:pt-32 xl:px-16 2xl:px-20">
-                    <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] xl:gap-16">
-                        <div className="min-w-0 max-w-4xl">
-                            <div className="inline-flex items-center rounded-full border border-[#c8a466]/35 bg-[#12344d]/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#efd29d] backdrop-blur-md sm:text-xs">
-                                DERMATOLOGY • SKINCARE • PROFESSIONAL CARE
-                            </div>
-
-                            <h1 className="mt-6 font-display text-[2.5rem] font-semibold leading-[1.1] tracking-[-0.025em] text-white sm:text-5xl xl:text-[3.8rem]">
-                                Chăm sóc làn da khoa học,
-                                <br />
-                                <span className="font-normal italic text-[#f0cc91]">
-                                    bắt đầu từ sản phẩm phù hợp
-                                </span>
-                            </h1>
-
-                            <p className="mt-6 max-w-2xl text-sm leading-7 text-white/85 sm:text-base lg:leading-8">
-                                Khám phá các sản phẩm chăm sóc da được tuyển chọn theo nhu cầu, với
-                                thông tin minh bạch, giá bán rõ ràng và hỗ trợ chuyên môn khi cần.
-                            </p>
-
-                            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                                <ButtonLink
-                                    to="/products"
-                                    className="w-full rounded-full border border-[#d3b06f]/40 bg-[#aa7d3f] px-6 text-white shadow-lg shadow-black/15 hover:bg-[#bd8d4b] sm:w-auto"
-                                >
-                                    <ShoppingBag size={16} />
-                                    Mua sản phẩm
-                                </ButtonLink>
-                                <ButtonLink
-                                    to="/dealer/apply"
-                                    variant="outline"
-                                    className="w-full rounded-full border-white/30 bg-[#0c2e47]/75 px-6 text-white backdrop-blur-sm hover:bg-[#123b58] hover:text-white sm:w-auto"
-                                >
-                                    Dành cho đại lý <ArrowRight size={16} />
-                                </ButtonLink>
-                            </div>
+                <div className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,rgba(28,27,25,.9),rgba(37,35,32,.66)_55%,rgba(31,30,28,.34))]" />
+                <Container className="grid gap-12 pb-28 pt-40 lg:grid-cols-[minmax(0,1.2fr)_minmax(310px,.7fr)] lg:items-center lg:gap-16 lg:pb-32">
+                    <div className="max-w-3xl">
+                        <p className="inline-flex items-center gap-2 rounded-full border border-[#dbc49e]/60 bg-black/15 px-4 py-2 text-xs font-semibold uppercase tracking-[.16em] text-[#f3dfbc] backdrop-blur-sm">
+                            <Sparkles size={14} /> Da liễu · Thẩm mỹ · Chăm sóc da
+                        </p>
+                        <h1 className="mt-7 font-display text-[clamp(2.75rem,5.5vw,5.5rem)] font-medium leading-[1.08] tracking-[-.035em]">
+                            Nâng niu làn da,
+                            <br />
+                            <span className="italic text-[#e9cfaa]">tôn vinh vẻ đẹp tự nhiên</span>
+                        </h1>
+                        <p className="mt-7 max-w-2xl text-base leading-8 text-white/85 md:text-lg">
+                            JUNIE đồng hành cùng bạn từ buổi tư vấn đầu tiên đến hành trình chăm sóc
+                            da phù hợp với nhu cầu riêng.
+                        </p>
+                        <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                             <ButtonLink
                                 to="/booking"
-                                variant="ghost"
-                                className="mt-4 w-full justify-center px-0 text-xs font-medium text-white/85 hover:bg-transparent hover:text-white sm:w-auto sm:justify-start"
+                                className="border-[#cba56c] bg-[#b99159] px-7 text-[#201d18] hover:bg-[#d2ad75]"
                             >
-                                Cần tư vấn chuyên môn? Đặt lịch với bác sĩ <ArrowRight size={14} />
+                                <CalendarDays size={18} /> Đặt lịch ngay
+                            </ButtonLink>
+                            <ButtonLink
+                                to="/services"
+                                variant="outline"
+                                className="border-white/70 px-7 text-white hover:bg-white/10 hover:text-white"
+                            >
+                                Khám phá dịch vụ <ArrowRight size={17} />
                             </ButtonLink>
                         </div>
-
-                        <div className="relative mx-auto w-full max-w-[460px] lg:mx-0 lg:justify-self-end">
-                            <div className="overflow-hidden rounded-xl border border-white/10 bg-[#15364b]/90 shadow-2xl shadow-black/30 backdrop-blur-xl">
-                                <div className="flex items-start gap-3 border-b border-white/10 px-5 py-5">
-                                    <div className="mt-0.5 grid h-8 w-8 place-items-center rounded-md bg-white/5 text-[#e9c989]">
-                                        <Sparkles size={17} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-semibold uppercase leading-4 tracking-[0.04em] text-white">
-                                            CHĂM SÓC THEO NHU CẦU
-                                        </p>
-                                        <p className="mt-1 text-xs text-white/70">
-                                            Tìm sản phẩm phù hợp với làn da
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="px-5 py-4">
-                                    <div className="space-y-2.5">
-                                        <HeroProductNeed label="Chăm sóc da mụn" />
-                                        <HeroProductNeed label="Phục hồi & làm dịu" />
-                                        <HeroProductNeed label="Dưỡng ẩm & hàng rào da" />
-                                        <HeroProductNeed label="Chống nắng" />
-                                        <HeroProductNeed label="Chăm sóc sắc tố" />
-                                    </div>
-
-                                    <div className="mt-5 border-t border-white/10 pt-4">
-                                        <ButtonLink
-                                            to="/products"
-                                            variant="ghost"
-                                            className="h-auto min-h-0 p-0 text-xs font-semibold text-[#e8c47f] hover:bg-transparent hover:text-[#f4d79f]"
-                                        >
-                                            Xem tất cả sản phẩm <ArrowRight size={14} />
-                                        </ButtonLink>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center gap-4 rounded-xl border border-white/20 bg-white/95 px-5 py-4 text-[#0b2d49] shadow-xl shadow-black/15">
-                                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f3ead9] text-[#b78a49]">
-                                    <ShieldCheck size={21} />
-                                </div>
-                                <div className="min-w-0">
-                                    <strong className="text-xs sm:text-sm">
-                                        Sản phẩm được tuyển chọn
-                                    </strong>
-                                    <p className="mt-0.5 text-[10px] leading-4 text-slate-500 sm:text-xs">
-                                        Thông tin rõ ràng • Nguồn gốc minh bạch • Hỗ trợ tư vấn
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-5 border-t border-white/20 pt-6 sm:grid-cols-2 lg:grid-cols-4">
-                        <HeroTrustItem
-                            title="SẢN PHẨM CHÍNH HÃNG"
-                            description="Nguồn gốc minh bạch"
-                        />
-                        <HeroTrustItem
-                            title="GIÁ BÁN RÕ RÀNG"
-                            description="Retail & giá dành cho đại lý"
-                        />
-                        <HeroTrustItem
-                            title="ĐẶT HÀNG DỄ DÀNG"
-                            description="Mua lẻ hoặc đặt số lượng lớn"
-                        />
-                        <HeroTrustItem
-                            title="TƯ VẤN CHUYÊN MÔN"
-                            description="Hỗ trợ khi khách hàng cần"
-                        />
+                    <div className="hidden rounded-2xl border border-white/25 bg-[#302d29]/60 p-7 shadow-2xl backdrop-blur-lg lg:block">
+                        <p className="text-xs font-semibold uppercase tracking-[.18em] text-[#ead0a5]">
+                            Bắt đầu tại JUNIE
+                        </p>
+                        <h2 className="mt-4 text-3xl leading-tight">
+                            Một buổi hẹn dành riêng cho làn da của bạn
+                        </h2>
+                        <p className="mt-4 text-sm leading-7 text-white/75">
+                            Chọn dịch vụ, bác sĩ và thời gian thuận tiện trên trang đặt lịch.
+                        </p>
+                        <ButtonLink
+                            to="/booking"
+                            className="mt-7 w-full border-[#e6d1ac] bg-[#f2e8d8] text-[#2b2925] hover:bg-white"
+                        >
+                            Chọn lịch hẹn <ArrowRight size={17} />
+                        </ButtonLink>
                     </div>
+                </Container>
+                <div className="absolute inset-x-0 bottom-0 border-t border-white/25 bg-[#242422]/45 py-4 backdrop-blur-sm">
+                    <Container className="flex flex-wrap gap-x-8 gap-y-2 text-xs font-medium text-white/85 md:justify-between md:text-sm">
+                        <span>Tư vấn theo nhu cầu làn da</span>
+                        <span>Dịch vụ da liễu và thẩm mỹ</span>
+                        <span>Đặt lịch trực tuyến thuận tiện</span>
+                    </Container>
                 </div>
             </section>
-            <section className="section-space bg-card">
+
+            <section id="pricing" className="section-space scroll-mt-20 bg-[#fbf8f3]">
                 <Container>
                     <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-                        <SectionHeading eyebrow="Junie Retail" title="Sản phẩm nổi bật" />
-                        <p className="max-w-md text-sm leading-6 text-muted-foreground">
-                            Khám phá sản phẩm chăm sóc da với thông tin và giá bán rõ ràng để lựa
-                            chọn phù hợp với nhu cầu của bạn.
+                        <SectionHeading
+                            eyebrow="Dịch vụ tại JUNIE"
+                            title="Chăm sóc làn da theo cách của bạn"
+                            description="Khám phá dịch vụ hiện có và xem giá tham khảo khi được công bố. Thông tin chi tiết được xác nhận trong quá trình đặt lịch."
+                        />
+                        <ButtonLink
+                            to="/services"
+                            variant="ghost"
+                            className="self-start px-0 text-[#705637] hover:bg-transparent"
+                        >
+                            Tất cả dịch vụ <ArrowRight size={17} />
+                        </ButtonLink>
+                    </div>
+                    {servicesQuery.isPending ? (
+                        <p className="mt-10 text-sm text-muted-foreground">Đang tải dịch vụ...</p>
+                    ) : servicesQuery.isError ? (
+                        <p className="mt-10 text-sm text-red-700">Chưa thể tải dịch vụ lúc này.</p>
+                    ) : services.length === 0 ? (
+                        <p className="mt-10 text-sm text-muted-foreground">
+                            Danh sách dịch vụ đang được cập nhật.
                         </p>
+                    ) : (
+                        <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                            {services.slice(0, 6).map((service) => (
+                                <HomeServiceCard key={service.id} service={service} />
+                            ))}
+                        </div>
+                    )}
+                </Container>
+            </section>
+
+            <section id="about" className="section-space scroll-mt-20 bg-white">
+                <Container className="grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
+                    <div className="overflow-hidden rounded-t-[9rem] rounded-b-2xl bg-[#e8dfd1]">
+                        <img
+                            src={hero}
+                            alt="Hình minh họa không gian phòng khám"
+                            loading="lazy"
+                            width={1200}
+                            height={900}
+                            className="aspect-[5/4] w-full object-cover"
+                        />
+                    </div>
+                    <div>
+                        <SectionHeading
+                            eyebrow="Về JUNIE"
+                            title="Một không gian dành cho sự an tâm và vẻ đẹp tự nhiên"
+                        />
+                        <p className="mt-6 text-base leading-8 text-muted-foreground">
+                            JUNIE giới thiệu các dịch vụ da liễu và thẩm mỹ trong một hành trình rõ
+                            ràng: tìm hiểu dịch vụ, chọn lịch hẹn và trao đổi trực tiếp với đội ngũ
+                            chuyên môn.
+                        </p>
+                        <div className="mt-8 grid gap-4 border-t border-[#e5daca] pt-7 text-sm leading-6 sm:grid-cols-2">
+                            <p>✦ Tìm hiểu dịch vụ và chi phí trước khi đặt lịch</p>
+                            <p>✦ Chọn khung giờ phù hợp với bạn</p>
+                        </div>
+                        <ButtonLink
+                            to="/booking"
+                            variant="outline"
+                            className="mt-8 border-[#bd9d74]"
+                        >
+                            Đặt lịch tư vấn <ArrowRight size={17} />
+                        </ButtonLink>
+                    </div>
+                </Container>
+            </section>
+
+            <section className="section-space bg-[#f4eee5]">
+                <Container>
+                    <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+                        <SectionHeading
+                            eyebrow="Đội ngũ JUNIE"
+                            title="Gặp gỡ bác sĩ"
+                            description="Thông tin đội ngũ từ hồ sơ bác sĩ đang hiển thị trên hệ thống JUNIE."
+                        />
+                        <ButtonLink
+                            to="/doctors"
+                            variant="ghost"
+                            className="self-start px-0 text-[#705637] hover:bg-transparent"
+                        >
+                            Xem đội ngũ <ArrowRight size={17} />
+                        </ButtonLink>
+                    </div>
+                    {doctorsQuery.isPending ? (
+                        <p className="mt-10 text-sm text-muted-foreground">Đang tải đội ngũ...</p>
+                    ) : doctorsQuery.isError ? (
+                        <p className="mt-10 text-sm text-red-700">
+                            Chưa thể tải thông tin bác sĩ lúc này.
+                        </p>
+                    ) : doctors.length === 0 ? (
+                        <p className="mt-10 text-sm text-muted-foreground">
+                            Thông tin đội ngũ đang được cập nhật.
+                        </p>
+                    ) : (
+                        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            {doctors.slice(0, 3).map((doctor) => (
+                                <HomeDoctorCard key={doctor.id} doctor={doctor} />
+                            ))}
+                        </div>
+                    )}
+                </Container>
+            </section>
+
+            <section className="section-space bg-white">
+                <Container>
+                    <SectionHeading
+                        center
+                        eyebrow="Quy trình đặt lịch"
+                        title="Chỉ vài bước để bắt đầu"
+                        description="Đặt lịch qua luồng hiện có của JUNIE và theo dõi thông tin hẹn của bạn."
+                    />
+                    <div className="mt-12 grid gap-5 md:grid-cols-3">
+                        {[
+                            [
+                                "01",
+                                "Chọn dịch vụ",
+                                "Xem thông tin dịch vụ và chọn điều bạn muốn tìm hiểu.",
+                            ],
+                            [
+                                "02",
+                                "Chọn bác sĩ & thời gian",
+                                "Chọn bác sĩ và khung giờ còn trống trên trang đặt lịch.",
+                            ],
+                            [
+                                "03",
+                                "Xác nhận lịch hẹn",
+                                "Điền thông tin liên hệ và hoàn tất các bước xác nhận.",
+                            ],
+                        ].map(([number, title, description]) => (
+                            <div
+                                key={number}
+                                className="rounded-xl border border-[#e8ddcb] bg-[#fbf8f3] p-7"
+                            >
+                                <span className="font-display text-4xl italic text-[#bb9a6a]">
+                                    {number}
+                                </span>
+                                <h3 className="mt-5 text-2xl text-[#2c2a27]">{title}</h3>
+                                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                                    {description}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </Container>
+            </section>
+
+            <section className="bg-[#373630] py-16 text-white md:py-24">
+                <Container className="grid items-center gap-8 lg:grid-cols-[1.3fr_.7fr]">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[.2em] text-[#e2c79d]">
+                            Lịch hẹn tại JUNIE
+                        </p>
+                        <h2 className="mt-4 max-w-2xl text-4xl leading-tight md:text-5xl">
+                            Dành thời gian cho làn da của bạn
+                        </h2>
+                        <p className="mt-5 max-w-xl text-sm leading-7 text-white/75">
+                            Chọn dịch vụ và thời gian thuận tiện trên trang đặt lịch JUNIE.
+                        </p>
+                    </div>
+                    <ButtonLink
+                        to="/booking"
+                        className="w-full border-[#d7bb91] bg-[#d7bb91] px-8 py-4 text-[#292621] hover:bg-[#ead4b2] lg:justify-self-end"
+                    >
+                        Đặt lịch hẹn <ArrowRight size={18} />
+                    </ButtonLink>
+                </Container>
+            </section>
+
+            <section className="section-space bg-[#fbf8f3]">
+                <Container>
+                    <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+                        <SectionHeading
+                            eyebrow="Chăm sóc tại nhà"
+                            title="Sản phẩm tiêu biểu"
+                            description="Một số sản phẩm chăm sóc da từ danh mục bán lẻ của JUNIE."
+                        />
+                        <ButtonLink
+                            to="/products"
+                            variant="ghost"
+                            className="self-start px-0 text-[#705637] hover:bg-transparent"
+                        >
+                            Xem sản phẩm <ArrowRight size={17} />
+                        </ButtonLink>
                     </div>
                     {productsQuery.isPending ? (
                         <p className="mt-10 text-sm text-muted-foreground">Đang tải sản phẩm...</p>
                     ) : productsQuery.isError ? (
-                        <p className="mt-10 text-sm text-red-700">
-                            Không thể tải sản phẩm lúc này.
-                        </p>
+                        <p className="mt-10 text-sm text-red-700">Chưa thể tải sản phẩm lúc này.</p>
                     ) : products.length === 0 ? (
                         <p className="mt-10 text-sm text-muted-foreground">
-                            Chưa có sản phẩm đang bán.
+                            Sản phẩm đang được cập nhật.
                         </p>
                     ) : (
                         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -184,227 +301,139 @@ export function HomePage() {
                             ))}
                         </div>
                     )}
-                    <div className="mt-8 text-center">
-                        <ButtonLink to="/products" variant="ghost">
-                            Xem tất cả sản phẩm <ArrowRight size={16} />
-                        </ButtonLink>
+                </Container>
+            </section>
+
+            <section className="section-space bg-white">
+                <Container className="grid gap-10 lg:grid-cols-[.75fr_1.25fr] lg:gap-16">
+                    <SectionHeading eyebrow="Câu hỏi thường gặp" title="Trước khi đến JUNIE" />
+                    <div className="divide-y divide-[#e9dfd1] border-y border-[#e9dfd1]">
+                        <Faq
+                            question="Tôi có thể đặt lịch trực tuyến không?"
+                            answer="Có. Chọn Đặt lịch, sau đó chọn dịch vụ, bác sĩ và khung giờ phù hợp trên trang đặt lịch."
+                        />
+                        <Faq
+                            question="Tôi có cần đăng nhập để đặt lịch không?"
+                            answer="Bạn có thể đặt lịch với tư cách khách. Trang đặt lịch sẽ hướng dẫn các bước xác nhận thông tin liên hệ."
+                        />
+                        <Faq
+                            question="Xem chi phí dịch vụ ở đâu?"
+                            answer="Giá hiện có được hiển thị trong danh sách và trang chi tiết dịch vụ. Bạn có thể trao đổi thêm khi đặt lịch."
+                        />
                     </div>
                 </Container>
             </section>
-            <section className="section-space">
-                <Container>
-                    <SectionHeading
-                        eyebrow="Chuyên gia đồng hành"
-                        title="Đội ngũ bác sĩ"
-                        description="Chuyên môn vững vàng, thấu hiểu từng làn da và luôn đặt sự an toàn lên hàng đầu."
-                    />
-                    {doctorsQuery.isPending ? (
-                        <p className="mt-10 text-sm text-muted-foreground">Đang tải bác sĩ...</p>
-                    ) : doctorsQuery.isError ? (
-                        <p className="mt-10 text-sm text-red-700">
-                            Không thể tải danh sách bác sĩ lúc này.
-                        </p>
-                    ) : doctors.length === 0 ? (
-                        <p className="mt-10 text-sm text-muted-foreground">
-                            Chưa có bác sĩ đang hoạt động.
-                        </p>
-                    ) : (
-                        <div className="mt-10 grid gap-x-8 gap-y-12 sm:grid-cols-2 xl:grid-cols-3">
-                            {doctors.slice(0, 6).map((d) => (
-                                <DoctorCard key={d.id} doctor={d} />
-                            ))}
-                        </div>
-                    )}
-                    <div className="mt-10 text-center">
-                        <ButtonLink to="/doctors" variant="outline">
-                            Xem thêm bác sĩ <ArrowRight size={16} />
-                        </ButtonLink>
-                    </div>
-                </Container>
-            </section>
-            <section id="about" className="section-space scroll-mt-20 bg-muted">
-                <Container>
-                    <div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr]">
-                        <div>
-                            <SectionHeading
-                                eyebrow="Giá trị cốt lõi"
-                                title="Tại sao hàng chục ngàn khách hàng tin chọn Junie"
-                            />
-                            <p className="mt-5 text-sm leading-6 text-muted-foreground">
-                                Chúng tôi kết hợp nền tảng y khoa, công nghệ chính hãng và trải
-                                nghiệm chăm sóc riêng tư.
-                            </p>
-                            <div className="mt-8 flex gap-3 rounded-md border bg-card p-5">
-                                <Award className="shrink-0 text-secondary" />
-                                <p className="text-sm leading-6">
-                                    <strong>Cam kết hiệu quả bằng văn bản</strong>
-                                    <br />
-                                    <span className="text-muted-foreground">
-                                        Mỗi liệu trình đều có mục tiêu và lộ trình theo dõi rõ ràng.
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <CheckFeature title="Bác sĩ chuyên môn cao">
-                                100% bác sĩ có chứng chỉ hành nghề và kinh nghiệm chuyên sâu.
-                            </CheckFeature>
-                            <CheckFeature title="Công nghệ hiện đại">
-                                Thiết bị chính hãng, được kiểm định và bảo trì định kỳ.
-                            </CheckFeature>
-                            <CheckFeature title="Quy trình chuẩn hóa">
-                                Đánh giá, thực hiện và theo dõi theo tiêu chuẩn y khoa.
-                            </CheckFeature>
-                            <CheckFeature title="Chăm sóc cá nhân hóa">
-                                Mỗi phác đồ dựa trên nền da, mong muốn và nhịp sống riêng.
-                            </CheckFeature>
-                        </div>
-                    </div>
-                </Container>
-            </section>
-            <section className="section-space bg-card">
-                <Container>
-                    <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-                        <SectionHeading eyebrow="Thay đổi chân thật" title="Kết quả khách hàng" />
-                        <p className="max-w-md text-sm text-muted-foreground">
-                            Hình ảnh ghi nhận sau liệu trình với sự đồng ý của khách hàng.
-                        </p>
-                    </div>
-                    <div className="mt-10 grid gap-6 md:grid-cols-3">
-                        {results.map((r, i) => (
-                            <article key={r.title} className="overflow-hidden rounded-md border">
-                                <div className="relative">
-                                    <img
-                                        src={treatment}
-                                        alt={r.title}
-                                        loading="lazy"
-                                        className="aspect-[16/9] w-full object-cover"
-                                    />
-                                    <div className="absolute inset-x-0 bottom-0 grid grid-cols-2 bg-navy-deep/85 py-2 text-center text-xs text-primary-foreground">
-                                        <span>Trước</span>
-                                        <span>Sau {3 + i} tuần</span>
-                                    </div>
-                                </div>
-                                <div className="p-5">
-                                    <p className="text-xs text-secondary">{r.service}</p>
-                                    <h3 className="mt-2 text-lg text-primary">{r.title}</h3>
-                                    <p className="mt-2 text-sm text-muted-foreground">
-                                        {r.description}
-                                    </p>
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                </Container>
-            </section>
-            <section className="section-space">
-                <Container>
-                    <SectionHeading
-                        center
-                        eyebrow="Trải nghiệm tại Junie"
-                        title="Khách hàng nói gì về chúng tôi"
-                        description="Sự hài lòng và an tâm của khách hàng là minh chứng rõ nhất cho chất lượng y khoa."
-                    />
-                    <div className="scrollbar-none mt-10 flex snap-x gap-5 overflow-x-auto pb-4 md:grid md:grid-cols-3">
-                        {reviews.map((r) => (
-                            <article
-                                key={r.name}
-                                className="card-surface min-w-[85%] snap-center p-6 sm:min-w-[55%] md:min-w-0"
-                            >
-                                <p className="tracking-widest text-secondary">★★★★★</p>
-                                <blockquote className="mt-5 font-display text-lg italic leading-7 text-primary">
-                                    “{r.quote}”
-                                </blockquote>
-                                <p className="mt-6 text-sm font-semibold">{r.name}</p>
-                                <p className="text-xs text-muted-foreground">{r.service}</p>
-                            </article>
-                        ))}
-                    </div>
-                </Container>
-            </section>
-            <section className="section-space bg-muted">
-                <Container>
-                    <SectionHeading eyebrow="Góc khoa học làn da" title="Kiến thức & Tin tức" />
-                    {blogsQuery.isPending ? (
-                        <p className="mt-10 text-sm text-muted-foreground">Đang tải bài viết...</p>
-                    ) : blogsQuery.isError ? (
-                        <p className="mt-10 text-sm text-red-700">
-                            Không thể tải bài viết lúc này.
-                        </p>
-                    ) : blogsQuery.data?.data.length === 0 ? (
-                        <p className="mt-10 text-sm text-muted-foreground">Chưa có bài viết nào.</p>
-                    ) : (
-                        <div className="mt-10 grid gap-6 md:grid-cols-3">
-                            {blogsQuery.data?.data.map((blog) => (
-                                <BlogCard key={blog.id} blog={blog} />
-                            ))}
-                        </div>
-                    )}
-                    <div className="mt-8 text-center">
-                        <ButtonLink to="/blogs" variant="ghost">
-                            Xem tất cả bài viết <ArrowRight size={16} />
-                        </ButtonLink>
-                    </div>
-                </Container>
-            </section>
-            <section className="bg-navy-deep py-16 text-primary-foreground md:py-20">
-                <Container>
-                    <div className="grid items-center gap-10 lg:grid-cols-[1fr_.8fr]">
-                        <div>
-                            <p className="label-luxury">Tư vấn miễn phí cùng bác sĩ</p>
-                            <h2 className="mt-4 max-w-2xl text-4xl md:text-5xl">
-                                Bắt đầu hành trình chăm sóc làn da chuẩn khoa học ngay hôm nay
-                            </h2>
-                            <p className="mt-5 max-w-xl text-sm leading-6 opacity-75">
-                                Đặt lịch trước để được bác sĩ chuyên khoa thăm khám và xây dựng lộ
-                                trình riêng.
-                            </p>
-                            <p className="mt-6 flex items-center gap-2 font-semibold">
-                                <Phone size={18} />
-                                1900 6688
-                            </p>
-                        </div>
-                        <div className="rounded-lg bg-card p-6 text-foreground md:p-8">
-                            <h3 className="text-2xl text-primary">Đăng ký khám da chuyên sâu</h3>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Bác sĩ sẽ liên hệ xác nhận trong vòng 15 phút.
-                            </p>
-                            <ButtonLink to="/booking" className="mt-6 w-full">
-                                Đặt lịch hẹn ngay
-                            </ButtonLink>
-                        </div>
-                    </div>
-                </Container>
-            </section>
+            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#e4d6bf] bg-[#fbf8f3]/95 p-3 shadow-[0_-8px_24px_rgba(0,0,0,.08)] backdrop-blur-md lg:hidden">
+                <ButtonLink
+                    to="/booking"
+                    className="w-full border-[#a9814f] bg-[#b99159] text-[#211d18] hover:bg-[#d0ab76]"
+                >
+                    <CalendarDays size={18} /> Đặt lịch tại JUNIE
+                </ButtonLink>
+            </div>
         </>
     );
 }
-function HeroTrustItem({ title, description }: { title: string; description: string }) {
+
+function HomeServiceCard({ service }: { service: Service }) {
     return (
-        <div>
-            <strong className="text-xs font-semibold tracking-[0.08em] text-[#f0cc91]">
-                {title}
-            </strong>
-            <p className="mt-1 text-xs text-white/75">{description}</p>
-        </div>
+        <article className="flex h-full flex-col overflow-hidden rounded-xl border border-[#e6dac7] bg-white shadow-sm">
+            <img
+                src={service.image || treatment}
+                alt={service.name}
+                loading="lazy"
+                width={1200}
+                height={720}
+                className="aspect-[16/10] w-full object-cover"
+            />
+            <div className="flex flex-1 flex-col p-6">
+                <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#a48156]">
+                    {service.category || "Dịch vụ JUNIE"}
+                </p>
+                <h3 className="mt-3 text-2xl text-[#2e2c29]">{service.name}</h3>
+                {service.description && (
+                    <p className="mt-3 line-clamp-3 flex-1 text-sm leading-7 text-muted-foreground">
+                        {service.description}
+                    </p>
+                )}
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-[#eee6da] pt-5 text-sm">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <Clock3 size={15} /> {service.duration} phút
+                    </span>
+                    {Number(service.price) > 0 && (
+                        <strong className="text-[#765739]">{money(service.price)}</strong>
+                    )}
+                </div>
+                <div className="mt-5 flex flex-wrap gap-3">
+                    <ButtonLink
+                        to={`/booking?service_id=${service.id}`}
+                        className="flex-1 border-[#b99159] bg-[#b99159] text-[#211d18] hover:bg-[#d0ab76]"
+                    >
+                        Đặt lịch
+                    </ButtonLink>
+                    <ButtonLink
+                        to={servicePath(service)}
+                        variant="outline"
+                        className="flex-1 border-[#c7af8f]"
+                    >
+                        Chi tiết
+                    </ButtonLink>
+                </div>
+            </div>
+        </article>
     );
 }
 
-function HeroProductNeed({ label }: { label: string }) {
+function HomeDoctorCard({ doctor }: { doctor: Doctor }) {
     return (
-        <ButtonLink
-            to="/products"
-            variant="ghost"
-            className="group flex min-h-11 w-full items-center justify-between rounded-md border border-white/10 bg-white/[0.055] px-3.5 py-2.5 text-left text-xs font-medium text-white hover:bg-white/10 hover:text-white"
-        >
-            <span className="flex items-center gap-2.5">
-                <Sparkles size={14} className="shrink-0 text-[#e7c37e]" />
-                {label}
-            </span>
-            <ArrowRight
-                size={13}
-                className="shrink-0 text-white/50 transition-transform group-hover:translate-x-0.5"
-            />
-        </ButtonLink>
+        <article className="rounded-xl border border-[#e4d7c4] bg-white p-5">
+            {doctor.avatar ? (
+                <img
+                    src={doctor.avatar}
+                    alt={doctor.name}
+                    loading="lazy"
+                    width={800}
+                    height={880}
+                    className="aspect-[5/4] w-full rounded-lg object-cover"
+                />
+            ) : (
+                <div
+                    className="grid aspect-[5/4] place-items-center rounded-lg bg-[#ece1d2] font-display text-5xl text-[#8c6b49]"
+                    aria-hidden="true"
+                >
+                    {doctor.name.trim().charAt(0)}
+                </div>
+            )}
+            {doctor.specialty && (
+                <p className="mt-5 text-xs font-semibold uppercase tracking-[.12em] text-[#9e7c53]">
+                    {doctor.specialty}
+                </p>
+            )}
+            <h3 className="mt-2 text-2xl text-[#2e2c29]">{doctor.name}</h3>
+            {doctor.bio && (
+                <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                    {doctor.bio}
+                </p>
+            )}
+            <ButtonLink
+                to="/booking"
+                variant="ghost"
+                className="mt-4 px-0 text-[#765739] hover:bg-transparent"
+            >
+                Đặt lịch tư vấn <ArrowRight size={16} />
+            </ButtonLink>
+        </article>
+    );
+}
+
+function Faq({ question, answer }: { question: string; answer: string }) {
+    return (
+        <details className="group py-5">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold text-[#302d29] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b99159]">
+                {question}
+                <span className="text-2xl font-normal text-[#b99159] group-open:rotate-45">+</span>
+            </summary>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">{answer}</p>
+        </details>
     );
 }

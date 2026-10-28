@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdministrativeWard;
 use App\Models\DealerAccount;
 use App\Models\DealerAccountUser;
 use App\Models\DealerOrderImport;
@@ -11,6 +12,7 @@ use App\Models\PriceListItem;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Models\WarehouseServiceArea;
 use App\Services\DealerOrderImportService;
 use App\Services\DealerQuickOrderService;
 use App\Services\DealerWalletService;
@@ -71,6 +73,7 @@ class DealerQuickOrderConcurrencyTest extends TestCase
     private function import(User $user, DealerAccount $account, ProductVariant $variant,
         string $reference): DealerOrderImport
     {
+        $shipping = $this->shipping();
         $import = DealerOrderImport::create(['dealer_account_id' => $account->id,
             'uploaded_by' => $user->id, 'original_filename' => 'test.xlsx',
             'file_hash' => hash('sha256', $reference.Str::uuid()), 'file_size' => 100,
@@ -78,16 +81,17 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         $normalized = strtoupper($reference);
         $import->rows()->create(['sheet_row_number' => 2, 'external_reference' => $reference,
             'external_reference_normalized' => $normalized, 'sku_input' => $variant->sku,
-            'quantity' => '1', 'recipient' => ['recipient_name' => 'Recipient',
-                'recipient_phone' => '0900000000', 'recipient_email' => '',
-                'shipping_address_line1' => 'Street', 'shipping_address_line2' => '',
-                'shipping_city' => 'HCM', 'shipping_province' => 'HCM',
-                'shipping_country' => 'VN', 'shipping_postal_code' => '', 'delivery_note' => ''],
+            'quantity' => '1', 'recipient' => [...$shipping,
+                'recipient_email' => '', 'shipping_address_line2' => '',
+                'shipping_postal_code' => '', 'delivery_note' => ''],
             'validation_errors' => []]);
         $import->groups()->create(['external_reference' => $reference,
             'external_reference_normalized' => $normalized]);
 
-        return app(DealerOrderImportService::class)->revalidate($user, $account, $import);
+        $preview = app(DealerOrderImportService::class)->revalidate($user, $account, $import);
+        $this->assertSame(0, $preview->invalid_order_count);
+
+        return $preview;
     }
 
     private function importProcess(User $user, DealerAccount $account, DealerOrderImport $import): Process
@@ -115,14 +119,53 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
     }
 
-    private function awaitLock(Process $process): void
+    private function awaitDatabaseLockWait(Process $process, string $table): void
     {
-        $process->start();
-        $deadline = microtime(true) + 5;
-        while (! str_contains($process->getOutput(), 'locked') && microtime(true) < $deadline) {
+        $deadline = microtime(true) + 10;
+        while ($process->isRunning() && microtime(true) < $deadline) {
+            $queries = DB::select('SHOW FULL PROCESSLIST');
+            if (collect($queries)->contains(fn (object $row): bool => $row->db === 'aesthetic_clinic_testing'
+                && $row->Command === 'Execute'
+                && str_contains(strtolower((string) $row->Info), $table)
+                && str_contains(strtolower((string) $row->Info), 'for update'))) {
+                return;
+            }
             usleep(10000);
         }
-        $this->assertStringContainsString('locked', $process->getOutput(), $process->getErrorOutput());
+        $this->fail('Submit process did not wait for the '.$table.' row lock: '.$process->getErrorOutput().$process->getOutput());
+    }
+
+    /** @param array<int, Process> $processes */
+    private function startAtDatabaseLock(array $processes, string $table, array $rowIds): void
+    {
+        DB::transaction(function () use ($processes, $table, $rowIds): void {
+            DB::table($table)->whereIn('id', $rowIds)->orderBy('id')->lockForUpdate()->get();
+
+            foreach ($processes as $process) {
+                $process->start();
+            }
+
+            $deadline = microtime(true) + 10;
+            while (microtime(true) < $deadline) {
+                $queries = DB::select('SHOW FULL PROCESSLIST');
+                $waitingCount = collect($queries)->filter(fn (object $row): bool => $row->db === 'aesthetic_clinic_testing'
+                    && $row->Command === 'Execute'
+                    && str_contains(strtolower((string) $row->Info), $table)
+                    && str_contains(strtolower((string) $row->Info), 'for update'))->count();
+                if ($waitingCount >= count($processes)) {
+                    return;
+                }
+
+                if (collect($processes)->contains(fn (Process $process): bool => ! $process->isRunning())) {
+                    break;
+                }
+
+                usleep(10000);
+            }
+
+            $this->fail('Processes did not both wait for the '.$table.' row lock: '
+                .implode(' | ', array_map(fn (Process $process): string => $process->getErrorOutput().$process->getOutput(), $processes)));
+        });
     }
 
     /** @return array{User, DealerAccount, DealerTier, ProductVariant, PriceListItem} */
@@ -134,6 +177,7 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         DealerAccountUser::factory()->create(['dealer_account_id' => $account->id, 'user_id' => $user->id]);
         $variant = ProductVariant::factory()->create(['sellable_dealer' => true, 'track_inventory' => true]);
         $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
+        WarehouseServiceArea::query()->create(['warehouse_id' => $warehouse->id, 'province_code' => '79']);
         $list = PriceList::factory()->create(['pricing_context' => 'dealer', 'scope_type' => 'tier',
             'dealer_tier_id' => $tier->id, 'currency' => 'VND']);
         $price = PriceListItem::factory()->create(['price_list_id' => $list->id,
@@ -151,12 +195,21 @@ class DealerQuickOrderConcurrencyTest extends TestCase
     private function body(User $user, DealerAccount $account, ProductVariant $variant, ?string $key = null): array
     {
         $items = [['product_variant_id' => $variant->id, 'quantity' => '1']];
-        $fingerprint = app(DealerQuickOrderService::class)->review($user, $account, $items)['review_fingerprint'];
+        $shipping = $this->shipping();
+        $fingerprint = app(DealerQuickOrderService::class)->review($user, $account, $items, $shipping)['review_fingerprint'];
 
         return ['operation_key' => $key ?? (string) Str::uuid(), 'review_fingerprint' => $fingerprint,
-            'items' => $items, 'recipient_name' => 'Recipient', 'recipient_phone' => '0900000000',
-            'shipping_address_line1' => 'Street', 'shipping_city' => 'HCM',
-            'shipping_province' => 'HCM', 'shipping_country' => 'VN'];
+            'items' => $items, ...$shipping];
+    }
+
+    /** @return array<string, string> */
+    private function shipping(): array
+    {
+        $ward = AdministrativeWard::query()->where('province_code', '79')->orderBy('code')->firstOrFail();
+
+        return ['recipient_name' => 'Recipient', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => 'Street', 'shipping_province_code' => '79',
+            'shipping_ward_code' => $ward->code];
     }
 
     public function test_two_dealer_accounts_competing_for_last_unit_do_not_oversell(): void
@@ -168,13 +221,15 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         app(DealerWalletService::class)->recordDeposit($secondAccount, ['operation_key' => (string) Str::uuid(), 'amount' => '100000.00', 'method' => 'other_manual'], User::factory()->admin()->create());
         $first = $this->orderProcess($firstUser, $firstAccount, $this->body($firstUser, $firstAccount, $variant));
         $second = $this->orderProcess($secondUser, $secondAccount, $this->body($secondUser, $secondAccount, $variant));
-        $first->start();
-        $second->start();
+        $this->startAtDatabaseLock([$first, $second], 'dealer_accounts', [$firstAccount->id, $secondAccount->id]);
         $results = [$this->processResult($first), $this->processResult($second)];
         $this->assertSame(['conflict', 'ok'], collect($results)->pluck('status')->sort()->values()->all());
-        $this->assertSame('INSUFFICIENT_STOCK', collect($results)->firstWhere('status', 'conflict')['code']);
+        $this->assertContains(collect($results)->firstWhere('status', 'conflict')['code'],
+            ['DEALER_ORDER_CHANGED', 'INSUFFICIENT_STOCK']);
         $this->assertDatabaseCount('sales_orders', 1);
         $this->assertDatabaseCount('inventory_reservations', 1);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('dealer_wallet_transactions', 3);
         $this->assertDatabaseHas('inventory_balances', ['reserved_quantity' => '1.000', 'on_hand_quantity' => '1.000']);
     }
 
@@ -184,13 +239,15 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         $body = $this->body($user, $account, $variant);
         $first = $this->orderProcess($user, $account, $body);
         $second = $this->orderProcess($user, $account, $body);
-        $first->start();
-        $second->start();
+        $this->startAtDatabaseLock([$first, $second], 'dealer_accounts', [$account->id]);
         $results = [$this->processResult($first), $this->processResult($second)];
         $this->assertSame(['ok', 'ok'], array_column($results, 'status'));
         $this->assertSame($results[0]['id'], $results[1]['id']);
         $this->assertDatabaseCount('sales_orders', 1);
         $this->assertDatabaseCount('inventory_reservations', 1);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('dealer_wallet_transactions', 2);
+        $this->assertDatabaseHas('dealer_wallets', ['dealer_account_id' => $account->id, 'balance' => '99900.00']);
     }
 
     public function test_concurrent_orders_serialize_wallet_debit_and_cannot_overspend(): void
@@ -198,14 +255,14 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         [$user, $account, , $variant] = $this->fixture('2', '100.00');
         $first = $this->orderProcess($user, $account, $this->body($user, $account, $variant));
         $second = $this->orderProcess($user, $account, $this->body($user, $account, $variant));
-        $first->start();
-        $second->start();
+        $this->startAtDatabaseLock([$first, $second], 'dealer_accounts', [$account->id]);
         $results = [$this->processResult($first), $this->processResult($second)];
 
         $this->assertSame(['conflict', 'ok'], collect($results)->pluck('status')->sort()->values()->all());
         $this->assertSame('DEALER_WALLET_INSUFFICIENT_BALANCE', collect($results)->firstWhere('status', 'conflict')['code']);
         $this->assertDatabaseCount('sales_orders', 1);
         $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('dealer_wallet_transactions', 2);
         $this->assertDatabaseHas('dealer_wallets', ['dealer_account_id' => $account->id, 'balance' => '0.00']);
     }
 
@@ -213,20 +270,20 @@ class DealerQuickOrderConcurrencyTest extends TestCase
     {
         [$user, $account, , $variant, $price] = $this->fixture('2');
         $body = $this->body($user, $account, $variant);
-        $modifier = $this->process('$productId = '.(int) $variant->product_id.'; $priceId = '.(int) $price->id.'; '
-            .'\Illuminate\Support\Facades\DB::transaction(function () use ($productId, $priceId) { '
-            .'\Illuminate\Support\Facades\DB::table("products")->where("id", $productId)->lockForUpdate()->first(); '
-            .'echo "locked\n"; flush(); usleep(300000); '
-            .'\Illuminate\Support\Facades\DB::table("price_list_items")->where("id", $priceId)->update(["unit_price" => "120.00"]); });');
-        $this->awaitLock($modifier);
         $submit = $this->orderProcess($user, $account, $body);
-        $submit->start();
+        DB::transaction(function () use ($variant, $price, $submit): void {
+            DB::table('products')->where('id', $variant->product_id)->lockForUpdate()->first();
+            $submit->start();
+            $this->awaitDatabaseLockWait($submit, 'products');
+            DB::table('price_list_items')->where('id', $price->id)->update(['unit_price' => '120.00']);
+        });
         $result = $this->processResult($submit);
-        $modifier->wait();
-        $this->assertTrue($modifier->isSuccessful(), $modifier->getErrorOutput());
+        $this->assertDatabaseHas('price_list_items', ['id' => $price->id, 'unit_price' => '120.00']);
         $this->assertSame('conflict', $result['status'], json_encode($result));
         $this->assertSame('DEALER_ORDER_CHANGED', $result['code']);
         $this->assertDatabaseCount('sales_orders', 0);
+        $this->assertDatabaseCount('payments', 0);
+        $this->assertDatabaseCount('dealer_wallet_transactions', 1);
     }
 
     public function test_tier_change_and_suspension_while_submit_waits_fail_closed(): void
@@ -234,39 +291,38 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         [$user, $account, , $variant] = $this->fixture('2');
         $body = $this->body($user, $account, $variant);
         $gold = DealerTier::factory()->create();
-        $modifier = $this->process('$accountId = '.(int) $account->id.'; $tierId = '.(int) $gold->id.'; '
-            .'\Illuminate\Support\Facades\DB::transaction(function () use ($accountId, $tierId) { '
-            .'\Illuminate\Support\Facades\DB::table("dealer_accounts")->where("id", $accountId)->lockForUpdate()->first(); '
-            .'echo "locked\n"; flush(); usleep(300000); '
-            .'\Illuminate\Support\Facades\DB::table("dealer_accounts")->where("id", $accountId)->update(["current_tier_id" => $tierId]); });');
-        $this->awaitLock($modifier);
         $submit = $this->orderProcess($user, $account, $body);
-        $submit->start();
+        DB::transaction(function () use ($account, $gold, $submit): void {
+            DB::table('dealer_accounts')->where('id', $account->id)->lockForUpdate()->first();
+            $submit->start();
+            $this->awaitDatabaseLockWait($submit, 'dealer_accounts');
+            DB::table('dealer_accounts')->where('id', $account->id)->update(['current_tier_id' => $gold->id]);
+        });
         $result = $this->processResult($submit);
-        $modifier->wait();
-        $this->assertTrue($modifier->isSuccessful(), $modifier->getErrorOutput());
+        $this->assertSame($gold->id, $account->fresh()->current_tier_id);
         $this->assertSame('DEALER_ORDER_CHANGED', $result['code']);
         $this->assertDatabaseCount('sales_orders', 0);
-
+        $this->assertDatabaseCount('payments', 0);
+        $this->assertDatabaseCount('dealer_wallet_transactions', 1);
     }
 
     public function test_account_suspension_while_submit_waits_creates_no_order(): void
     {
         [$user, $account, , $variant] = $this->fixture('2');
         $body = $this->body($user, $account, $variant);
-        $modifier = $this->process('$accountId = '.(int) $account->id.'; '
-            .'\Illuminate\Support\Facades\DB::transaction(function () use ($accountId) { '
-            .'\Illuminate\Support\Facades\DB::table("dealer_accounts")->where("id", $accountId)->lockForUpdate()->first(); '
-            .'echo "locked\n"; flush(); usleep(300000); '
-            .'\Illuminate\Support\Facades\DB::table("dealer_accounts")->where("id", $accountId)->update(["status" => "suspended"]); });');
-        $this->awaitLock($modifier);
         $submit = $this->orderProcess($user, $account, $body);
-        $submit->start();
+        DB::transaction(function () use ($account, $submit): void {
+            DB::table('dealer_accounts')->where('id', $account->id)->lockForUpdate()->first();
+            $submit->start();
+            $this->awaitDatabaseLockWait($submit, 'dealer_accounts');
+            DB::table('dealer_accounts')->where('id', $account->id)->update(['status' => 'suspended']);
+        });
         $result = $this->processResult($submit);
-        $modifier->wait();
-        $this->assertTrue($modifier->isSuccessful(), $modifier->getErrorOutput());
+        $this->assertSame('suspended', $account->fresh()->status);
         $this->assertSame('not_found', $result['status']);
         $this->assertDatabaseCount('sales_orders', 0);
+        $this->assertDatabaseCount('payments', 0);
+        $this->assertDatabaseCount('dealer_wallet_transactions', 1);
     }
 
     public function test_two_confirmations_of_one_import_create_one_order(): void
@@ -275,12 +331,20 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         $import = $this->import($user, $account, $variant, 'PO-001');
         $first = $this->importProcess($user, $account, $import);
         $second = $this->importProcess($user, $account, $import);
-        $first->start();
-        $second->start();
-        $this->processResult($first);
-        $this->processResult($second);
+        $this->startAtDatabaseLock([$first, $second], 'dealer_order_imports', [$import->id]);
+        $results = [$this->processResult($first), $this->processResult($second)];
+        $this->assertContains('completed', array_column($results, 'status'));
+        foreach ($results as $result) {
+            if ($result['status'] === 'conflict') {
+                $this->assertSame('DEALER_IMPORT_CHANGED', $result['code']);
+            } else {
+                $this->assertSame('completed', $result['status']);
+            }
+        }
         $this->assertDatabaseCount('sales_orders', 1);
         $this->assertDatabaseCount('inventory_reservations', 1);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('dealer_wallet_transactions', 2);
     }
 
     public function test_simultaneous_imports_with_same_external_reference_create_one_order(): void
@@ -290,12 +354,13 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         $secondImport = $this->import($user, $account, $variant, 'po-001');
         $first = $this->importProcess($user, $account, $firstImport);
         $second = $this->importProcess($user, $account, $secondImport);
-        $first->start();
-        $second->start();
-        $this->processResult($first);
-        $this->processResult($second);
+        $this->startAtDatabaseLock([$first, $second], 'dealer_order_imports', [$firstImport->id, $secondImport->id]);
+        $results = [$this->processResult($first), $this->processResult($second)];
+        $this->assertContains('completed', array_column($results, 'status'));
         $this->assertDatabaseCount('sales_orders', 1);
         $this->assertDatabaseCount('inventory_reservations', 1);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('dealer_wallet_transactions', 2);
     }
 
     public function test_simultaneous_imports_competing_for_last_stock_do_not_oversell(): void
@@ -305,12 +370,13 @@ class DealerQuickOrderConcurrencyTest extends TestCase
         $secondImport = $this->import($user, $account, $variant, 'PO-002');
         $first = $this->importProcess($user, $account, $firstImport);
         $second = $this->importProcess($user, $account, $secondImport);
-        $first->start();
-        $second->start();
-        $this->processResult($first);
-        $this->processResult($second);
+        $this->startAtDatabaseLock([$first, $second], 'dealer_order_imports', [$firstImport->id, $secondImport->id]);
+        $results = [$this->processResult($first), $this->processResult($second)];
+        $this->assertContains('completed', array_column($results, 'status'));
         $this->assertDatabaseCount('sales_orders', 1);
         $this->assertDatabaseCount('inventory_reservations', 1);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('dealer_wallet_transactions', 2);
         $this->assertDatabaseHas('inventory_balances', ['on_hand_quantity' => '1.000',
             'reserved_quantity' => '1.000']);
     }

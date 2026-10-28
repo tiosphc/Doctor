@@ -412,9 +412,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         ->name('service-categories.index');
     Route::post('/service-categories', [ServiceCategoryController::class, 'store'])
         ->name('service-categories.store');
-    Route::get('customers/{customer}/purchases', [CustomerPurchaseController::class, 'show']);
-    Route::get('customers/{customer}/purchased-products', [CustomerPurchaseController::class, 'products']);
-    Route::get('customers/{customer}/vouchers', [CustomerPurchaseController::class, 'vouchers']);
+    Route::get('customers/{customer}/purchases', [CustomerPurchaseController::class, 'show'])->name('customers.purchases.show');
+    Route::get('customers/{customer}/purchased-products', [CustomerPurchaseController::class, 'products'])->name('customers.purchased-products.index');
+    Route::get('customers/{customer}/vouchers', [CustomerPurchaseController::class, 'vouchers'])->name('customers.vouchers.index');
     Route::apiResource('customers', AdminCustomerController::class)->only(['index', 'show']);
     Route::get('/blogs', [AdminBlogController::class, 'index'])->name('blogs.index');
     Route::post('/blogs', [AdminBlogController::class, 'store'])->name('blogs.store');

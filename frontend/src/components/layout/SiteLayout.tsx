@@ -65,10 +65,11 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 const nav = [
     ["Trang chủ", "/"],
-    ["Sản phẩm", "/products"],
-    ["Ưu đãi", "/promotions"],
     ["Dịch vụ", "/services"],
+    ["Bảng giá", "/#pricing"],
     ["Bác sĩ", "/doctors"],
+    ["Về JUNIE", "/#about"],
+    ["Sản phẩm", "/products"],
 ] as const;
 
 function initials(name: string): string {
@@ -174,12 +175,20 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                         </span>
                     </Link>
                     <nav
-                        className="hidden items-center justify-center gap-4 lg:flex xl:gap-5"
+                        className="hidden items-center justify-center gap-3 xl:flex 2xl:gap-5"
                         aria-label="Điều hướng chính"
                     >
                         {nav.map(([name, to]) =>
                             to === "/services" ? (
                                 <ServiceMegaMenu key={name} inverted={transparentHeader} />
+                            ) : to === "/#pricing" || to === "/#about" ? (
+                                <a
+                                    key={name}
+                                    href={to}
+                                    className={`focus-premium border-b-2 border-transparent py-2 text-sm transition-colors ${transparentHeader ? "text-white/80 hover:border-white/60 hover:text-white" : "text-foreground/80 hover:text-primary"}`}
+                                >
+                                    {name}
+                                </a>
                             ) : (
                                 <Link
                                     key={name}
@@ -196,14 +205,14 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                                 </Link>
                             ),
                         )}
-                        <a
-                            href="/#about"
-                            className={`focus-premium border-b-2 border-transparent py-2 text-sm transition-colors ${transparentHeader ? "text-white/80 hover:border-white/60 hover:text-white" : "text-foreground/80 hover:text-primary"}`}
-                        >
-                            Về chúng tôi
-                        </a>
                     </nav>
                     <div className="flex items-center justify-end gap-1.5 md:gap-2.5">
+                        <Link
+                            to="/booking"
+                            className={`focus-premium hidden min-h-10 shrink-0 items-center justify-center rounded-full border border-[#cba56c] bg-[#b99159] px-5 text-sm font-semibold text-[#211d18] transition-colors hover:bg-[#d2ad75] xl:inline-flex`}
+                        >
+                            Đặt lịch
+                        </Link>
                         {!isLoading && user && (
                             <Link
                                 to="/cart"
@@ -267,7 +276,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                             aria-expanded={open}
                             aria-controls="mobile-navigation"
                             onClick={() => setOpen(true)}
-                            className={`focus-premium grid size-10 place-items-center rounded-full lg:hidden ${transparentHeader ? "text-white" : "text-primary"}`}
+                            className={`focus-premium grid size-10 place-items-center rounded-full xl:hidden ${transparentHeader ? "text-white" : "text-primary"}`}
                         >
                             <Menu />
                         </button>
@@ -276,7 +285,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
             </header>
             {open && (
                 <div
-                    className="fixed inset-0 z-[60] bg-navy-deep/45 lg:hidden"
+                    className="fixed inset-0 z-[60] bg-navy-deep/45 xl:hidden"
                     onClick={() => setOpen(false)}
                 >
                     <aside
@@ -309,6 +318,15 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                                         key={name}
                                         onNavigate={() => setOpen(false)}
                                     />
+                                ) : to === "/#pricing" || to === "/#about" ? (
+                                    <a
+                                        key={name}
+                                        href={to}
+                                        onClick={() => setOpen(false)}
+                                        className="focus-premium border-b py-4 font-medium text-primary"
+                                    >
+                                        {name}
+                                    </a>
                                 ) : (
                                     <Link
                                         key={name}
@@ -321,13 +339,13 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                                     </Link>
                                 ),
                             )}
-                            <a
-                                href="/#about"
+                            <Link
+                                to="/booking"
                                 onClick={() => setOpen(false)}
-                                className="focus-premium border-b py-4 font-medium text-primary"
+                                className="focus-premium mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-[#b99159] px-5 text-sm font-semibold text-[#211d18]"
                             >
-                                Về chúng tôi
-                            </a>
+                                Đặt lịch
+                            </Link>
                             {canLookupAppointments && (
                                 <Link
                                     to="/appointment-lookup"
@@ -398,7 +416,13 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                     children
                 )}
             </main>
-            {account ? <AccountFooter /> : <Footer showAppointmentLookup={canLookupAppointments} />}
+            {account ? (
+                <AccountFooter />
+            ) : (
+                <div className={path === "/" ? "pb-16 lg:pb-0" : ""}>
+                    <Footer showAppointmentLookup={canLookupAppointments} />
+                </div>
+            )}
         </div>
     );
 }

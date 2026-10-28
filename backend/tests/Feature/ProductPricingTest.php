@@ -11,14 +11,43 @@ use App\Models\User;
 use App\Services\DealerPricingService;
 use App\Services\ProductPricingService;
 use App\Services\RetailPricingService;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class ProductPricingTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    public function test_product_detail_price_summary_batches_queries_for_many_skus_and_tiers(): void
+    {
+        $product = Product::factory()->create();
+        $variants = ProductVariant::factory()->count(8)->for($product)->create();
+        $tiers = DealerTier::factory()->count(3)->create();
+        $pricing = app(ProductPricingService::class);
+        $pricing->addInitialPrice($variants[0], 'retail', '120000');
+        $pricing->addInitialPrice($variants[1], 'retail', '130000');
+        $pricing->addInitialPrice($variants[0], 'dealer', '90000', 10, $tiers[0]->id);
+        $pricing->addInitialPrice($variants[1], 'dealer', '80000', 20, $tiers[1]->id);
+        $queries = [];
+        DB::listen(function (QueryExecuted $query) use (&$queries): void {
+            if (str_starts_with(strtolower($query->sql), 'select')) {
+                $queries[] = strtolower($query->sql);
+            }
+        });
+
+        $summary = $pricing->show($product);
+
+        $this->assertSame('120000.00', $summary['retail_price']);
+        $this->assertSame('130000.00', $summary['variant_retail_prices'][1]['unit_price']);
+        $this->assertCount(2, $summary['dealer_rules']);
+        $this->assertSame(10, (int) $summary['dealer_rules'][0]['min_quantity']);
+        $this->assertCount(2, array_filter($queries, fn (string $sql): bool => str_contains($sql, 'from `price_list_items`')));
+        $this->assertLessThanOrEqual(7, count($queries));
+    }
 
     public function test_catalog_searches_variant_name_and_filters_effective_sellable_status(): void
     {

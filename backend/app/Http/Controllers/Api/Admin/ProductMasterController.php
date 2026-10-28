@@ -7,9 +7,9 @@ use App\Http\Requests\Admin\SaveProductMasterRequest;
 use App\Models\Brand;
 use App\Models\ProductCategory;
 use App\Models\Unit;
+use App\Services\ProductMasterWriteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class ProductMasterController extends Controller
 {
@@ -37,13 +37,9 @@ class ProductMasterController extends Controller
         return response()->json($query->orderBy('name')->orderBy('id')->paginate($validated['per_page'] ?? 20));
     }
 
-    public function store(SaveProductMasterRequest $request, string $kind): JsonResponse
+    public function store(SaveProductMasterRequest $request, string $kind, ProductMasterWriteService $writer): JsonResponse
     {
-        $data = $request->validated();
-        if ($kind === 'categories') {
-            $this->assertValidParent($data['parent_id'] ?? null, null);
-        }
-        $model = $this->model($kind)::create($data);
+        $model = $writer->create($kind, $request->validated());
 
         return response()->json(['data' => $model], 201);
     }
@@ -53,25 +49,11 @@ class ProductMasterController extends Controller
         return response()->json(['data' => $this->model($kind)::findOrFail($id)]);
     }
 
-    public function update(SaveProductMasterRequest $request, string $kind, int $id): JsonResponse
+    public function update(SaveProductMasterRequest $request, string $kind, int $id, ProductMasterWriteService $writer): JsonResponse
     {
         $model = $this->model($kind)::findOrFail($id);
-        $data = $request->validated();
-        if ($kind === 'categories' && array_key_exists('parent_id', $data)) {
-            $this->assertValidParent($data['parent_id'], $id);
-        }
-        $model->update($data);
+        $writer->update($kind, $model, $request->validated());
 
         return response()->json(['data' => $model->refresh()]);
-    }
-
-    private function assertValidParent(?int $parentId, ?int $selfId): void
-    {
-        for ($depth = 0; $parentId !== null; $depth++) {
-            if ($depth >= 20 || $parentId === $selfId) {
-                throw ValidationException::withMessages(['parent_id' => 'Category hierarchy cannot contain a cycle or exceed 20 levels.']);
-            }
-            $parentId = ProductCategory::findOrFail($parentId)->parent_id;
-        }
     }
 }

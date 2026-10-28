@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SaveDealerCatalogPriceRequest;
+use App\Http\Requests\Admin\SaveRetailCatalogPriceRequest;
 use App\Models\DealerTier;
 use App\Models\ProductVariant;
 use App\Services\ProductPricingService;
@@ -40,21 +42,17 @@ class CatalogPricingController extends Controller
         return response()->json($pricing->catalog('dealer', $filters));
     }
 
-    public function retailUpdate(Request $request, ProductVariant $variant, ProductPricingService $pricing): JsonResponse
+    public function retailUpdate(SaveRetailCatalogPriceRequest $request, ProductVariant $variant, ProductPricingService $pricing): JsonResponse
     {
-        $data = $request->validate(['unit_price' => ['required', 'numeric', 'min:0', 'decimal:0,2']]);
-        $pricing->updateRetail($variant, (string) $data['unit_price'], $request->user()->id);
+        $pricing->updateRetail($variant, (string) $request->validated('unit_price'), $request->user()->id);
 
         return response()->json(['data' => ['variant_id' => $variant->id]]);
     }
 
-    public function dealerUpdate(Request $request, ProductVariant $variant, DealerTier $tier, ProductPricingService $pricing): JsonResponse
+    public function dealerUpdate(SaveDealerCatalogPriceRequest $request, ProductVariant $variant, DealerTier $tier, ProductPricingService $pricing): JsonResponse
     {
         abort_unless($tier->status === 'active', 422);
-        $data = $request->validate([
-            'unit_price' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
-            'minimum_quantity' => ['required', 'integer', 'min:1'],
-        ]);
+        $data = $request->validated();
         $pricing->updateDealer($variant, $tier, (string) $data['unit_price'], (int) $data['minimum_quantity'], $request->user()->id);
 
         return response()->json(['data' => ['variant_id' => $variant->id, 'tier_id' => $tier->id]]);

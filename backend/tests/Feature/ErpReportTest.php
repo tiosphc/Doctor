@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdministrativeWard;
 use App\Models\DealerAccount;
 use App\Models\DealerAccountUser;
 use App\Models\DealerTier;
@@ -11,6 +12,7 @@ use App\Models\PriceListItem;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Models\WarehouseServiceArea;
 use App\Services\DealerWalletService;
 use App\Services\InventoryService;
 use Carbon\Carbon;
@@ -227,6 +229,8 @@ class ErpReportTest extends TestCase
         $account = DealerAccount::factory()->create(['current_tier_id' => $tier->id]);
         DealerAccountUser::factory()->create(['dealer_account_id' => $account->id, 'user_id' => $dealer->id]);
         $warehouse = Warehouse::factory()->create(['is_default_sales' => true]);
+        WarehouseServiceArea::query()->create(['warehouse_id' => $warehouse->id, 'province_code' => '79']);
+        $ward = AdministrativeWard::query()->where('province_code', '79')->firstOrFail();
         $variant = ProductVariant::factory()->create(['sellable_dealer' => true, 'track_inventory' => true]);
         $priceList = PriceList::factory()->create(['pricing_context' => 'dealer', 'scope_type' => 'tier',
             'dealer_tier_id' => $tier->id, 'currency' => 'VND']);
@@ -246,13 +250,16 @@ class ErpReportTest extends TestCase
         Sanctum::actingAs($dealer);
         $base = "/api/dealer/accounts/{$account->id}/quick-order";
         $items = [['product_variant_id' => $variant->id, 'quantity' => '2']];
-        $fingerprint = $this->postJson("{$base}/review", ['items' => $items])
+        $shipping = [
+            'recipient_name' => 'Manager', 'recipient_phone' => '0900000000',
+            'shipping_address_line1' => '1 Street', 'shipping_province_code' => '79',
+            'shipping_ward_code' => $ward->code,
+        ];
+        $fingerprint = $this->postJson("{$base}/review", ['items' => $items, ...$shipping])
             ->assertOk()->json('data.review_fingerprint');
         $this->postJson($base, [
             'operation_key' => (string) Str::uuid(), 'review_fingerprint' => $fingerprint,
-            'items' => $items, 'recipient_name' => 'Manager', 'recipient_phone' => '0900000000',
-            'shipping_address_line1' => '1 Street', 'shipping_city' => 'HCM',
-            'shipping_province' => 'HCM', 'shipping_country' => 'VN',
+            'items' => $items, ...$shipping,
         ])->assertCreated();
 
         Sanctum::actingAs($admin);

@@ -15,4 +15,9 @@ class WarehouseServiceArea extends Model
     {
         return $this->belongsTo(Warehouse::class);
     }
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeProvince::class, 'province_code', 'code');
+    }
 }

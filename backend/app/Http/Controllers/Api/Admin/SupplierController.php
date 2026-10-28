@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SaveSupplierRequest;
 use App\Models\Supplier;
-use App\Services\AuditLogger;
+use App\Services\SupplierWriteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SupplierController extends Controller
@@ -26,15 +26,9 @@ class SupplierController extends Controller
         return response()->json($query->orderBy('name')->orderBy('id')->paginate($filters['per_page'] ?? 20));
     }
 
-    public function store(Request $request, AuditLogger $audit): JsonResponse
+    public function store(SaveSupplierRequest $request, SupplierWriteService $writer): JsonResponse
     {
-        $data = $this->validated($request);
-        $supplier = DB::transaction(function () use ($data, $audit): Supplier {
-            $supplier = Supplier::create($data);
-            $audit->log(AuditLogger::ACTION_CREATE, AuditLogger::MODULE_PROCUREMENT, $supplier, 'Supplier created', [], $supplier->only(['code', 'name', 'status']));
-
-            return $supplier;
-        });
+        $supplier = $writer->create($request->validated());
 
         return response()->json(['data' => $supplier], 201);
     }
@@ -44,38 +38,10 @@ class SupplierController extends Controller
         return response()->json(['data' => $supplier]);
     }
 
-    public function update(Request $request, Supplier $supplier, AuditLogger $audit): JsonResponse
+    public function update(SaveSupplierRequest $request, Supplier $supplier, SupplierWriteService $writer): JsonResponse
     {
-        $data = $this->validated($request, $supplier);
-        $supplier = DB::transaction(function () use ($data, $supplier, $audit): Supplier {
-            $supplier = Supplier::query()->lockForUpdate()->findOrFail($supplier->id);
-            if (isset($data['code']) && $data['code'] !== $supplier->code && $supplier->purchaseOrders()->exists()) {
-                abort(409, 'SUPPLIER_CODE_IMMUTABLE');
-            }
-            $before = $supplier->only(['code', 'name', 'status']);
-            $supplier->update($data);
-            $audit->log(AuditLogger::ACTION_UPDATE, AuditLogger::MODULE_PROCUREMENT, $supplier, 'Supplier updated', $before, $supplier->only(['code', 'name', 'status']));
-
-            return $supplier;
-        });
+        $supplier = $writer->update($supplier, $request->validated());
 
         return response()->json(['data' => $supplier]);
-    }
-
-    /** @return array<string, mixed> */
-    private function validated(Request $request, ?Supplier $supplier = null): array
-    {
-        $request->merge(['code' => strtoupper(trim((string) $request->input('code', $supplier?->code ?? '')))]);
-
-        return $request->validate([
-            'code' => [$supplier ? 'sometimes' : 'required', 'string', 'max:50', 'regex:/^[A-Z0-9][A-Z0-9_-]*$/', Rule::unique('suppliers', 'code')->ignore($supplier?->id)],
-            'name' => [$supplier ? 'sometimes' : 'required', 'string', 'max:255'],
-            'contact_name' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-            'tax_code' => ['nullable', 'string', 'max:50'],
-            'address' => ['nullable', 'string', 'max:2000'],
-            'status' => ['sometimes', Rule::in(['active', 'inactive'])],
-        ]);
     }
 }

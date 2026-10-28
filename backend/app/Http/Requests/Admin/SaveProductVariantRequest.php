@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Support\Sku;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -25,11 +26,12 @@ class SaveProductVariantRequest extends FormRequest
     public function rules(): array
     {
         $required = $this->isMethod('post') ? 'required' : 'sometimes';
+        $currentUnitId = $this->route('variant') instanceof ProductVariant ? $this->route('variant')->unit_id : null;
 
         return [
             'sku' => [$required, 'string', 'max:100', 'regex:/^[A-Z0-9][A-Z0-9._-]*$/', Rule::unique('product_variants', 'sku')->ignore($this->route('variant'))],
             'variant_name' => [$required, 'string', 'max:255', 'not_regex:/^\s*$/u'],
-            'unit_id' => [$required, 'integer', Rule::exists('units', 'id')->where('status', 'active')],
+            'unit_id' => [$required, 'integer', Rule::exists('units', 'id')->where(fn ($query) => $query->where('status', 'active')->when($currentUnitId, fn ($query) => $query->orWhere('id', $currentUnitId)))],
             'barcode' => ['nullable', 'string', 'max:100', Rule::unique('product_variants', 'barcode')->ignore($this->route('variant'))],
             'specifications' => ['nullable', 'array'],
             'specifications.*' => ['string', 'max:255'],
