@@ -1,11 +1,11 @@
 import { defineConfig } from '@playwright/test';
 import { resolve } from 'node:path';
 
-const reportDirectory = resolve(import.meta.dirname, '../.codex/browser-qa');
+const reportDirectory = resolve(import.meta.dirname, '../.codex/browser-qa', process.env.PLAYWRIGHT_REPORT_DIR || 'react-phase4');
 
 export default defineConfig({
   testDir: './tests/Browser',
-  testMatch: '**/*.spec.mjs',
+  testMatch: '**/react-*.spec.mjs',
   globalSetup: './tests/Browser/global-setup.mjs',
   fullyParallel: false,
   workers: 1,
@@ -19,7 +19,7 @@ export default defineConfig({
     ['json', { outputFile: resolve(reportDirectory, 'results.json') }],
   ],
   use: {
-    baseURL: 'http://127.0.0.1:8001',
+    baseURL: 'http://127.0.0.1:5173',
     browserName: 'chromium',
     channel: 'chrome',
     trace: 'retain-on-failure',

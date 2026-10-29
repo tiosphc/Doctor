@@ -27,6 +27,12 @@
     --color-success: var(--success);
     --color-warning: var(--warning);
     --color-navy-deep: var(--navy-deep);
+    --color-ivory: var(--ivory);
+    --color-cream: var(--cream);
+    --color-sand: var(--sand);
+    --color-champagne: var(--champagne);
+    --color-mocha: var(--mocha);
+    --color-espresso: var(--espresso);
     --shadow-card: 0 8px 24px -6px oklch(0.29 0.08 255 / 0.06);
 }
 

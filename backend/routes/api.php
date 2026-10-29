@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardControll
 use App\Http\Controllers\Api\Admin\DealerAccountController as AdminDealerAccountController;
 use App\Http\Controllers\Api\Admin\DealerAccountTierController as AdminDealerAccountTierController;
 use App\Http\Controllers\Api\Admin\DealerApplicationController as AdminDealerApplicationController;
+use App\Http\Controllers\Api\Admin\DealerPriceImportController;
 use App\Http\Controllers\Api\Admin\DealerTierController;
 use App\Http\Controllers\Api\Admin\DealerWalletController as AdminDealerWalletController;
 use App\Http\Controllers\Api\Admin\DealerWalletDepositRequestController as AdminDealerWalletDepositRequestController;
@@ -46,6 +47,7 @@ use App\Http\Controllers\Api\Admin\StaffController;
 use App\Http\Controllers\Api\Admin\StockMovementController;
 use App\Http\Controllers\Api\Admin\SupplierController;
 use App\Http\Controllers\Api\Admin\WarehouseController;
+use App\Http\Controllers\Api\Admin\WarehouseServiceAreaController;
 use App\Http\Controllers\Api\AdministrativeLocationController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
@@ -270,6 +272,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::post('/product-wizard/drafts/{product}/complete', [ProductWizardController::class, 'complete'])->name('product-wizard.drafts.complete');
     Route::get('/product-wizard/sku-availability', [ProductWizardController::class, 'skuAvailability'])->name('product-wizard.sku-availability');
     Route::apiResource('warehouses', WarehouseController::class)->except(['destroy']);
+    Route::get('/warehouse-service-areas/options', [WarehouseServiceAreaController::class, 'options'])->name('warehouse-service-areas.options');
+    Route::get('/warehouse-service-areas', [WarehouseServiceAreaController::class, 'index'])->name('warehouse-service-areas.index');
+    Route::post('/warehouse-service-areas', [WarehouseServiceAreaController::class, 'store'])->name('warehouse-service-areas.store');
+    Route::patch('/warehouse-service-areas/{serviceArea}', [WarehouseServiceAreaController::class, 'update'])->name('warehouse-service-areas.update');
     Route::apiResource('suppliers', SupplierController::class)->except(['destroy']);
     Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::post('/purchase-orders', [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
@@ -301,6 +307,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::get('/retail-prices', [CatalogPricingController::class, 'retailIndex'])->name('retail-prices.index');
     Route::patch('/retail-prices/{variant}', [CatalogPricingController::class, 'retailUpdate'])->name('retail-prices.update');
     Route::get('/dealer-prices', [CatalogPricingController::class, 'dealerIndex'])->name('dealer-prices.index');
+    Route::post('/dealer-prices/products/{product}/import/preview', [DealerPriceImportController::class, 'preview'])->name('dealer-prices.import.preview');
+    Route::post('/dealer-prices/products/{product}/import/apply', [DealerPriceImportController::class, 'apply'])->name('dealer-prices.import.apply');
+    Route::get('/dealer-prices/products/{product}/import/template', [DealerPriceImportController::class, 'template'])->name('dealer-prices.import.template');
     Route::put('/dealer-prices/{variant}/{tier}', [CatalogPricingController::class, 'dealerUpdate'])->name('dealer-prices.update');
     Route::delete('/dealer-prices/{variant}/{tier}', [CatalogPricingController::class, 'dealerDelete'])->name('dealer-prices.delete');
     Route::post('/products/{product}/variants', [ProductVariantController::class, 'store'])->name('products.variants.store');

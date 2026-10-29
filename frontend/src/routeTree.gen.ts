@@ -20,6 +20,7 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as DealerRouteImport } from './routes/dealer'
 import { Route as DoctorRouteImport } from './routes/doctor'
 import { Route as DoctorsRouteImport } from './routes/doctors'
+import { Route as DoiNguBacSiRouteImport } from './routes/doi-ngu-bac-si'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MyOrdersRouteImport } from './routes/my-orders'
@@ -68,7 +69,7 @@ import { Route as AdminVouchersRouteImport } from './routes/admin.vouchers'
 import { Route as AdminWarehousesRouteImport } from './routes/admin.warehouses'
 import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
 import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
-import { Route as BookingSuccessRouteImport } from './routes/booking.success'
+import { Route as BookingSuccessRouteImport } from './routes/booking_.success'
 import { Route as CheckoutIndexRouteImport } from './routes/checkout.index'
 import { Route as DealerIndexRouteImport } from './routes/dealer.index'
 import { Route as DealerApplyRouteImport } from './routes/dealer.apply'
@@ -124,6 +125,7 @@ import { Route as AdminSalesPromotionsIndexRouteImport } from './routes/admin.sa
 import { Route as AdminSalesPromotionsCreateRouteImport } from './routes/admin.sales-promotions.create'
 import { Route as AdminSalesVouchersIndexRouteImport } from './routes/admin.sales-vouchers.index'
 import { Route as AdminSalesVouchersCreateRouteImport } from './routes/admin.sales-vouchers.create'
+import { Route as AdminServicesIndexRouteImport } from './routes/admin.services.index'
 import { Route as AdminServicesIdRouteImport } from './routes/admin.services.$id'
 import { Route as CheckoutSuccessOrderIdRouteImport } from './routes/checkout.success.$orderId'
 import { Route as DealerOrdersIndexRouteImport } from './routes/dealer.orders.index'
@@ -196,6 +198,11 @@ const DoctorRoute = DoctorRouteImport.update({
 const DoctorsRoute = DoctorsRouteImport.update({
   id: '/doctors',
   path: '/doctors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DoiNguBacSiRoute = DoiNguBacSiRouteImport.update({
+  id: '/doi-ngu-bac-si',
+  path: '/doi-ngu-bac-si',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -439,9 +446,9 @@ const BlogsSlugRoute = BlogsSlugRouteImport.update({
   getParentRoute: () => BlogsRoute,
 } as any)
 const BookingSuccessRoute = BookingSuccessRouteImport.update({
-  id: '/success',
-  path: '/success',
-  getParentRoute: () => BookingRoute,
+  id: '/booking_/success',
+  path: '/booking/success',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutIndexRoute = CheckoutIndexRouteImport.update({
   id: '/',
@@ -727,6 +734,11 @@ const AdminSalesVouchersCreateRoute =
     path: '/create',
     getParentRoute: () => AdminSalesVouchersRoute,
   } as any)
+const AdminServicesIndexRoute = AdminServicesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminServicesRoute,
+} as any)
 const AdminServicesIdRoute = AdminServicesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -832,12 +844,13 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/appointment-lookup': typeof AppointmentLookupRoute
   '/blogs': typeof BlogsRouteWithChildren
-  '/booking': typeof BookingRouteWithChildren
+  '/booking': typeof BookingRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRouteWithChildren
   '/dealer': typeof DealerRouteWithChildren
   '/doctor': typeof DoctorRouteWithChildren
   '/doctors': typeof DoctorsRouteWithChildren
+  '/doi-ngu-bac-si': typeof DoiNguBacSiRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/my-orders': typeof MyOrdersRouteWithChildren
@@ -949,6 +962,7 @@ export interface FileRoutesByFullPath {
   '/admin/sales-orders/': typeof AdminSalesOrdersIndexRoute
   '/admin/sales-promotions/': typeof AdminSalesPromotionsIndexRoute
   '/admin/sales-vouchers/': typeof AdminSalesVouchersIndexRoute
+  '/admin/services/': typeof AdminServicesIndexRoute
   '/dealer/orders/': typeof DealerOrdersIndexRoute
   '/dealer/products/': typeof DealerProductsIndexRoute
   '/dealer/quick-order/': typeof DealerQuickOrderIndexRoute
@@ -964,9 +978,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/appointment-lookup': typeof AppointmentLookupRoute
-  '/booking': typeof BookingRouteWithChildren
+  '/booking': typeof BookingRoute
   '/cart': typeof CartRoute
   '/doctors': typeof DoctorsRouteWithChildren
+  '/doi-ngu-bac-si': typeof DoiNguBacSiRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/promotions': typeof PromotionsRoute
@@ -990,7 +1005,6 @@ export interface FileRoutesByTo {
   '/admin/retail-pricing': typeof AdminRetailPricingRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/service-categories': typeof AdminServiceCategoriesRoute
-  '/admin/services': typeof AdminServicesRouteWithChildren
   '/admin/staff': typeof AdminStaffRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/admin/voucher-management': typeof AdminVoucherManagementRoute
@@ -1057,6 +1071,7 @@ export interface FileRoutesByTo {
   '/admin/sales-orders': typeof AdminSalesOrdersIndexRoute
   '/admin/sales-promotions': typeof AdminSalesPromotionsIndexRoute
   '/admin/sales-vouchers': typeof AdminSalesVouchersIndexRoute
+  '/admin/services': typeof AdminServicesIndexRoute
   '/dealer/orders': typeof DealerOrdersIndexRoute
   '/dealer/products': typeof DealerProductsIndexRoute
   '/dealer/quick-order': typeof DealerQuickOrderIndexRoute
@@ -1076,12 +1091,13 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/appointment-lookup': typeof AppointmentLookupRoute
   '/blogs': typeof BlogsRouteWithChildren
-  '/booking': typeof BookingRouteWithChildren
+  '/booking': typeof BookingRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRouteWithChildren
   '/dealer': typeof DealerRouteWithChildren
   '/doctor': typeof DoctorRouteWithChildren
   '/doctors': typeof DoctorsRouteWithChildren
+  '/doi-ngu-bac-si': typeof DoiNguBacSiRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/my-orders': typeof MyOrdersRouteWithChildren
@@ -1127,7 +1143,7 @@ export interface FileRoutesById {
   '/admin/vouchers': typeof AdminVouchersRoute
   '/admin/warehouses': typeof AdminWarehousesRoute
   '/blogs/$slug': typeof BlogsSlugRoute
-  '/booking/success': typeof BookingSuccessRoute
+  '/booking_/success': typeof BookingSuccessRoute
   '/dealer/apply': typeof DealerApplyRoute
   '/dealer/import-orders': typeof DealerImportOrdersRoute
   '/dealer/orders': typeof DealerOrdersRouteWithChildren
@@ -1193,6 +1209,7 @@ export interface FileRoutesById {
   '/admin/sales-orders/': typeof AdminSalesOrdersIndexRoute
   '/admin/sales-promotions/': typeof AdminSalesPromotionsIndexRoute
   '/admin/sales-vouchers/': typeof AdminSalesVouchersIndexRoute
+  '/admin/services/': typeof AdminServicesIndexRoute
   '/dealer/orders/': typeof DealerOrdersIndexRoute
   '/dealer/products/': typeof DealerProductsIndexRoute
   '/dealer/quick-order/': typeof DealerQuickOrderIndexRoute
@@ -1219,6 +1236,7 @@ export interface FileRouteTypes {
     | '/dealer'
     | '/doctor'
     | '/doctors'
+    | '/doi-ngu-bac-si'
     | '/forgot-password'
     | '/login'
     | '/my-orders'
@@ -1330,6 +1348,7 @@ export interface FileRouteTypes {
     | '/admin/sales-orders/'
     | '/admin/sales-promotions/'
     | '/admin/sales-vouchers/'
+    | '/admin/services/'
     | '/dealer/orders/'
     | '/dealer/products/'
     | '/dealer/quick-order/'
@@ -1348,6 +1367,7 @@ export interface FileRouteTypes {
     | '/booking'
     | '/cart'
     | '/doctors'
+    | '/doi-ngu-bac-si'
     | '/forgot-password'
     | '/login'
     | '/promotions'
@@ -1371,7 +1391,6 @@ export interface FileRouteTypes {
     | '/admin/retail-pricing'
     | '/admin/reviews'
     | '/admin/service-categories'
-    | '/admin/services'
     | '/admin/staff'
     | '/admin/suppliers'
     | '/admin/voucher-management'
@@ -1438,6 +1457,7 @@ export interface FileRouteTypes {
     | '/admin/sales-orders'
     | '/admin/sales-promotions'
     | '/admin/sales-vouchers'
+    | '/admin/services'
     | '/dealer/orders'
     | '/dealer/products'
     | '/dealer/quick-order'
@@ -1462,6 +1482,7 @@ export interface FileRouteTypes {
     | '/dealer'
     | '/doctor'
     | '/doctors'
+    | '/doi-ngu-bac-si'
     | '/forgot-password'
     | '/login'
     | '/my-orders'
@@ -1507,7 +1528,7 @@ export interface FileRouteTypes {
     | '/admin/vouchers'
     | '/admin/warehouses'
     | '/blogs/$slug'
-    | '/booking/success'
+    | '/booking_/success'
     | '/dealer/apply'
     | '/dealer/import-orders'
     | '/dealer/orders'
@@ -1573,6 +1594,7 @@ export interface FileRouteTypes {
     | '/admin/sales-orders/'
     | '/admin/sales-promotions/'
     | '/admin/sales-vouchers/'
+    | '/admin/services/'
     | '/dealer/orders/'
     | '/dealer/products/'
     | '/dealer/quick-order/'
@@ -1592,12 +1614,13 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AppointmentLookupRoute: typeof AppointmentLookupRoute
   BlogsRoute: typeof BlogsRouteWithChildren
-  BookingRoute: typeof BookingRouteWithChildren
+  BookingRoute: typeof BookingRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRouteWithChildren
   DealerRoute: typeof DealerRouteWithChildren
   DoctorRoute: typeof DoctorRouteWithChildren
   DoctorsRoute: typeof DoctorsRouteWithChildren
+  DoiNguBacSiRoute: typeof DoiNguBacSiRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   MyOrdersRoute: typeof MyOrdersRouteWithChildren
@@ -1607,6 +1630,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ServicesRoute: typeof ServicesRouteWithChildren
   SetupPasswordRoute: typeof SetupPasswordRoute
+  BookingSuccessRoute: typeof BookingSuccessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1686,6 +1710,13 @@ declare module '@tanstack/react-router' {
       path: '/doctors'
       fullPath: '/doctors'
       preLoaderRoute: typeof DoctorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/doi-ngu-bac-si': {
+      id: '/doi-ngu-bac-si'
+      path: '/doi-ngu-bac-si'
+      fullPath: '/doi-ngu-bac-si'
+      preLoaderRoute: typeof DoiNguBacSiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -2024,12 +2055,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogsSlugRouteImport
       parentRoute: typeof BlogsRoute
     }
-    '/booking/success': {
-      id: '/booking/success'
-      path: '/success'
+    '/booking_/success': {
+      id: '/booking_/success'
+      path: '/booking/success'
       fullPath: '/booking/success'
       preLoaderRoute: typeof BookingSuccessRouteImport
-      parentRoute: typeof BookingRoute
+      parentRoute: typeof rootRouteImport
     }
     '/checkout/': {
       id: '/checkout/'
@@ -2416,6 +2447,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSalesVouchersCreateRouteImport
       parentRoute: typeof AdminSalesVouchersRoute
     }
+    '/admin/services/': {
+      id: '/admin/services/'
+      path: '/'
+      fullPath: '/admin/services/'
+      preLoaderRoute: typeof AdminServicesIndexRouteImport
+      parentRoute: typeof AdminServicesRoute
+    }
     '/admin/services/$id': {
       id: '/admin/services/$id'
       path: '/$id'
@@ -2758,10 +2796,12 @@ const AdminSalesVouchersRouteWithChildren =
 
 interface AdminServicesRouteChildren {
   AdminServicesIdRoute: typeof AdminServicesIdRoute
+  AdminServicesIndexRoute: typeof AdminServicesIndexRoute
 }
 
 const AdminServicesRouteChildren: AdminServicesRouteChildren = {
   AdminServicesIdRoute: AdminServicesIdRoute,
+  AdminServicesIndexRoute: AdminServicesIndexRoute,
 }
 
 const AdminServicesRouteWithChildren = AdminServicesRoute._addFileChildren(
@@ -2847,17 +2887,6 @@ const BlogsRouteChildren: BlogsRouteChildren = {
 }
 
 const BlogsRouteWithChildren = BlogsRoute._addFileChildren(BlogsRouteChildren)
-
-interface BookingRouteChildren {
-  BookingSuccessRoute: typeof BookingSuccessRoute
-}
-
-const BookingRouteChildren: BookingRouteChildren = {
-  BookingSuccessRoute: BookingSuccessRoute,
-}
-
-const BookingRouteWithChildren =
-  BookingRoute._addFileChildren(BookingRouteChildren)
 
 interface CheckoutRouteChildren {
   CheckoutIndexRoute: typeof CheckoutIndexRoute
@@ -3084,12 +3113,13 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AppointmentLookupRoute: AppointmentLookupRoute,
   BlogsRoute: BlogsRouteWithChildren,
-  BookingRoute: BookingRouteWithChildren,
+  BookingRoute: BookingRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRouteWithChildren,
   DealerRoute: DealerRouteWithChildren,
   DoctorRoute: DoctorRouteWithChildren,
   DoctorsRoute: DoctorsRouteWithChildren,
+  DoiNguBacSiRoute: DoiNguBacSiRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   MyOrdersRoute: MyOrdersRouteWithChildren,
@@ -3099,6 +3129,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ServicesRoute: ServicesRouteWithChildren,
   SetupPasswordRoute: SetupPasswordRoute,
+  BookingSuccessRoute: BookingSuccessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

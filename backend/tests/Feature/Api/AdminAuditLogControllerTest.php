@@ -192,6 +192,28 @@ class AdminAuditLogControllerTest extends TestCase
             ->assertJsonPath('data.id', $id);
     }
 
+    public function test_audit_api_redacts_sensitive_fields_in_legacy_records(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $log = AuditLog::factory()->for($admin, 'actor')->create([
+            'old_values' => ['status' => 'safe-value', 'password' => 'old-secret-value'],
+            'new_values' => ['status' => 'changed', 'nested' => ['api_token' => 'new-secret-value']],
+            'metadata' => ['operation' => 'reviewed', 'secret' => 'metadata-secret-value'],
+            'request_url' => 'http://localhost/?access_token=sensitive-url-value&filter=active',
+        ]);
+        Sanctum::actingAs($admin);
+
+        $this->getJson('/api/admin/audit-logs/'.$log->id)
+            ->assertOk()
+            ->assertJsonPath('data.old_values.status', 'safe-value')
+            ->assertJsonPath('data.metadata.operation', 'reviewed')
+            ->assertJsonPath('data.request_url', 'http://localhost/?filter=active')
+            ->assertDontSee('old-secret-value')
+            ->assertDontSee('new-secret-value')
+            ->assertDontSee('metadata-secret-value')
+            ->assertDontSee('sensitive-url-value');
+    }
+
     #[DataProvider('forbiddenRoles')]
     public function test_non_admin_roles_cannot_access_audit_log_api(string $role): void
     {

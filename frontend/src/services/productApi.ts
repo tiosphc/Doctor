@@ -1,4 +1,4 @@
-import { apiRequest } from "./api";
+import { apiDownload, apiRequest } from "./api";
 import type { DealerTier } from "@/features/dealers/types";
 import type { PaginatedResponse, ResourceResponse } from "@/types";
 import type {
@@ -12,6 +12,19 @@ import type {
 } from "@/types/product";
 
 export type MasterKind = "categories" | "brands" | "units";
+export type DealerPriceImportPreview = {
+    rows: Array<{
+        line: number;
+        tier: string;
+        sku: string;
+        moq: string;
+        price: string;
+        action: string;
+        errors: string[];
+    }>;
+    can_apply: boolean;
+    preview_token: string | null;
+};
 export type ProductPricingData = {
     sellable_retail: boolean;
     sellable_dealer: boolean;
@@ -97,6 +110,24 @@ export const productApi = {
         }),
     deleteCatalogDealerPrice: (variantId: number, tierId: number) =>
         apiRequest(`/api/admin/dealer-prices/${variantId}/${tierId}`, { method: "DELETE" }),
+    previewDealerPriceImport: (productId: number, paste: string, file: File | null) => {
+        const body = file ? new FormData() : { source: "paste", paste };
+        if (body instanceof FormData) {
+            body.append("source", "file");
+            body.append("file", file!);
+        }
+        return apiRequest<DealerPriceImportPreview>(
+            `/api/admin/dealer-prices/products/${productId}/import/preview`,
+            { method: "POST", body },
+        );
+    },
+    applyDealerPriceImport: (productId: number, previewToken: string) =>
+        apiRequest<{ applied_count: number }>(
+            `/api/admin/dealer-prices/products/${productId}/import/apply`,
+            { method: "POST", body: { preview_token: previewToken } },
+        ),
+    dealerPriceImportTemplate: (productId: number) =>
+        apiDownload(`/api/admin/dealer-prices/products/${productId}/import/template`, "text/csv"),
     filters: () => apiRequest<{ categories: Master[]; brands: Master[] }>("/api/product-filters"),
     catalog: (filters: ProductFilters) =>
         apiRequest<PaginatedResponse<Product>>("/api/products", { query: filters }),

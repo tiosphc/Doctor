@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AdminServiceCreatePage } from "@/pages/admin/ServicePages";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 export const Route = createFileRoute("/admin/services")({
-    head: () => ({ meta: [{ title: "Danh sách dịch vụ | Junie" }] }),
-    component: AdminServiceCreatePage,
+    component: Outlet,
 });

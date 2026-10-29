@@ -5,7 +5,6 @@ import { DashboardOverview } from "@/components/admin/dashboard/DashboardOvervie
 import { DashboardWidgets } from "@/components/admin/dashboard/DashboardWidgets";
 import { TodayAppointments } from "@/components/admin/dashboard/TodayAppointments";
 import { ErrorState } from "@/components/common/AsyncState";
-import { ErpOverviewPanel } from "@/pages/admin/ErpReportsPage";
 import { AdminGuard, AdminTitle } from "@/pages/admin/AdminPages";
 import {
     adminApi,
@@ -24,10 +23,9 @@ export function AdminDashboardPage() {
     return (
         <AdminGuard>
             <AdminTitle
-                title="Tổng quan hệ thống"
+                title="Tổng quan phòng khám"
                 description="Theo dõi tình hình hoạt động, lịch hẹn và các thông tin cần xử lý."
             />
-            <ErpOverviewPanel />
             {query.isPending ? (
                 <DashboardSkeleton />
             ) : query.isError ? (

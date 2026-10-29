@@ -21,38 +21,30 @@ import {
     ShoppingCart,
     Package,
     LayoutDashboard,
-    ChartNoAxesCombined,
     Users,
-    Warehouse,
     ShoppingBag,
-    List,
-    Store,
-    Megaphone,
     UserCog,
     History,
-    ClipboardList,
     Stethoscope,
     Star,
     UserRound,
-    Building2,
-    WalletCards,
-    FileClock,
     Tags,
     Layers3,
     BadgePercent,
     Newspaper,
     FolderTree,
-    Boxes,
     ExternalLink,
     PanelLeft,
     type LucideIcon,
 } from "lucide-react";
 import { Container } from "@/components/common/Container";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { MobileServiceMenu, ServiceMegaMenu } from "@/components/services/ServiceNavigation";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { StaffShell } from "@/components/layout/StaffLayout";
 import { DealerLayout } from "@/components/layout/DealerLayout";
+import { LovableFlowLayout } from "@/components/landing/LovableFlowLayout";
 import { retailCommerceApi, retailKeys } from "@/services/retailCommerceApi";
 import { DealerNavLink } from "@/features/dealers/DealerNavLink";
 import {
@@ -66,9 +58,9 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 const nav = [
     ["Trang chủ", "/"],
     ["Dịch vụ", "/services"],
-    ["Bảng giá", "/#pricing"],
+    ["Bảng giá", "/#dich-vu"],
     ["Bác sĩ", "/doctors"],
-    ["Về JUNIE", "/#about"],
+    ["Về JUNIE", "/#ve-junie"],
     ["Sản phẩm", "/products"],
 ] as const;
 
@@ -153,6 +145,18 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
     if (dealer && path !== "/dealer/apply") {
         return <DealerLayout onLogout={signOut}>{children}</DealerLayout>;
     }
+    if (path === "/" || path === "/doi-ngu-bac-si") {
+        return <>{children}</>;
+    }
+    if (
+        path === "/booking" ||
+        path === "/booking/success" ||
+        path === "/login" ||
+        path === "/register" ||
+        path === "/forgot-password"
+    ) {
+        return <LovableFlowLayout>{children}</LovableFlowLayout>;
+    }
 
     return (
         <div className="min-h-screen">
@@ -162,17 +166,10 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                 <Container className="flex h-16 items-center justify-between gap-3 md:h-20 md:gap-4">
                     <Link
                         to="/"
-                        className={`shrink-0 transition-colors ${transparentHeader ? "text-white" : "text-primary"}`}
+                        className={`shrink-0 ${transparentHeader ? "rounded-sm bg-background/90 px-2" : ""}`}
                         aria-label="Junie - Trang chủ"
                     >
-                        <span className="font-display text-xl font-semibold tracking-[.2em] md:text-[1.25rem]">
-                            JUNIE
-                        </span>
-                        <span
-                            className={`hidden text-[8px] tracking-[.24em] md:block ${transparentHeader ? "text-white/70" : "text-secondary"}`}
-                        >
-                            AESTHETIC & DERMATOLOGY
-                        </span>
+                        <BrandLogo />
                     </Link>
                     <nav
                         className="hidden items-center justify-center gap-3 xl:flex 2xl:gap-5"
@@ -181,7 +178,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                         {nav.map(([name, to]) =>
                             to === "/services" ? (
                                 <ServiceMegaMenu key={name} inverted={transparentHeader} />
-                            ) : to === "/#pricing" || to === "/#about" ? (
+                            ) : to === "/#dich-vu" || to === "/#ve-junie" ? (
                                 <a
                                     key={name}
                                     href={to}
@@ -297,9 +294,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="flex items-center justify-between border-b pb-5">
-                            <span className="font-display text-xl tracking-[.18em] text-primary">
-                                JUNIE
-                            </span>
+                            <BrandLogo />
                             <button
                                 aria-label="Đóng menu"
                                 onClick={() => setOpen(false)}
@@ -318,7 +313,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
                                         key={name}
                                         onNavigate={() => setOpen(false)}
                                     />
-                                ) : to === "/#pricing" || to === "/#about" ? (
+                                ) : to === "/#dich-vu" || to === "/#ve-junie" ? (
                                     <a
                                         key={name}
                                         href={to}
@@ -431,8 +426,8 @@ function AccountFooter() {
     return (
         <footer className="border-t bg-card py-5 text-xs text-muted-foreground">
             <Container className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p>
-                    <span className="font-display tracking-[.12em] text-primary">JUNIE</span>
+                <p className="flex flex-wrap items-center gap-2">
+                    <BrandLogo />
                     <span className="ml-2">— Viện Thẩm Mỹ & Da Liễu chuẩn y khoa.</span>
                 </p>
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
@@ -451,7 +446,6 @@ function AccountFooter() {
 
 function AccountShell({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
     const [open, setOpen] = useState(false);
-    const { user } = useAuth();
     const links = [
         ["Tổng quan", "/account", Grid2X2],
         ["Lịch hẹn", "/account/appointments", CalendarDays],
@@ -594,165 +588,107 @@ type AdminNavSection = { label: string; entries: AdminNavEntry[] };
 
 const adminSections: AdminNavSection[] = [
     {
-        label: "QUẢN TRỊ",
+        label: "PHÒNG KHÁM",
         entries: [
             { kind: "link", label: "Tổng quan", to: "/admin", icon: LayoutDashboard },
-            { kind: "link", label: "Báo cáo ERP", to: "/admin/reports", icon: ChartNoAxesCombined },
-        ],
-    },
-    {
-        label: "KHÁCH HÀNG",
-        entries: [
             {
-                kind: "group",
-                id: "customers",
-                label: "Khách hàng & đại lý",
-                icon: Users,
-                links: [
-                    { label: "Khách hàng", to: "/admin/customers", icon: UserRound },
-                    { label: "Đại lý", to: "/admin/dealers", icon: Building2 },
-                    {
-                        label: "Ví đại lý",
-                        to: "/admin/dealer-wallet-top-ups",
-                        icon: WalletCards,
-                    },
-                    {
-                        label: "Đơn đăng ký đại lý",
-                        to: "/admin/dealer-applications",
-                        icon: FileClock,
-                    },
-                    { label: "Tier đại lý", to: "/admin/dealer-tiers", icon: BadgePercent },
-                ],
-            },
-        ],
-    },
-    {
-        label: "BÁN HÀNG",
-        entries: [
-            {
-                kind: "group",
-                id: "products",
-                label: "Quản lý sản phẩm",
-                icon: Package,
-                links: [
-                    { label: "Danh sách sản phẩm", to: "/admin/products", icon: Package },
-                    { label: "Danh mục & đơn vị", to: "/admin/product-master", icon: Layers3 },
-                    { label: "Bảng giá Retail", to: "/admin/retail-pricing", icon: Tags },
-                    { label: "Bảng giá Đại lý", to: "/admin/dealer-pricing", icon: BadgePercent },
-                ],
-            },
-            {
-                kind: "group",
-                id: "sales-orders",
-                label: "Quản lý đơn hàng",
-                icon: ShoppingBag,
-                links: [
-                    { label: "Tất cả đơn", to: "/admin/sales-orders", icon: List },
-                    { label: "Đơn bán lẻ", to: "/admin/sales-orders/retail", icon: Store },
-                    { label: "Đơn đại lý", to: "/admin/sales-orders/dealer", icon: Building2 },
-                ],
-            },
-        ],
-    },
-    {
-        label: "KHO & MUA HÀNG",
-        entries: [
-            {
-                kind: "group",
-                id: "warehouse",
-                label: "Kho",
-                icon: Warehouse,
-                links: [
-                    { label: "Kho hàng", to: "/admin/warehouses", icon: Warehouse },
-                    { label: "Tồn kho", to: "/admin/inventory", icon: Boxes },
-                ],
-            },
-            {
-                kind: "group",
-                id: "procurement",
-                label: "Mua hàng",
-                icon: ClipboardList,
-                links: [
-                    { label: "Nhà cung cấp", to: "/admin/suppliers", icon: Building2 },
-                    {
-                        label: "Đơn mua / Nhận hàng",
-                        to: "/admin/purchase-orders",
-                        icon: ClipboardList,
-                    },
-                ],
-            },
-        ],
-    },
-    {
-        label: "MARKETING",
-        entries: [
-            {
-                kind: "group",
-                id: "promotions",
-                label: "Khuyến mãi",
-                icon: Megaphone,
-                links: [
-                    { label: "Ưu đãi bán hàng", to: "/admin/sales-promotions", icon: BadgePercent },
-                ],
-            },
-            {
-                kind: "group",
-                id: "vouchers",
-                label: "Voucher",
-                icon: Gift,
-                links: [
-                    { label: "Voucher dịch vụ", to: "/admin/voucher-management", icon: Gift },
-                    { label: "Voucher đơn hàng", to: "/admin/sales-vouchers", icon: ShoppingBag },
-                    { label: "Voucher đánh giá", to: "/admin/vouchers", icon: BadgePercent },
-                ],
-            },
-            { kind: "link", label: "Thông báo", to: "/admin/notifications", icon: Bell },
-            {
-                kind: "group",
-                id: "content",
-                label: "Nội dung",
-                icon: Newspaper,
-                links: [
-                    { label: "Bài viết", to: "/admin/blogs", icon: Newspaper },
-                    { label: "Danh mục bài viết", to: "/admin/blog-categories", icon: FolderTree },
-                ],
-            },
-        ],
-    },
-    {
-        label: "VẬN HÀNH",
-        entries: [
-            {
-                kind: "group",
-                id: "operations",
-                label: "Lịch hẹn & dịch vụ",
+                kind: "link",
+                label: "Quản lý lịch hẹn",
+                to: "/admin/appointments",
                 icon: CalendarDays,
+            },
+            {
+                kind: "group",
+                id: "services",
+                label: "Dịch vụ",
+                icon: Stethoscope,
                 links: [
-                    { label: "Lịch hẹn", to: "/admin/appointments", icon: ClipboardList },
-                    { label: "Dịch vụ", to: "/admin/services", icon: Stethoscope },
+                    { label: "Danh sách dịch vụ", to: "/admin/services", icon: Stethoscope },
                     { label: "Danh mục dịch vụ", to: "/admin/service-categories", icon: Layers3 },
-                    { label: "Đánh giá", to: "/admin/reviews", icon: Star },
                 ],
             },
-        ],
-    },
-    {
-        label: "HỆ THỐNG",
-        entries: [
+            { kind: "link", label: "Khách hàng", to: "/admin/customers", icon: UserRound },
             {
                 kind: "group",
                 id: "personnel",
-                label: "Nhân sự",
+                label: "Bác sĩ & nhân viên",
                 icon: UserCog,
                 links: [
                     { label: "Bác sĩ", to: "/admin/doctors", icon: Stethoscope },
                     { label: "Nhân viên", to: "/admin/staff", icon: Users },
                 ],
             },
-            { kind: "link", label: "Nhật ký hoạt động", to: "/admin/audit-logs", icon: History },
+            { kind: "link", label: "Đánh giá", to: "/admin/reviews", icon: Star },
+            {
+                kind: "group",
+                id: "service-offers",
+                label: "Ưu đãi dịch vụ",
+                icon: Gift,
+                links: [
+                    { label: "Voucher dịch vụ", to: "/admin/voucher-management", icon: Gift },
+                    { label: "Voucher đánh giá", to: "/admin/vouchers", icon: BadgePercent },
+                ],
+            },
+        ],
+    },
+    {
+        label: "SẢN PHẨM & NỘI DUNG",
+        entries: [
+            {
+                kind: "group",
+                id: "products",
+                label: "Sản phẩm",
+                icon: Package,
+                links: [
+                    { label: "Danh sách sản phẩm", to: "/admin/products", icon: Package },
+                    { label: "Danh mục & đơn vị", to: "/admin/product-master", icon: Layers3 },
+                    { label: "Bảng giá Retail", to: "/admin/retail-pricing", icon: Tags },
+                ],
+            },
+            {
+                kind: "link",
+                label: "Đơn hàng sản phẩm",
+                to: "/admin/sales-orders/retail",
+                icon: ShoppingBag,
+            },
+            {
+                kind: "group",
+                id: "content",
+                label: "Bài viết",
+                icon: Newspaper,
+                links: [
+                    { label: "Bài viết", to: "/admin/blogs", icon: Newspaper },
+                    { label: "Danh mục bài viết", to: "/admin/blog-categories", icon: FolderTree },
+                ],
+            },
+            { kind: "link", label: "Thông báo", to: "/admin/notifications", icon: Bell },
+            {
+                kind: "group",
+                id: "system",
+                label: "Hệ thống",
+                icon: History,
+                links: [{ label: "Nhật ký hoạt động", to: "/admin/audit-logs", icon: History }],
+            },
         ],
     },
 ];
+
+const hiddenAdminPageTitles: Partial<Record<AdminRoute, string>> = {
+    "/admin/reports": "Báo cáo ERP",
+    "/admin/dealer-pricing": "Bảng giá Đại lý",
+    "/admin/dealer-tiers": "Tier đại lý",
+    "/admin/dealer-applications": "Đơn đăng ký đại lý",
+    "/admin/dealers": "Đại lý",
+    "/admin/dealer-wallet-top-ups": "Ví đại lý",
+    "/admin/warehouses": "Kho hàng",
+    "/admin/inventory": "Tồn kho",
+    "/admin/suppliers": "Nhà cung cấp",
+    "/admin/purchase-orders": "Đơn mua hàng",
+    "/admin/sales-orders": "Tất cả đơn hàng",
+    "/admin/sales-orders/dealer": "Đơn đại lý",
+    "/admin/sales-promotions": "Ưu đãi bán hàng",
+    "/admin/sales-vouchers": "Voucher đơn hàng",
+};
 
 function adminRouteMatches(path: string, route: AdminRoute): boolean {
     if (route === "/admin/sales-orders") {
@@ -779,7 +715,7 @@ function activeAdminGroup(path: string): string | null {
 }
 
 function adminPageTitle(path: string): string {
-    if (path === "/admin") return "Tổng quan hệ thống";
+    if (path === "/admin") return "Tổng quan phòng khám";
     if (path === "/admin/products/new") return "Thêm sản phẩm";
     if (path === "/admin/sales-orders/new") return "Tạo đơn bán lẻ";
     if (/^\/admin\/sales-orders\/\d+$/.test(path)) return "Chi tiết đơn hàng";
@@ -791,6 +727,9 @@ function adminPageTitle(path: string): string {
                 if (active) return active.label;
             }
         }
+    }
+    for (const [route, title] of Object.entries(hiddenAdminPageTitles)) {
+        if (adminRouteMatches(path, route as AdminRoute)) return title;
     }
     return "Quản trị";
 }
@@ -815,9 +754,7 @@ function AdminShell({ children, onLogout }: { children: React.ReactNode; onLogou
         <div className="flex h-full min-h-0 flex-col">
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/70 px-5">
                 <div className="min-w-0">
-                    <p className="font-sans text-lg font-semibold tracking-[.12em] text-primary">
-                        JUNIE
-                    </p>
+                    <BrandLogo variant="small" />
                     <p className="text-[10px] font-semibold tracking-[.2em] text-secondary">
                         ADMIN
                     </p>
@@ -1073,7 +1010,9 @@ function Footer({ showAppointmentLookup }: { showAppointmentLookup: boolean }) {
             <Container>
                 <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
                     <div>
-                        <h2 className="text-2xl">JUNIE</h2>
+                        <span className="inline-block rounded-sm bg-background px-3 py-1">
+                            <BrandLogo />
+                        </span>
                         <p className="mt-4 max-w-sm text-sm leading-6 opacity-70">
                             Không gian da liễu thẩm mỹ chuẩn khoa học, đồng hành cùng vẻ đẹp tự
                             nhiên và bền vững.
@@ -1088,7 +1027,7 @@ function Footer({ showAppointmentLookup }: { showAppointmentLookup: boolean }) {
                         links={[
                             ["Dịch vụ", "/services"],
                             ["Bác sĩ", "/doctors"],
-                            ["Về chúng tôi", "/#about"],
+                            ["Về chúng tôi", "/#ve-junie"],
                             ["Tin tức", "/blogs"],
                         ]}
                     />

@@ -1,0 +1,161 @@
+.junie-hero-visual {
+    --visual-shadow: 0 22px 48px -24px color-mix(in oklab, var(--espresso) 28%, transparent);
+    --pointer-x: 0px;
+    --pointer-y: 0px;
+    position: relative;
+    order: 2;
+    z-index: 10;
+    width: min(88%, 480px);
+    aspect-ratio: 4 / 5;
+    margin: 3.5rem auto 4rem;
+    isolation: isolate;
+}
+.junie-hero-visual__main-layer {
+    position: absolute;
+    inset: 3% 7% 10% 3%;
+    transform: translate(var(--pointer-x), var(--pointer-y));
+    transition: transform 1.3s var(--ease-lux);
+}
+.junie-hero-visual__main {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--cream);
+    box-shadow: var(--visual-shadow);
+}
+.junie-hero-visual__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1.8s ease-in-out;
+}
+.junie-hero-visual__slide[data-active="true"] {
+    opacity: 1;
+}
+.junie-hero-visual__slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: junie-hero-cinema 20s ease-in-out infinite alternate;
+}
+.junie-hero-visual__slide:nth-child(2) img {
+    animation-direction: alternate-reverse;
+}
+.junie-hero-visual__edge {
+    position: absolute;
+    inset: -2.5% 5% 5% -3%;
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    pointer-events: none;
+    z-index: -1;
+}
+.junie-hero-visual__secondary-layer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 38%;
+    transform: translate(calc(var(--pointer-x) * -0.7), calc(var(--pointer-y) * -0.7));
+    transition: transform 1.5s var(--ease-lux);
+}
+.junie-hero-visual__secondary {
+    margin: 0;
+    animation: junie-hero-float 8s ease-in-out infinite;
+}
+.junie-hero-visual__detail {
+    aspect-ratio: 4 / 5;
+    border: 5px solid var(--ivory);
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: var(--visual-shadow);
+}
+.junie-hero-visual__detail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 1.2s var(--ease-lux);
+}
+.junie-hero-visual__secondary figcaption {
+    margin-top: 0.7rem;
+    font: italic 1.1rem / 1.2 var(--font-serif);
+    color: var(--mocha);
+    text-align: center;
+    letter-spacing: 0;
+}
+.junie-hero-visual__motif {
+    position: absolute;
+    width: 24%;
+    aspect-ratio: 1;
+    top: -1%;
+    right: 0;
+    color: var(--champagne);
+    animation: junie-hero-line 32s linear infinite;
+    pointer-events: none;
+}
+@keyframes junie-hero-cinema {
+    from {
+        transform: scale(1.035) translate(-0.5%, 0.3%);
+    }
+    to {
+        transform: scale(1.085) translate(0.5%, -0.6%);
+    }
+}
+@keyframes junie-hero-float {
+    0%,
+    100% {
+        transform: translateY(0) rotate(2deg);
+    }
+    50% {
+        transform: translateY(-9px) rotate(1deg);
+    }
+}
+@keyframes junie-hero-line {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@media (min-width: 768px) {
+    .junie-hero-visual {
+        position: absolute;
+        order: initial;
+        margin: 0;
+        right: 4%;
+        top: 16svh;
+        width: min(43vw, 610px);
+        height: min(75svh, 790px);
+        aspect-ratio: auto;
+    }
+    .junie-hero-visual__main-layer {
+        inset: 2% 8% 12% 5%;
+    }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+    .junie-hero-visual {
+        right: 2%;
+        width: 43vw;
+        top: 21svh;
+        height: 65svh;
+        max-height: 650px;
+    }
+}
+@media (hover: hover) and (pointer: fine) {
+    .junie-hero-visual__secondary:hover img {
+        transform: scale(1.035);
+    }
+}
+.junie-hero-visual[data-paused="true"] img,
+.junie-hero-visual[data-paused="true"] figure,
+.junie-hero-visual[data-paused="true"] svg {
+    animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+    .junie-hero-visual *,
+    .junie-hero-visual *::before {
+        animation: none !important;
+        transition: none !important;
+    }
+    .junie-hero-visual__main-layer,
+    .junie-hero-visual__secondary-layer {
+        transform: none;
+    }
+}

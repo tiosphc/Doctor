@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { errorMessage } from "@/services/api";
 import { dealerApi, dealerKeys } from "./api";
 import { DealerAutoTierProgress } from "./DealerAutoTierProgress";
+import { DealerAddressManager } from "./DealerAddressManager";
 
 export function DealerProfilePage() {
     const { user, isLoading } = useAuth();
@@ -25,12 +26,6 @@ export function DealerProfilePage() {
         return (
             <div className="dealer-page-form space-y-5">
                 <EmptyState message="Bạn chưa có tài khoản đại lý đang hoạt động." />
-                <Link
-                    to="/dealer/apply"
-                    className="inline-flex text-sm font-medium text-primary underline"
-                >
-                    Xem trạng thái đăng ký
-                </Link>
             </div>
         );
     }
@@ -124,6 +119,7 @@ export function DealerProfilePage() {
                     </section>
                 ))}
             </div>
+            {query.data.data[0] && <DealerAddressManager accountId={query.data.data[0].id} />}
         </div>
     );
 }

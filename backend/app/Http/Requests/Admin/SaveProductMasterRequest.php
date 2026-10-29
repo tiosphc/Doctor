@@ -2,9 +2,6 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Models\Brand;
-use App\Models\ProductCategory;
-use App\Models\Unit;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,17 +22,10 @@ class SaveProductMasterRequest extends FormRequest
      */
     public function rules(): array
     {
-        $routeName = (string) $this->route()?->getName();
-        $kind = $this->route('kind')
-            ?? (str_starts_with($routeName, 'admin.web.categories.') ? 'categories' : null)
-            ?? (str_starts_with($routeName, 'admin.web.brands.') ? 'brands' : null)
-            ?? (str_starts_with($routeName, 'admin.web.units.') ? 'units' : null);
+        $kind = $this->route('kind');
         $table = ['categories' => 'product_categories', 'brands' => 'brands', 'units' => 'units'][$kind] ?? null;
         abort_unless($table, 404);
-        $id = $this->route('id')
-            ?? ($this->route('category') instanceof ProductCategory ? $this->route('category')->getKey() : null)
-            ?? ($this->route('brand') instanceof Brand ? $this->route('brand')->getKey() : null)
-            ?? ($this->route('unit') instanceof Unit ? $this->route('unit')->getKey() : null);
+        $id = $this->route('id');
         $required = $this->isMethod('post') ? 'required' : 'sometimes';
 
         return [

@@ -15,6 +15,15 @@ export type Warehouse = {
     is_default_clinic: boolean;
 };
 
+export type WarehouseServiceArea = {
+    id: number;
+    warehouse_id: number;
+    province_code: string;
+    priority: number;
+    warehouse: Pick<Warehouse, "id" | "code" | "name" | "status">;
+    province: { code: string; name: string };
+};
+
 export type InventoryBalance = {
     id: number;
     warehouse_id: number;

@@ -7,7 +7,15 @@ import type {
     Reconciliation,
     StockMovement,
     Warehouse,
+    WarehouseServiceArea,
 } from "@/types/inventory";
+
+export type WarehouseServiceAreaFilters = {
+    search?: string;
+    warehouse_id?: number | undefined;
+    province_code?: string;
+    page?: number;
+};
 
 export type InventoryFilters = {
     warehouse_id?: number | undefined;
@@ -42,6 +50,8 @@ export type InventoryOperation = {
 
 export const inventoryKeys = {
     warehouses: (filters: object) => ["warehouses", filters] as const,
+    warehouseServiceAreas: (filters: WarehouseServiceAreaFilters) =>
+        ["warehouse-service-areas", filters] as const,
     balances: (filters: InventoryFilters) => ["inventory-balances", filters] as const,
     productBalances: (filters: InventoryFilters) => ["inventory-products", filters] as const,
     movements: (filters: MovementFilters) => ["stock-movements", filters] as const,
@@ -49,6 +59,29 @@ export const inventoryKeys = {
 };
 
 export const inventoryApi = {
+    warehouseServiceAreaOptions: () =>
+        apiRequest<{
+            warehouses: Pick<Warehouse, "id" | "code" | "name" | "status">[];
+            provinces: { code: string; name: string }[];
+        }>("/api/admin/warehouse-service-areas/options"),
+    warehouseServiceAreas: (filters: WarehouseServiceAreaFilters = {}) =>
+        apiRequest<RawPage<WarehouseServiceArea>>("/api/admin/warehouse-service-areas", {
+            query: filters,
+        }),
+    createWarehouseServiceArea: (body: {
+        warehouse_id: number;
+        province_code: string;
+        priority: number;
+    }) =>
+        apiRequest<ResourceResponse<WarehouseServiceArea>>("/api/admin/warehouse-service-areas", {
+            method: "POST",
+            body,
+        }),
+    updateWarehouseServiceArea: (id: number, priority: number) =>
+        apiRequest<ResourceResponse<WarehouseServiceArea>>(
+            `/api/admin/warehouse-service-areas/${id}`,
+            { method: "PATCH", body: { priority } },
+        ),
     warehouses: (
         filters: { search?: string; status?: string; page?: number; per_page?: number } = {},
     ) => apiRequest<RawPage<Warehouse>>("/api/admin/warehouses", { query: filters }),

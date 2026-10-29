@@ -11,6 +11,7 @@ import {
 import { errorMessage, firstFieldErrors } from "@/services/api";
 import { inventoryApi, inventoryKeys } from "@/services/inventoryApi";
 import type { Warehouse } from "@/types/inventory";
+import { WarehouseServiceAreas } from "./WarehouseServiceAreas";
 
 type WarehouseForm = {
     code: string;
@@ -335,6 +336,7 @@ export function WarehousePage() {
                         </div>
                     </form>
                 </div>
+                <WarehouseServiceAreas />
             </div>
         </ProductAdminGuard>
     );

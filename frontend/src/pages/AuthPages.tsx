@@ -7,6 +7,8 @@ import { Field, Input } from "@/components/common/Fields";
 import { useAuth } from "@/contexts/AuthContext";
 import { errorMessage, firstFieldErrors } from "@/services/api";
 import { authApi } from "@/services/authApi";
+import { dealerApi } from "@/features/dealers/api";
+import { loginDestination } from "@/lib/loginDestination";
 
 export function LoginPage() {
     const { login, isLoading } = useAuth();
@@ -24,20 +26,16 @@ export function LoginPage() {
                 email: String(form.get("email")),
                 password: String(form.get("password")),
             });
-            const destination =
-                user.role === "admin"
-                    ? "/admin"
-                    : user.role === "receptionist"
-                      ? "/receptionist"
-                      : user.role === "doctor"
-                        ? "/doctor"
-                        : "/account";
+            let hasDealerAccount = false;
+            if (user.role === "customer") {
+                try {
+                    hasDealerAccount = (await dealerApi.mine()).data.length > 0;
+                } catch {
+                    hasDealerAccount = false;
+                }
+            }
             const returnTo = new URLSearchParams(window.location.search).get("returnTo");
-            const safeReturn =
-                returnTo && /^\/(cart|checkout|my-orders|products)(\/|$)/.test(returnTo)
-                    ? returnTo
-                    : destination;
-            await navigate({ to: safeReturn });
+            await navigate({ to: loginDestination(user.role, hasDealerAccount, returnTo) });
         } catch (reason) {
             setError(errorMessage(reason));
             setErrors(firstFieldErrors(reason));

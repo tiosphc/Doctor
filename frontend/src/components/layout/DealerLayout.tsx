@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import {
     Building2,
     ChevronDown,
@@ -160,9 +161,7 @@ export function DealerLayout({
         <div className="flex h-full min-h-0 flex-col">
             <div className="flex h-20 shrink-0 items-center border-b border-[#d8e0eb] px-6">
                 <Link to="/dealer" onClick={() => setDrawerOpen(false)}>
-                    <p className="font-display text-lg font-semibold tracking-[.14em] text-[#092b5c]">
-                        JUNIE
-                    </p>
+                    <BrandLogo variant="small" />
                     <p className="mt-0.5 text-[10px] font-semibold tracking-[.2em] text-[#bc9151]">
                         DEALER PORTAL
                     </p>

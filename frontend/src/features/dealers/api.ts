@@ -102,6 +102,16 @@ export const dealerApi = {
             `/api/dealer/accounts/${id}/shipping-addresses`,
             { method: "POST", body },
         ),
+    updateAddress: (accountId: number, addressId: number, body: DealerShippingAddressInput) =>
+        apiRequest<{ data: DealerShippingAddress }>(
+            `/api/dealer/accounts/${accountId}/shipping-addresses/${addressId}`,
+            { method: "PUT", body },
+        ),
+    deleteAddress: (accountId: number, addressId: number) =>
+        apiRequest<{ message: string }>(
+            `/api/dealer/accounts/${accountId}/shipping-addresses/${addressId}`,
+            { method: "DELETE" },
+        ),
     mine: () => apiRequest<ResourceResponse<DealerAccount[]>>("/api/dealer/accounts"),
     detail: (id: number) =>
         apiRequest<ResourceResponse<DealerAccount>>(`/api/dealer/accounts/${id}`),

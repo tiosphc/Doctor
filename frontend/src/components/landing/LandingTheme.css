@@ -1,0 +1,271 @@
+.lovable-home {
+    --ivory: oklch(0.984 0.006 75);
+    --cream: oklch(0.963 0.013 75);
+    --sand: oklch(0.913 0.024 70);
+    --champagne: oklch(0.7 0.043 66);
+    --mocha: oklch(0.49 0.038 58);
+    --espresso: oklch(0.36 0.025 58);
+    --background: var(--ivory);
+    --foreground: var(--espresso);
+    --primary: oklch(0.47 0.039 58);
+    --primary-foreground: var(--ivory);
+    --card: var(--ivory);
+    --card-foreground: var(--espresso);
+    --secondary: var(--sand);
+    --secondary-foreground: var(--espresso);
+    --muted: var(--cream);
+    --accent: var(--sand);
+    --accent-foreground: var(--espresso);
+    --muted-foreground: oklch(0.49 0.026 58);
+    --border: oklch(0.7 0.043 66 / 30%);
+    --input: var(--border);
+    --ring: var(--champagne);
+    --ease-lux: cubic-bezier(0.22, 1, 0.36, 1);
+    background: var(--ivory);
+    color: var(--espresso);
+    font-family: "Manrope", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.lovable-home :is(h1, h2, h3, h4, .font-display) {
+    font-family: "Cormorant Garamond", "Times New Roman", serif;
+    font-weight: 300;
+    letter-spacing: 0;
+}
+.lovable-home .font-display {
+    line-height: 0.95;
+}
+.lovable-home .font-serif {
+    font-family: "Cormorant Garamond", "Times New Roman", serif;
+}
+.lovable-home .eyebrow {
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+}
+.lovable-home .grain {
+    position: relative;
+}
+.lovable-home .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.18;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.35 0 0 0 0 0.27 0 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.lovable-home .arch {
+    border-radius: 999px 999px 0 0;
+}
+.lovable-home .link-lux {
+    position: relative;
+}
+.lovable-home .link-lux::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    height: 1px;
+    width: 100%;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.6s var(--ease-lux);
+}
+.lovable-home .link-lux:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+}
+
+@keyframes page-reveal {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+@keyframes arch-reveal {
+    from {
+        clip-path: inset(100% 0 0 0 round 999px 999px 0 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0 round 999px 999px 0 0);
+    }
+}
+@keyframes line-up {
+    from {
+        transform: translateY(110%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+@keyframes fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes draw {
+    from {
+        stroke-dashoffset: 1;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+@keyframes slow-zoom {
+    from {
+        transform: scale(1.12);
+    }
+    to {
+        transform: scale(1.02);
+    }
+}
+@keyframes spin-slow {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@keyframes scroll-dot {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: translateY(200%);
+    }
+}
+.lovable-home .anim-page-reveal {
+    animation: page-reveal 1.4s var(--ease-lux) 0.2s forwards;
+}
+.lovable-home .anim-arch {
+    animation: arch-reveal 1.8s var(--ease-lux) 0.5s both;
+}
+.lovable-home .anim-zoom {
+    animation: slow-zoom 3.2s var(--ease-lux) 0.5s both;
+}
+.lovable-home .anim-line {
+    animation: line-up 1.2s var(--ease-lux) both;
+}
+.lovable-home .anim-fade-up {
+    animation: fade-up 1.2s var(--ease-lux) both;
+}
+.lovable-home .anim-draw {
+    stroke-dasharray: 1;
+    animation: draw 2.6s var(--ease-lux) 1.2s both;
+}
+.lovable-home .anim-spin-slow {
+    animation: spin-slow 40s linear infinite;
+}
+.lovable-home .anim-scroll-dot {
+    animation: scroll-dot 2.2s var(--ease-lux) infinite;
+}
+.lovable-home .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+        opacity 1.2s var(--ease-lux),
+        transform 1.2s var(--ease-lux);
+}
+.lovable-home .reveal.is-in {
+    opacity: 1;
+    transform: none;
+}
+.lovable-home .reveal-arch {
+    clip-path: inset(100% 0 0 0 round 999px 999px 0 0);
+    transition: clip-path 1.6s var(--ease-lux);
+}
+.lovable-home .reveal-arch.is-in {
+    clip-path: inset(0 0 0 0 round 999px 999px 0 0);
+}
+.lovable-home .reveal-mask {
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 1.6s var(--ease-lux);
+}
+.lovable-home .reveal-mask.is-in {
+    clip-path: inset(0 0 0 0);
+}
+@keyframes invitation-drift {
+    from {
+        transform: scale(1.03) translate(0, 0);
+    }
+    to {
+        transform: scale(1.09) translate(-1%, -1.4%);
+    }
+}
+@keyframes invitation-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+.lovable-home .junie-invitation__visual {
+    isolation: isolate;
+}
+.lovable-home .junie-invitation__inner {
+    transform: translateY(9%) scale(1.07);
+    transition: transform 1.7s var(--ease-lux);
+}
+.lovable-home .junie-invitation__frame.is-in .junie-invitation__inner {
+    transform: none;
+}
+.lovable-home .junie-invitation__img {
+    animation: invitation-drift 18s ease-in-out infinite alternate;
+}
+.lovable-home .junie-invitation__visual-edge {
+    animation: invitation-float 9s ease-in-out infinite;
+}
+.lovable-home .junie-invitation__visual .junie-invitation__caption {
+    transition-delay: 0.9s;
+}
+.lovable-home .junie-services__state {
+    margin: 2rem auto 0;
+    max-width: 42rem;
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--mocha);
+}
+.lovable-home .junie-services__image-empty {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--sand), var(--cream));
+}
+.lovable-flow .card-surface {
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--ivory);
+    box-shadow: 0 18px 50px -30px oklch(0.36 0.025 58 / 25%);
+}
+.lovable-flow .label-luxury {
+    color: var(--mocha);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lovable-home *,
+    .lovable-home *::before,
+    .lovable-home *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        transition-duration: 0.01ms !important;
+    }
+    .lovable-home :is(.reveal, .reveal-arch, .reveal-mask) {
+        opacity: 1;
+        transform: none;
+        clip-path: none;
+    }
+    .lovable-home .junie-invitation__inner {
+        transform: none;
+    }
+}

@@ -49,16 +49,21 @@ export const procurementApi = {
         apiRequest<ResourceResponse<PurchaseOrder>>(`/api/admin/purchase-orders/${id}/cancel`, {
             method: "POST",
         }),
-    recordPayment: (id: number, body: {
-        operation_key: string;
-        amount: string;
-        payment_method: string;
-        paid_at: string;
-        external_reference?: string;
-        note?: string;
-    }) => apiRequest<ResourceResponse<PurchaseOrder>>(`/api/admin/purchase-orders/${id}/payments`, {
-        method: "POST", body,
-    }),
+    recordPayment: (
+        id: number,
+        body: {
+            operation_key: string;
+            amount: string;
+            payment_method: string;
+            paid_at: string;
+            external_reference?: string;
+            note?: string;
+        },
+    ) =>
+        apiRequest<ResourceResponse<PurchaseOrder>>(`/api/admin/purchase-orders/${id}/payments`, {
+            method: "POST",
+            body,
+        }),
     receive: (
         id: number,
         body: {

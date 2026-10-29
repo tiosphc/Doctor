@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { BookingPage } from "@/pages/BookingPage";
+import { TwoStepBookingPage } from "@/pages/TwoStepBookingPage";
 export const Route = createFileRoute("/booking")({
     validateSearch: (search: Record<string, unknown>): { service_id?: number } => {
         const raw = search["service_id"];
@@ -27,8 +27,10 @@ export const Route = createFileRoute("/booking")({
 function Page() {
     const { service_id } = Route.useSearch();
     return (
-        <div className="min-h-[calc(100svh-4rem)] bg-[#f0f3f5] md:min-h-[calc(100svh-5rem)]">
-            <BookingPage {...(service_id !== undefined ? { initialServiceId: service_id } : {})} />
+        <div className="min-h-[calc(100svh-4rem)] bg-cream md:min-h-[calc(100svh-5rem)]">
+            <TwoStepBookingPage
+                {...(service_id !== undefined ? { initialServiceId: service_id } : {})}
+            />
         </div>
     );
 }

@@ -1,0 +1,18 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - banner [ref=f5e3]:
+      - navigation [ref=f5e4]:
+        - link "DrJunie — Trang chủ" [ref=f5e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f5e6]: DRJUNIE
+        - generic [ref=f5e7]:
+          - link "Dịch vụ" [ref=f5e8] [cursor=pointer]:
+            - /url: /services
+          - link "Đặt lịch" [ref=f5e9] [cursor=pointer]:
+            - /url: /booking
+          - link "Tài khoản" [ref=f5e10] [cursor=pointer]:
+            - /url: /login
+    - main [ref=f5e11]:
+      - status [ref=f5e14]: Đang kiểm tra phiên đăng nhập...
+    - contentinfo [ref=f5e15]: © 2026 DrJunie
+  - region "Notifications alt+T"

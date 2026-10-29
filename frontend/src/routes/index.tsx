@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HomePage } from "@/pages/HomePage";
+import { LovableHomePage } from "@/pages/LovableHomePage";
 
 export const Route = createFileRoute("/")({
     head: () => ({
         meta: [
-            { title: "Phòng khám da liễu thẩm mỹ Junie" },
+            { title: "Junie — Vẻ đẹp riêng. Một cách nâng niu." },
             {
                 name: "description",
-                content: "Chăm sóc da chuẩn khoa học, tôn vinh vẻ đẹp tự nhiên tại Junie.",
+                content: "Chăm sóc da cá nhân hóa và đặt lịch trực tuyến tại Junie.",
             },
             { property: "og:title", content: "Junie Aesthetic & Dermatology" },
             {
@@ -18,5 +18,5 @@ export const Route = createFileRoute("/")({
             { name: "twitter:card", content: "summary_large_image" },
         ],
     }),
-    component: HomePage,
+    component: LovableHomePage,
 });

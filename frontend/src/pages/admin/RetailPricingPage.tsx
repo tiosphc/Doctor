@@ -37,6 +37,7 @@ import {
     type CatalogProductGroup,
     type CatalogVariantGroup,
 } from "./catalogPriceGroups";
+import { ExistingDealerPriceImportDialog } from "./ExistingDealerPriceImportDialog";
 
 type PriceContext = "retail" | "dealer";
 type PriceStatus = "" | "priced" | "unpriced";
@@ -407,6 +408,7 @@ function ProductGroup({
     onToggle,
     onEdit,
     onDelete,
+    onImport,
 }: {
     group: CatalogProductGroup;
     context: PriceContext;
@@ -415,6 +417,7 @@ function ProductGroup({
     onToggle: () => void;
     onEdit: (row: CatalogPriceRow) => void;
     onDelete: (row: CatalogPriceRow) => void;
+    onImport?: ((product: CatalogProductGroup) => void) | undefined;
 }) {
     const range =
         group.minPrice === null
@@ -465,6 +468,18 @@ function ProductGroup({
             </button>
             {open && (
                 <div id={`catalog-product-${group.id}`}>
+                    {context === "dealer" && onImport && (
+                        <div className="border-t px-4 py-3">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onImport(group)}
+                            >
+                                Import giá sản phẩm này
+                            </Button>
+                        </div>
+                    )}
                     {context === "retail" ? (
                         <RetailVariants variants={group.variants} search={search} onEdit={onEdit} />
                     ) : (
@@ -682,6 +697,7 @@ function CatalogPricingPage({ context }: { context: PriceContext }) {
     const [expanded, setExpanded] = useState<Record<number, boolean>>({});
     const [editing, setEditing] = useState<CatalogPriceRow | null>(null);
     const [deleting, setDeleting] = useState<CatalogPriceRow | null>(null);
+    const [importing, setImporting] = useState<CatalogProductGroup | null>(null);
     const filters = {
         search: search.trim() || undefined,
         status: status || undefined,
@@ -808,6 +824,7 @@ function CatalogPricingPage({ context }: { context: PriceContext }) {
                                     }
                                     onEdit={setEditing}
                                     onDelete={setDeleting}
+                                    onImport={context === "dealer" ? setImporting : undefined}
                                 />
                             );
                         })}
@@ -834,6 +851,12 @@ function CatalogPricingPage({ context }: { context: PriceContext }) {
                     />
                 )}
                 {deleting && <DeletePriceDialog row={deleting} onClose={() => setDeleting(null)} />}
+                {importing && (
+                    <ExistingDealerPriceImportDialog
+                        product={{ id: importing.id, name: importing.name }}
+                        onClose={() => setImporting(null)}
+                    />
+                )}
             </div>
         </ProductAdminGuard>
     );

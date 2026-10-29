@@ -1,7 +1,0 @@
-<div class="grid gap-5 sm:grid-cols-2">
-    @foreach(['code' => 'Mã nhà cung cấp *', 'name' => 'Tên nhà cung cấp *', 'contact_name' => 'Người liên hệ', 'email' => 'Email', 'phone' => 'Điện thoại', 'tax_code' => 'Mã số thuế'] as $field => $label)
-        <label class="text-sm font-semibold text-slate-700">{{ $label }}<input name="{{ $field }}" value="{{ old($field, $supplier?->$field) }}" maxlength="{{ $field === 'code' || $field === 'phone' || $field === 'tax_code' ? 50 : 255 }}" @required(in_array($field, ['code', 'name'], true)) class="mt-2 min-h-11 w-full rounded-lg border border-slate-300 px-3">@error($field)<span class="mt-1 block text-red-700">{{ $message }}</span>@enderror</label>
-    @endforeach
-    <label class="text-sm font-semibold text-slate-700 sm:col-span-2">Địa chỉ<textarea name="address" maxlength="2000" rows="3" class="mt-2 w-full rounded-lg border border-slate-300 p-3">{{ old('address', $supplier?->address) }}</textarea>@error('address')<span class="mt-1 block text-red-700">{{ $message }}</span>@enderror</label>
-    <label class="text-sm font-semibold text-slate-700">Trạng thái<select name="status" class="mt-2 min-h-11 w-full rounded-lg border border-slate-300 px-3"><option value="active" @selected(old('status', $supplier?->status ?? 'active') === 'active')>Hoạt động</option><option value="inactive" @selected(old('status', $supplier?->status) === 'inactive')>Ngừng hoạt động</option></select>@error('status')<span class="mt-1 block text-red-700">{{ $message }}</span>@enderror</label>
-</div>
