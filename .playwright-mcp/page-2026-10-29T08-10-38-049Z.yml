@@ -1,0 +1,62 @@
+- generic [ref=f6e1]:
+  - generic [ref=f6e2]:
+    - banner [ref=f6e3]:
+      - navigation [ref=f6e4]:
+        - link "DrJunie — Trang chủ" [ref=f6e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f6e6]: DRJUNIE
+        - generic [ref=f6e7]:
+          - link "Dịch vụ" [ref=f6e8] [cursor=pointer]:
+            - /url: /services
+          - link "Đặt lịch" [ref=f6e9] [cursor=pointer]:
+            - /url: /booking
+          - link "Tài khoản" [ref=f6e10] [cursor=pointer]:
+            - /url: /login
+    - main [ref=f6e11]:
+      - generic [ref=f6e18]:
+        - paragraph [ref=f6e19]: Đặt lịch trực tuyến
+        - heading "Chọn lịch hẹn phù hợp" [level=1] [ref=f6e20]
+        - generic [ref=f6e22]:
+          - generic [ref=f6e23]: Dịch vụ
+          - generic [ref=f6e28]: Bác sĩ
+          - generic [ref=f6e34]:
+            - generic [ref=f6e35]: "3"
+            - generic [ref=f6e36]: Ngày giờ & thông tin
+          - generic [ref=f6e39]:
+            - generic [ref=f6e40]: "4"
+            - generic [ref=f6e41]: Xác nhận
+        - generic [ref=f6e42]:
+          - generic [ref=f6e89]:
+            - region [ref=f6e90]:
+              - generic [ref=f6e91]:
+                - heading "Ngày và giờ khám" [level=2] [ref=f6e92]
+                - paragraph [ref=f6e93]: Chọn ngày trước để xem các khung giờ còn trống của bác sĩ.
+              - generic [ref=f6e94]:
+                - generic [ref=f6e95]: Bạn muốn đến vào ngày nào?
+                - generic [ref=f6e96]:
+                  - generic [ref=f6e97]: Chọn ngày phù hợp
+                  - textbox "Bạn muốn đến vào ngày nào?" [ref=f6e100] [cursor=pointer]
+              - paragraph [ref=f6e101]: Vui lòng chọn ngày khám để hiển thị khung giờ.
+            - region [ref=f6e102]:
+              - generic [ref=f6e103]:
+                - heading "Thông tin liên hệ" [level=2] [ref=f6e104]
+                - paragraph [ref=f6e105]: Điền thông tin để chúng tôi xác nhận lịch hẹn với bạn.
+              - generic [ref=f6e106]:
+                - generic [ref=f6e107]:
+                  - generic [ref=f6e108]: Họ và tên *
+                  - textbox "Họ và tên *" [ref=f6e109]
+                - generic [ref=f6e110]:
+                  - generic [ref=f6e111]: Email *
+                  - textbox "Email *" [ref=f6e112]
+                - generic [ref=f6e113]:
+                  - generic [ref=f6e114]: Số điện thoại *
+                  - textbox "Số điện thoại *" [ref=f6e115]
+                - generic [ref=f6e116]:
+                  - generic [ref=f6e117]: Bạn có muốn nhắn gì thêm? (không bắt buộc)
+                  - textbox "Bạn có muốn nhắn gì thêm? (không bắt buộc)" [ref=f6e118]:
+                    - /placeholder: "Ví dụ: Tôi muốn tư vấn thêm về..., đây là lần đầu tôi..., hoặc một điều bạn muốn bác sĩ lưu ý."
+          - generic [ref=f6e68]:
+            - button "Quay lại" [ref=f6e69]
+            - button "Tiếp tục" [active] [ref=f6e72]
+    - contentinfo [ref=f6e17]: © 2026 DrJunie
+  - region "Notifications alt+T"

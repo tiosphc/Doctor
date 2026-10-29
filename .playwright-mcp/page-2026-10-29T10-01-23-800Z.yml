@@ -1,0 +1,88 @@
+- generic [active] [ref=f10e1]:
+  - generic [ref=f10e2]:
+    - banner [ref=f10e3]:
+      - navigation [ref=f10e4]:
+        - link "Junie — Trang chủ" [ref=f10e5] [cursor=pointer]:
+          - /url: /
+          - img "Junie Beauty Clinic" [ref=f10e7]
+        - list [ref=f10e8]:
+          - listitem [ref=f10e9]:
+            - link "Trang chủ" [ref=f10e10] [cursor=pointer]:
+              - /url: /#trang-chu
+          - listitem [ref=f10e11]:
+            - link "Về Junie" [ref=f10e12] [cursor=pointer]:
+              - /url: /#ve-junie
+          - listitem [ref=f10e13]:
+            - link "Dịch vụ" [ref=f10e14] [cursor=pointer]:
+              - /url: /#dich-vu
+          - listitem [ref=f10e15]:
+            - link "Không gian" [ref=f10e16] [cursor=pointer]:
+              - /url: /#khong-gian
+          - listitem [ref=f10e17]:
+            - link "Liên hệ" [ref=f10e18] [cursor=pointer]:
+              - /url: /#lien-he
+        - generic [ref=f10e19]:
+          - link "Đặt lịch" [ref=f10e20] [cursor=pointer]:
+            - /url: /booking
+          - link "Đăng nhập" [ref=f10e21] [cursor=pointer]:
+            - /url: /login
+    - main [ref=f10e22]:
+      - generic [ref=f10e24]:
+        - generic [ref=f10e25]: Đội ngũ Junie
+        - heading [level=1] [ref=f10e28]:
+          - text: Chuyên môn là nền tảng của
+          - emphasis [ref=f10e29]: vẻ đẹp bền vững.
+        - paragraph [ref=f10e30]: Junie bắt đầu mỗi buổi tư vấn bằng việc lắng nghe, tìm hiểu làn da và cùng khách hàng lựa chọn hướng chăm sóc phù hợp.
+      - region [ref=f10e31]:
+        - status [ref=f10e33]: Đang tải hồ sơ bác sĩ...
+      - region [ref=f10e34]:
+        - generic [ref=f10e35]:
+          - generic [ref=f10e36]: Lịch tư vấn
+          - heading "Khởi đầu hành trình chăm sóc cùng Junie" [level=2] [ref=f10e39]
+          - paragraph [ref=f10e40]: Chọn dịch vụ và thời gian phù hợp để Junie tiếp nhận yêu cầu đặt lịch của bạn.
+          - link "Đặt lịch tư vấn" [ref=f10e42] [cursor=pointer]:
+            - /url: /booking
+          - link "Về trang chủ" [ref=f10e51] [cursor=pointer]:
+            - /url: /
+    - contentinfo [ref=f10e52]:
+      - generic [ref=f10e53]:
+        - generic [ref=f10e54]:
+          - paragraph [ref=f10e55]: “Sang trọng không nằm ở sự phô trương, mà ở vẻ đẹp của từng chi tiết được nâng niu.”
+          - generic [ref=f10e56]:
+            - paragraph [ref=f10e57]: Khám phá
+            - list [ref=f10e58]:
+              - listitem [ref=f10e59]:
+                - link "Về Junie" [ref=f10e60] [cursor=pointer]:
+                  - /url: /#ve-junie
+              - listitem [ref=f10e61]:
+                - link "Dịch vụ" [ref=f10e62] [cursor=pointer]:
+                  - /url: /#dich-vu
+              - listitem [ref=f10e63]:
+                - link "Không gian" [ref=f10e64] [cursor=pointer]:
+                  - /url: /#khong-gian
+              - listitem [ref=f10e65]:
+                - link "Liên hệ" [ref=f10e66] [cursor=pointer]:
+                  - /url: /#lien-he
+          - generic [ref=f10e67]:
+            - paragraph [ref=f10e68]: Liên hệ
+            - list [ref=f10e69]:
+              - listitem [ref=f10e70]: "Địa chỉ: đang cập nhật"
+              - listitem [ref=f10e71]: "Điện thoại: đang cập nhật"
+              - listitem [ref=f10e72]: "Email: đang cập nhật"
+          - generic [ref=f10e73]:
+            - paragraph [ref=f10e74]: Theo dõi
+            - list [ref=f10e75]:
+              - listitem [ref=f10e76]:
+                - link "Instagram" [ref=f10e77] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f10e78]:
+                - link "Facebook" [ref=f10e79] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f10e80]:
+                - link "TikTok" [ref=f10e81] [cursor=pointer]:
+                  - /url: "#"
+        - img "Junie Beauty Clinic" [ref=f10e84]
+        - generic [ref=f10e85]:
+          - generic [ref=f10e86]: © 2026 Junie. Bảo lưu mọi quyền.
+          - generic [ref=f10e87]: Beauty in Stillness
+  - region "Notifications alt+T"

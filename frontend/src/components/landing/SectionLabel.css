@@ -1,0 +1,29 @@
+/* Shared section label — one visual system across all landing sections */
+.junie-label {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--mocha);
+    text-align: left;
+}
+.junie-label__line {
+    width: 48px;
+    height: 1px;
+    flex-shrink: 0;
+    background: var(--champagne);
+}
+.junie-label--light {
+    color: var(--sand);
+}
+.junie-label--light .junie-label__line {
+    background: color-mix(in oklab, var(--sand) 50%, transparent);
+}
+
+@media (max-width: 767px) {
+    .junie-label {
+        gap: 12px;
+    }
+    .junie-label__line {
+        width: 32px;
+    }
+}

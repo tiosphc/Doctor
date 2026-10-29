@@ -1,0 +1,15 @@
+{
+    "$schema": "https://schema.railpack.com",
+    "steps": {
+        "build": {
+            "variables": {
+                "NITRO_PRESET": "node-server"
+            }
+        }
+    },
+    "deploy": {
+        "variables": {
+            "HOST": "0.0.0.0"
+        }
+    }
+}

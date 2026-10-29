@@ -1,0 +1,18 @@
+- generic [active] [ref=f12e1]:
+  - generic [ref=f12e2]:
+    - banner [ref=f12e3]:
+      - navigation [ref=f12e4]:
+        - link "Junie — Trang chủ" [ref=f12e5] [cursor=pointer]:
+          - /url: /
+          - img "Junie Beauty Clinic" [ref=f12e7]
+        - generic [ref=f12e8]:
+          - link "Dịch vụ" [ref=f12e9] [cursor=pointer]:
+            - /url: /services
+          - link "Đặt lịch" [ref=f12e10] [cursor=pointer]:
+            - /url: /booking
+          - link "Tài khoản" [ref=f12e11] [cursor=pointer]:
+            - /url: /login
+    - main [ref=f12e12]:
+      - status [ref=f12e15]: Đang kiểm tra phiên đăng nhập...
+    - contentinfo [ref=f12e16]: © 2026 Junie
+  - region "Notifications alt+T"

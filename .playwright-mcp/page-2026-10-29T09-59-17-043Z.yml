@@ -1,0 +1,74 @@
+- generic [active] [ref=f9e1]:
+  - generic [ref=f9e2]:
+    - banner [ref=f9e3]:
+      - generic [ref=f9e4]:
+        - link "Junie - Trang chủ" [ref=f9e5] [cursor=pointer]:
+          - /url: /
+          - img "Junie Beauty Clinic" [ref=f9e7]
+        - button "Mở menu điều hướng" [ref=f9e9]
+    - main [ref=f9e11]:
+      - generic [ref=f9e16]:
+        - generic [ref=f9e17]:
+          - generic [ref=f9e18]: Viện da liễu & thẩm mỹ y khoa
+          - paragraph [ref=f9e23]: 8 dịch vụ trong danh mục
+          - heading "Demo Clinic" [level=1] [ref=f9e24]
+          - paragraph [ref=f9e25]: Demo data
+          - generic [ref=f9e26]:
+            - link "Khám phá danh mục" [ref=f9e27] [cursor=pointer]:
+              - /url: /services/demo-clinic
+            - link "Đặt lịch tư vấn 1:1" [ref=f9e30] [cursor=pointer]:
+              - /url: /booking
+        - generic [ref=f9e33]:
+          - generic [ref=f9e34]:
+            - generic [ref=f9e35]: 01 / 01
+            - generic [ref=f9e36]:
+              - button "Danh mục trước" [ref=f9e37]
+              - button "Danh mục tiếp theo" [ref=f9e40]
+          - listbox "Danh mục dịch vụ" [ref=f9e43]:
+            - option [selected] [ref=f9e44]:
+              - generic [ref=f9e47]:
+                - paragraph [ref=f9e48]: 8 dịch vụ
+                - heading "Demo Clinic" [level=2] [ref=f9e49]
+                - generic [ref=f9e50]: Bấm để khám phá
+    - contentinfo [ref=f9e54]:
+      - generic [ref=f9e55]:
+        - generic [ref=f9e56]:
+          - generic [ref=f9e57]:
+            - img "Junie Beauty Clinic" [ref=f9e60]
+            - paragraph [ref=f9e61]: Không gian da liễu thẩm mỹ chuẩn khoa học, đồng hành cùng vẻ đẹp tự nhiên và bền vững.
+          - generic [ref=f9e68]:
+            - paragraph [ref=f9e69]: Khám phá
+            - list [ref=f9e70]:
+              - listitem [ref=f9e71]:
+                - link "Dịch vụ" [ref=f9e72] [cursor=pointer]:
+                  - /url: /services
+              - listitem [ref=f9e73]:
+                - link "Bác sĩ" [ref=f9e74] [cursor=pointer]:
+                  - /url: /doctors
+              - listitem [ref=f9e75]:
+                - link "Về chúng tôi" [ref=f9e76] [cursor=pointer]:
+                  - /url: /#ve-junie
+              - listitem [ref=f9e77]:
+                - link "Tin tức" [ref=f9e78] [cursor=pointer]:
+                  - /url: /blogs
+          - generic [ref=f9e79]:
+            - paragraph [ref=f9e80]: Khách hàng
+            - list [ref=f9e81]:
+              - listitem [ref=f9e82]:
+                - link "Đặt lịch" [ref=f9e83] [cursor=pointer]:
+                  - /url: /booking
+              - listitem [ref=f9e84]:
+                - link "Tra cứu lịch hẹn" [ref=f9e85] [cursor=pointer]:
+                  - /url: /appointment-lookup
+              - listitem [ref=f9e86]:
+                - link "Đăng nhập" [ref=f9e87] [cursor=pointer]:
+                  - /url: /login
+          - generic [ref=f9e88]:
+            - paragraph [ref=f9e89]: Liên hệ
+            - list [ref=f9e90]:
+              - listitem [ref=f9e91]: Thủ Đức, Thành phố Hồ Chí Minh
+              - listitem [ref=f9e95]: 1900 6688
+              - listitem [ref=f9e98]: hello@junie.vn
+              - listitem [ref=f9e102]: 08:00–20:00 hằng ngày
+        - paragraph [ref=f9e106]: © 2026 Junie Aesthetic & Dermatology. All rights reserved.
+  - region "Notifications alt+T"

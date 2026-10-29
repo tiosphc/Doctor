@@ -1,0 +1,62 @@
+- generic [ref=f6e1]:
+  - generic [ref=f6e2]:
+    - banner [ref=f6e3]:
+      - navigation [ref=f6e4]:
+        - link "DrJunie — Trang chủ" [ref=f6e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f6e6]: DRJUNIE
+        - generic [ref=f6e7]:
+          - link "Dịch vụ" [ref=f6e8] [cursor=pointer]:
+            - /url: /services
+          - link "Đặt lịch" [ref=f6e9] [cursor=pointer]:
+            - /url: /booking
+          - link "Tài khoản" [ref=f6e10] [cursor=pointer]:
+            - /url: /login
+    - main [ref=f6e11]:
+      - generic [ref=f6e18]:
+        - paragraph [ref=f6e19]: Đặt lịch trực tuyến
+        - heading "Chọn lịch hẹn phù hợp" [level=1] [ref=f6e20]
+        - generic [ref=f6e22]:
+          - generic [ref=f6e24]:
+            - generic [ref=f6e25]: "1"
+            - generic [ref=f6e26]: Dịch vụ
+          - generic [ref=f6e29]:
+            - generic [ref=f6e30]: "2"
+            - generic [ref=f6e31]: Bác sĩ
+          - generic [ref=f6e34]:
+            - generic [ref=f6e35]: "3"
+            - generic [ref=f6e36]: Ngày giờ & thông tin
+          - generic [ref=f6e39]:
+            - generic [ref=f6e40]: "4"
+            - generic [ref=f6e41]: Xác nhận
+        - generic [ref=f6e42]:
+          - generic [ref=f6e43]:
+            - button [active] [ref=f6e44]:
+              - strong [ref=f6e45]: Demo Skin Consultation 1
+              - paragraph [ref=f6e46]: 30 phút · 350.000 VNĐ
+            - button [ref=f6e47]:
+              - strong [ref=f6e48]: Demo Skin Consultation 2
+              - paragraph [ref=f6e49]: 30 phút · 450.000 VNĐ
+            - button [ref=f6e50]:
+              - strong [ref=f6e51]: Demo Skin Consultation 3
+              - paragraph [ref=f6e52]: 30 phút · 550.000 VNĐ
+            - button [ref=f6e53]:
+              - strong [ref=f6e54]: QA Readiness Service 1793182397454
+              - paragraph [ref=f6e55]: 30 phút · 100.000 VNĐ
+            - button [ref=f6e56]:
+              - strong [ref=f6e57]: QA Readiness Service 1793182446702
+              - paragraph [ref=f6e58]: 30 phút · 100.000 VNĐ
+            - button [ref=f6e59]:
+              - strong [ref=f6e60]: QA Readiness Service 1793182561498
+              - paragraph [ref=f6e61]: 30 phút · 100.000 VNĐ
+            - button [ref=f6e62]:
+              - strong [ref=f6e63]: QA Readiness Service 1793182774772
+              - paragraph [ref=f6e64]: 30 phút · 100.000 VNĐ
+            - button [ref=f6e65]:
+              - strong [ref=f6e66]: QA Readiness Service 1793183144723
+              - paragraph [ref=f6e67]: 30 phút · 100.000 VNĐ
+          - generic [ref=f6e68]:
+            - button "Quay lại" [disabled] [ref=f6e69]
+            - button "Tiếp tục" [ref=f6e72]
+    - contentinfo [ref=f6e17]: © 2026 DrJunie
+  - region "Notifications alt+T"

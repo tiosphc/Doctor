@@ -1,0 +1,71 @@
+- generic [active] [ref=f4e1]:
+  - generic [ref=f4e2]:
+    - banner [ref=f4e3]:
+      - navigation [ref=f4e4]:
+        - link "DrJunie — Trang chủ" [ref=f4e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f4e6]: DRJUNIE
+        - generic [ref=f4e7]:
+          - link "Đăng nhập" [ref=f4e8] [cursor=pointer]:
+            - /url: /login
+          - button "Mở menu" [ref=f4e9] [cursor=pointer]
+    - main [ref=f4e12]:
+      - generic [ref=f4e14]:
+        - generic [ref=f4e15]: Đội ngũ DrJunie
+        - heading [level=1] [ref=f4e18]:
+          - text: Chuyên môn là nền tảng của
+          - emphasis [ref=f4e19]: vẻ đẹp bền vững.
+        - paragraph [ref=f4e20]: DrJunie bắt đầu mỗi buổi tư vấn bằng việc lắng nghe, tìm hiểu làn da và cùng khách hàng lựa chọn hướng chăm sóc phù hợp.
+      - region [ref=f4e21]:
+        - status [ref=f4e23]: Đang tải hồ sơ bác sĩ...
+      - region [ref=f4e24]:
+        - generic [ref=f4e25]:
+          - generic [ref=f4e26]: Lịch tư vấn
+          - heading "Khởi đầu hành trình chăm sóc cùng DrJunie" [level=2] [ref=f4e29]
+          - paragraph [ref=f4e30]: Chọn dịch vụ và thời gian phù hợp để DrJunie tiếp nhận yêu cầu đặt lịch của bạn.
+          - link "Đặt lịch tư vấn" [ref=f4e32] [cursor=pointer]:
+            - /url: /booking
+          - link "Về trang chủ" [ref=f4e41] [cursor=pointer]:
+            - /url: /
+    - contentinfo [ref=f4e42]:
+      - generic [ref=f4e43]:
+        - generic [ref=f4e44]:
+          - paragraph [ref=f4e45]: “Sang trọng không nằm ở sự phô trương, mà ở vẻ đẹp của từng chi tiết được nâng niu.”
+          - generic [ref=f4e46]:
+            - paragraph [ref=f4e47]: Khám phá
+            - list [ref=f4e48]:
+              - listitem [ref=f4e49]:
+                - link "Về DrJunie" [ref=f4e50] [cursor=pointer]:
+                  - /url: /#ve-drjunie
+              - listitem [ref=f4e51]:
+                - link "Dịch vụ" [ref=f4e52] [cursor=pointer]:
+                  - /url: /#dich-vu
+              - listitem [ref=f4e53]:
+                - link "Không gian" [ref=f4e54] [cursor=pointer]:
+                  - /url: /#khong-gian
+              - listitem [ref=f4e55]:
+                - link "Liên hệ" [ref=f4e56] [cursor=pointer]:
+                  - /url: /#lien-he
+          - generic [ref=f4e57]:
+            - paragraph [ref=f4e58]: Liên hệ
+            - list [ref=f4e59]:
+              - listitem [ref=f4e60]: "Địa chỉ: đang cập nhật"
+              - listitem [ref=f4e61]: "Điện thoại: đang cập nhật"
+              - listitem [ref=f4e62]: "Email: đang cập nhật"
+          - generic [ref=f4e63]:
+            - paragraph [ref=f4e64]: Theo dõi
+            - list [ref=f4e65]:
+              - listitem [ref=f4e66]:
+                - link "Instagram" [ref=f4e67] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f4e68]:
+                - link "Facebook" [ref=f4e69] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f4e70]:
+                - link "TikTok" [ref=f4e71] [cursor=pointer]:
+                  - /url: "#"
+        - generic [ref=f4e72]: DRJUNIE
+        - generic [ref=f4e74]:
+          - generic [ref=f4e75]: © 2026 DrJunie. Bảo lưu mọi quyền.
+          - generic [ref=f4e76]: Beauty in Stillness
+  - region "Notifications alt+T"

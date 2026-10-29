@@ -1,0 +1,28 @@
+{
+    "$schema": "https://schema.railpack.com",
+    "packages": {
+        "php": "8.4"
+    },
+    "steps": {
+        "build": {
+            "commands": [
+                "...",
+                "test -f storage/app/public/products/demo/DEMO-PRD-12.jpg && if [ ! -e public/storage ]; then php artisan storage:link --no-interaction; fi && test -f public/storage/products/demo/DEMO-PRD-12.jpg",
+                "test -s app/Models/User.php",
+                "php -l app/Models/User.php",
+                "grep -q Authenticatable app/Models/User.php",
+                "grep -q internal/diagnostics/auth routes/api.php",
+                "php artisan route:list --path=internal/diagnostics/auth --no-interaction > /tmp/auth-routes.txt",
+                "grep -q GET /tmp/auth-routes.txt",
+                "grep -q POST /tmp/auth-routes.txt",
+                "grep -q internal/diagnostics/auth /tmp/auth-routes.txt"
+            ]
+        }
+    },
+    "deploy": {
+        "variables": {
+            "RAILPACK_SKIP_MIGRATIONS": "true"
+        },
+        "startCommand": "echo 'Clearing Laravel caches before FrankenPHP' && php artisan optimize:clear --no-interaction && php artisan storage:link --no-interaction && exec docker-php-entrypoint --config /Caddyfile --adapter caddyfile"
+    }
+}

@@ -1,0 +1,21 @@
+{
+  "license": "https://unsplash.com/license",
+  "products": {
+    "DEMO-PRD-01": { "file": "hydrating-serum.jpg", "source": "https://unsplash.com/photos/clear-serum-bottle-with-dropper-on-reflective-surface-tuLAz4SBaCs" },
+    "DEMO-PRD-02": { "file": "barrier-cream.jpg", "source": "https://unsplash.com/photos/skin-silk-cream-jar-on-rocks-with-purple-flowers-Z4xEb4Ny3RA" },
+    "DEMO-PRD-03": { "file": "gentle-cleanser.jpg", "source": "https://unsplash.com/photos/a-facial-cleanser-bottle-held-on-laboratory-equipment-qaniwuNUE5k" },
+    "DEMO-PRD-04": { "file": "skincare-kit.jpg", "source": "https://unsplash.com/photos/a-white-table-topped-with-lots-of-different-types-of-skin-care-products-oLc-kWI-W7Y" },
+    "DEMO-PRD-05": { "file": "recovery-mask.jpg", "source": "https://unsplash.com/photos/woman-applying-a-sheet-mask-to-her-face-BAPMUZJNyGs" },
+    "DEMO-PRD-06": { "file": "vitamin-serum.jpg", "source": "https://unsplash.com/photos/niacinamide-serum-bottle-with-dropper-and-dropper-zuIpmjxrmRk" },
+    "DEMO-PRD-07": { "file": "cooling-gel.jpg", "source": "https://unsplash.com/photos/white-cream-in-an-open-jar-on-a-rock-bM-aV4Jt5qM" },
+    "DEMO-PRD-08": { "file": "sun-care-lotion.jpg", "source": "https://unsplash.com/photos/a-white-tube-of-skin-care-sitting-on-top-of-a-plant-WKCXM67lIC0" },
+    "DEMO-PRD-09": { "file": "peptide-cream.jpg", "source": "https://unsplash.com/photos/white-cream-jar-with-gold-accents-on-tiered-display-CsXj29MoJts" },
+    "DEMO-PRD-10": { "file": "moisture-ampoule.jpg", "source": "https://unsplash.com/photos/skincare-serum-bottle-with-box-and-liquid-sample-IwnZta9eVVU" },
+    "DEMO-PRD-11": { "file": "treatment-pads.jpg", "source": "https://unsplash.com/photos/white-round-plastic-container-on-brown-woven-basket-a6OxyVdFzSA" },
+    "DEMO-PRD-12": { "file": "hyaluronic-mist.jpg", "source": "https://unsplash.com/photos/white-and-gold-spray-bottle-RbQj6WxcVGk" },
+    "DEMO-PRD-13": { "file": "aftercare-set.jpg", "source": "https://unsplash.com/photos/skincare-products-arranged-on-a-wooden-table-dFubjAPlWfI" },
+    "DEMO-GIFT-01": { "file": "mini-cleanser.jpg", "source": "https://unsplash.com/photos/foaming-cleanser-bottle-with-natural-elements-vZUuN08D8L8" },
+    "DEMO-GIFT-02": { "file": "sheet-mask.jpg", "source": "https://unsplash.com/photos/anti-aging-face-mask-sheets-with-percentages-K8GjuSKcPq4" },
+    "DEMO-GIFT-03": { "file": "aftercare-set.jpg", "source": "https://unsplash.com/photos/skincare-products-arranged-on-a-wooden-table-dFubjAPlWfI" }
+  }
+}

@@ -1,0 +1,305 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/landing/BookingJourney.tsx");const useEffect = __vite__cjsImport0_react["useEffect"]; const useRef = __vite__cjsImport0_react["useRef"]; const useState = __vite__cjsImport0_react["useState"];const _jsxDEV = __vite__cjsImport5_react_jsxDevRuntime["jsxDEV"];import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=2419cdff";
+import { Sparkles, CalendarDays, CalendarCheck2 } from "/node_modules/.vite/deps/lucide-react.js?v=d865ed1f";
+import { LuxButton } from "/src/components/landing/LuxButton.tsx";
+import { SectionLabel } from "/src/components/landing/SectionLabel.tsx";
+import "/src/components/landing/BookingJourney.css";
+var _jsxFileName = "D:/TTFIS/Doctor-refactor-admin-ui/frontend/src/components/landing/BookingJourney.tsx";
+import __vite__cjsImport5_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=2419cdff";
+var _s = $RefreshSig$();
+const steps = [
+	{
+		number: "01",
+		title: "Khám phá vẻ đẹp của bạn",
+		description: "Lựa chọn dịch vụ phù hợp với nhu cầu và mong muốn của bạn.",
+		Icon: Sparkles
+	},
+	{
+		number: "02",
+		title: "Chọn khoảnh khắc dành riêng",
+		description: "Chọn ngày giờ thuận tiện và để lại thông tin liên hệ của bạn.",
+		Icon: CalendarDays
+	},
+	{
+		number: "03",
+		title: "Hoàn tất cuộc hẹn",
+		description: "Kiểm tra lại thông tin và xác nhận yêu cầu đặt lịch của bạn.",
+		Icon: CalendarCheck2
+	}
+];
+export function BookingJourney() {
+	_s();
+	const ref = useRef(null);
+	const [active, setActive] = useState(null);
+	useEffect(() => {
+		const section = ref.current;
+		if (!section) return;
+		section.classList.add("is-ready");
+		const observer = new IntersectionObserver((entries) => {
+			entries.forEach((entry) => {
+				if (!entry.isIntersecting) return;
+				entry.target.classList.add("is-in");
+				observer.unobserve(entry.target);
+			});
+		}, { threshold: .16 });
+		observer.observe(section);
+		section.querySelectorAll(".junie-journey__step").forEach((step) => observer.observe(step));
+		return () => observer.disconnect();
+	}, []);
+	return /* @__PURE__ */ _jsxDEV("section", {
+		ref,
+		className: "junie-journey",
+		"aria-labelledby": "junie-journey-title",
+		"data-tsd-source": "/src/components/landing/BookingJourney.tsx:51:9",
+		children: /* @__PURE__ */ _jsxDEV("div", {
+			className: "junie-journey__inner",
+			"data-tsd-source": "/src/components/landing/BookingJourney.tsx:52:13",
+			children: [
+				/* @__PURE__ */ _jsxDEV("div", {
+					className: "junie-journey__divider",
+					"aria-hidden": "true",
+					"data-tsd-source": "/src/components/landing/BookingJourney.tsx:53:17"
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 53,
+					columnNumber: 17
+				}, this),
+				/* @__PURE__ */ _jsxDEV(SectionLabel, {
+					label: "Junie — Hành trình đặt lịch",
+					"data-tsd-source": "/src/components/landing/BookingJourney.tsx:54:17"
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 54,
+					columnNumber: 17
+				}, this),
+				/* @__PURE__ */ _jsxDEV("div", {
+					className: "junie-journey__header",
+					"data-tsd-source": "/src/components/landing/BookingJourney.tsx:55:17",
+					children: [/* @__PURE__ */ _jsxDEV("h2", {
+						id: "junie-journey-title",
+						className: "junie-journey__title",
+						"data-tsd-source": "/src/components/landing/BookingJourney.tsx:56:21",
+						children: [/* @__PURE__ */ _jsxDEV("span", {
+							"data-tsd-source": "/src/components/landing/BookingJourney.tsx:57:25",
+							children: /* @__PURE__ */ _jsxDEV("span", {
+								"data-tsd-source": "/src/components/landing/BookingJourney.tsx:58:29",
+								children: "Một cuộc hẹn,"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 58,
+								columnNumber: 29
+							}, this)
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 57,
+							columnNumber: 25
+						}, this), /* @__PURE__ */ _jsxDEV("span", {
+							"data-tsd-source": "/src/components/landing/BookingJourney.tsx:60:25",
+							children: /* @__PURE__ */ _jsxDEV("span", {
+								"data-tsd-source": "/src/components/landing/BookingJourney.tsx:61:29",
+								children: ["khởi đầu cho ", /* @__PURE__ */ _jsxDEV("em", {
+									"data-tsd-source": "/src/components/landing/BookingJourney.tsx:62:46",
+									children: "vẻ đẹp riêng."
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 62,
+									columnNumber: 46
+								}, this)]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 61,
+								columnNumber: 29
+							}, this)
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 60,
+							columnNumber: 25
+						}, this)]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 56,
+						columnNumber: 21
+					}, this), /* @__PURE__ */ _jsxDEV("p", {
+						className: "junie-journey__description",
+						"data-tsd-source": "/src/components/landing/BookingJourney.tsx:66:21",
+						children: "Chỉ với ba bước đơn giản, bạn đã có thể bắt đầu hành trình chăm sóc sắc đẹp cùng Junie."
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 66,
+						columnNumber: 21
+					}, this)]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 55,
+					columnNumber: 17
+				}, this),
+				/* @__PURE__ */ _jsxDEV("div", {
+					className: "junie-journey__timeline",
+					"data-active": active ?? "",
+					"data-tsd-source": "/src/components/landing/BookingJourney.tsx:71:17",
+					children: [/* @__PURE__ */ _jsxDEV("svg", {
+						className: "junie-journey__path",
+						viewBox: "0 0 1200 150",
+						preserveAspectRatio: "none",
+						"aria-hidden": "true",
+						"data-tsd-source": "/src/components/landing/BookingJourney.tsx:72:21",
+						children: [
+							/* @__PURE__ */ _jsxDEV("path", {
+								className: "junie-journey__path-base",
+								pathLength: 1,
+								d: "M35 52 C210 4 265 116 435 100 S660 52 835 66 S1010 104 1160 38",
+								"data-tsd-source": "/src/components/landing/BookingJourney.tsx:78:25"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 78,
+								columnNumber: 25
+							}, this),
+							/* @__PURE__ */ _jsxDEV("path", {
+								className: "junie-journey__highlight junie-journey__highlight--first",
+								d: "M35 52 C210 4 265 116 435 100 S660 52 835 66",
+								"data-tsd-source": "/src/components/landing/BookingJourney.tsx:83:25"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 83,
+								columnNumber: 25
+							}, this),
+							/* @__PURE__ */ _jsxDEV("path", {
+								className: "junie-journey__highlight junie-journey__highlight--last",
+								d: "M435 100 C580 86 660 52 835 66 S1010 104 1160 38",
+								"data-tsd-source": "/src/components/landing/BookingJourney.tsx:87:25"
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 87,
+								columnNumber: 25
+							}, this)
+						]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 72,
+						columnNumber: 21
+					}, this), /* @__PURE__ */ _jsxDEV("ol", {
+						className: "junie-journey__steps",
+						"data-tsd-source": "/src/components/landing/BookingJourney.tsx:92:21",
+						children: steps.map(({ number, title, description, Icon }, i) => /* @__PURE__ */ _jsxDEV("li", {
+							className: "junie-journey__step",
+							onMouseEnter: () => setActive(i),
+							onMouseLeave: () => setActive(null),
+							"data-tsd-source": "/src/components/landing/BookingJourney.tsx:94:29",
+							children: [
+								/* @__PURE__ */ _jsxDEV("div", {
+									className: "junie-journey__step-top",
+									"data-tsd-source": "/src/components/landing/BookingJourney.tsx:100:33",
+									children: [/* @__PURE__ */ _jsxDEV("span", {
+										className: "junie-journey__number",
+										"aria-hidden": "true",
+										"data-tsd-source": "/src/components/landing/BookingJourney.tsx:101:37",
+										children: number
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 101,
+										columnNumber: 37
+									}, this), /* @__PURE__ */ _jsxDEV(Icon, {
+										className: "junie-journey__icon",
+										size: 26,
+										strokeWidth: 1.1,
+										"aria-hidden": "true",
+										"data-tsd-source": "/src/components/landing/BookingJourney.tsx:104:37"
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 104,
+										columnNumber: 37
+									}, this)]
+								}, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 100,
+									columnNumber: 33
+								}, this),
+								/* @__PURE__ */ _jsxDEV("h3", {
+									"data-tsd-source": "/src/components/landing/BookingJourney.tsx:111:33",
+									children: title
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 111,
+									columnNumber: 33
+								}, this),
+								/* @__PURE__ */ _jsxDEV("p", {
+									"data-tsd-source": "/src/components/landing/BookingJourney.tsx:112:33",
+									children: description
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 112,
+									columnNumber: 33
+								}, this)
+							]
+						}, number, true, {
+							fileName: _jsxFileName,
+							lineNumber: 94,
+							columnNumber: 29
+						}, this))
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 92,
+						columnNumber: 21
+					}, this)]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 71,
+					columnNumber: 17
+				}, this),
+				/* @__PURE__ */ _jsxDEV("div", {
+					className: "junie-journey__footer",
+					"data-tsd-source": "/src/components/landing/BookingJourney.tsx:117:17",
+					children: /* @__PURE__ */ _jsxDEV(LuxButton, {
+						href: "/booking",
+						className: "junie-journey__cta",
+						"data-tsd-source": "/src/components/landing/BookingJourney.tsx:118:21",
+						children: "BẮT ĐẦU ĐẶT LỊCH"
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 118,
+						columnNumber: 21
+					}, this)
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 117,
+					columnNumber: 17
+				}, this)
+			]
+		}, void 0, true, {
+			fileName: _jsxFileName,
+			lineNumber: 52,
+			columnNumber: 13
+		}, this)
+	}, void 0, false, {
+		fileName: _jsxFileName,
+		lineNumber: 51,
+		columnNumber: 9
+	}, this);
+}
+_s(BookingJourney, "i5SXSr79ogUGY7X61PiKNDzoV2U=");
+_c = BookingJourney;
+var _c;
+$RefreshReg$(_c, "BookingJourney");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+import * as __vite_react_currentExports from "/src/components/landing/BookingJourney.tsx";
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+
+  const currentExports = __vite_react_currentExports;
+  queueMicrotask(() => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/TTFIS/Doctor-refactor-admin-ui/frontend/src/components/landing/BookingJourney.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/TTFIS/Doctor-refactor-admin-ui/frontend/src/components/landing/BookingJourney.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) { return RefreshRuntime.register(type, "D:/TTFIS/Doctor-refactor-admin-ui/frontend/src/components/landing/BookingJourney.tsx" + ' ' + id); }
+function $RefreshSig$() { return RefreshRuntime.createSignatureFunctionForTransform(); }
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBQUE7QUFDQTtBQUNBO0FBQ0E7QUFDQTs7OztBQUVBO0NBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtDQUNBO0NBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtDQUNBO0NBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTtDQUNBO0FBQ0E7QUFFQTs7Q0FDQTtDQUNBO0NBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQSwyQ0FDQTtHQUNBO0lBQ0E7SUFDQTtJQUNBO0dBQ0E7RUFDQSxHQUNBLGtCQUNBO0VBQ0E7RUFDQTtFQUNBO0NBQ0E7Q0FFQSxPQUNBO0VBQUE7RUFBQTtFQUFBO0VBQUE7WUFDQTtHQUFBO0dBQUE7YUFBQTtJQUNBO0tBQUE7S0FBQTtLQUFBO0lBQTJFOzs7OztJQUMzRTtLQUFBO0tBQUE7SUFBa0U7Ozs7O0lBQ2xFO0tBQUE7S0FBQTtlQUFBLENBQ0E7TUFBQTtNQUFBO01BQUE7Z0JBQUEsQ0FDQTtPQUFBO2lCQUNBO1FBQUE7a0JBQWlDO09BQUE7Ozs7O01BQ2pDOzs7O2dCQUNBO09BQUE7aUJBQ0E7UUFBQTtrQkFBQSxDQUFpQyxpQkFDakM7U0FBQTttQkFBZ0Q7UUFBQTs7OztnQkFDaEQ7Ozs7OztNQUNBOzs7O2NBQ0E7Ozs7O2VBQ0E7TUFBQTtNQUFBO2dCQUE2RDtLQUc3RDs7OzthQUNBOzs7Ozs7SUFDQTtLQUFBO0tBQUE7S0FBQTtlQUFBLENBQ0E7TUFDQTtNQUNBO01BQ0E7TUFDQTtNQUNBO2dCQUxBO09BTUE7UUFDQTtRQUNBO1FBQ0E7UUFDQTtPQUF3Qjs7Ozs7T0FDeEI7UUFDQTtRQUNBO1FBQ0E7T0FBd0I7Ozs7O09BQ3hCO1FBQ0E7UUFDQTtRQUNBO09BQXdCOzs7OztNQUN4Qjs7Ozs7ZUFDQTtNQUFBO01BQUE7Z0JBQ0EsdURBQ0E7T0FFQTtPQUNBO09BQ0E7T0FDQTtpQkFMQTtRQU1BO1NBQUE7U0FBQTttQkFBQSxDQUNBO1VBQUE7VUFBQTtVQUFBO29CQUNBO1NBQ0E7Ozs7bUJBQ0E7VUFDQTtVQUNBO1VBQ0E7VUFDQTtVQUNBO1NBQW9DOzs7O2lCQUNwQzs7Ozs7O1FBQ0E7U0FBQTttQkFBbUM7UUFBQTs7Ozs7UUFDbkM7U0FBQTttQkFBa0M7UUFBQTs7Ozs7T0FDbEM7U0FsQkE7Ozs7YUFrQkEsQ0FDQTtLQUNBOzs7O2FBQ0E7Ozs7OztJQUNBO0tBQUE7S0FBQTtlQUNBO01BQUE7TUFBQTtNQUFBO2dCQUE2RTtLQUU3RTs7Ozs7SUFDQTs7Ozs7R0FDQTs7Ozs7O0NBQ0E7Ozs7O0FBRUEiLCJuYW1lcyI6W10sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIkJvb2tpbmdKb3VybmV5LnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VFZmZlY3QsIHVzZVJlZiwgdXNlU3RhdGUgfSBmcm9tIFwicmVhY3RcIjtcbmltcG9ydCB7IFNwYXJrbGVzLCBDYWxlbmRhckRheXMsIENhbGVuZGFyQ2hlY2syIH0gZnJvbSBcImx1Y2lkZS1yZWFjdFwiO1xuaW1wb3J0IHsgTHV4QnV0dG9uIH0gZnJvbSBcIi4vTHV4QnV0dG9uXCI7XG5pbXBvcnQgeyBTZWN0aW9uTGFiZWwgfSBmcm9tIFwiLi9TZWN0aW9uTGFiZWxcIjtcbmltcG9ydCBcIi4vQm9va2luZ0pvdXJuZXkuY3NzXCI7XG5cbmNvbnN0IHN0ZXBzID0gW1xuICAgIHtcbiAgICAgICAgbnVtYmVyOiBcIjAxXCIsXG4gICAgICAgIHRpdGxlOiBcIktow6FtIHBow6EgduG6uyDEkeG6uXAgY+G7p2EgYuG6oW5cIixcbiAgICAgICAgZGVzY3JpcHRpb246IFwiTOG7sWEgY2jhu41uIGThu4tjaCB24bulIHBow7kgaOG7o3AgduG7m2kgbmh1IGPhuqd1IHbDoCBtb25nIG114buRbiBj4bunYSBi4bqhbi5cIixcbiAgICAgICAgSWNvbjogU3BhcmtsZXMsXG4gICAgfSxcbiAgICB7XG4gICAgICAgIG51bWJlcjogXCIwMlwiLFxuICAgICAgICB0aXRsZTogXCJDaOG7jW4ga2hv4bqjbmgga2jhuq9jIGTDoG5oIHJpw6puZ1wiLFxuICAgICAgICBkZXNjcmlwdGlvbjogXCJDaOG7jW4gbmfDoHkgZ2nhu50gdGh14bqtbiB0aeG7h24gdsOgIMSR4buDIGzhuqFpIHRow7RuZyB0aW4gbGnDqm4gaOG7hyBj4bunYSBi4bqhbi5cIixcbiAgICAgICAgSWNvbjogQ2FsZW5kYXJEYXlzLFxuICAgIH0sXG4gICAge1xuICAgICAgICBudW1iZXI6IFwiMDNcIixcbiAgICAgICAgdGl0bGU6IFwiSG/DoG4gdOG6pXQgY3Xhu5ljIGjhurluXCIsXG4gICAgICAgIGRlc2NyaXB0aW9uOiBcIktp4buDbSB0cmEgbOG6oWkgdGjDtG5nIHRpbiB2w6AgeMOhYyBuaOG6rW4gecOqdSBj4bqndSDEkeG6t3QgbOG7i2NoIGPhu6dhIGLhuqFuLlwiLFxuICAgICAgICBJY29uOiBDYWxlbmRhckNoZWNrMixcbiAgICB9LFxuXTtcblxuZXhwb3J0IGZ1bmN0aW9uIEJvb2tpbmdKb3VybmV5KCkge1xuICAgIGNvbnN0IHJlZiA9IHVzZVJlZjxIVE1MRWxlbWVudD4obnVsbCk7XG4gICAgY29uc3QgW2FjdGl2ZSwgc2V0QWN0aXZlXSA9IHVzZVN0YXRlPG51bWJlciB8IG51bGw+KG51bGwpO1xuICAgIHVzZUVmZmVjdCgoKSA9PiB7XG4gICAgICAgIGNvbnN0IHNlY3Rpb24gPSByZWYuY3VycmVudDtcbiAgICAgICAgaWYgKCFzZWN0aW9uKSByZXR1cm47XG4gICAgICAgIHNlY3Rpb24uY2xhc3NMaXN0LmFkZChcImlzLXJlYWR5XCIpO1xuICAgICAgICBjb25zdCBvYnNlcnZlciA9IG5ldyBJbnRlcnNlY3Rpb25PYnNlcnZlcihcbiAgICAgICAgICAgIChlbnRyaWVzKSA9PiB7XG4gICAgICAgICAgICAgICAgZW50cmllcy5mb3JFYWNoKChlbnRyeSkgPT4ge1xuICAgICAgICAgICAgICAgICAgICBpZiAoIWVudHJ5LmlzSW50ZXJzZWN0aW5nKSByZXR1cm47XG4gICAgICAgICAgICAgICAgICAgIGVudHJ5LnRhcmdldC5jbGFzc0xpc3QuYWRkKFwiaXMtaW5cIik7XG4gICAgICAgICAgICAgICAgICAgIG9ic2VydmVyLnVub2JzZXJ2ZShlbnRyeS50YXJnZXQpO1xuICAgICAgICAgICAgICAgIH0pO1xuICAgICAgICAgICAgfSxcbiAgICAgICAgICAgIHsgdGhyZXNob2xkOiAwLjE2IH0sXG4gICAgICAgICk7XG4gICAgICAgIG9ic2VydmVyLm9ic2VydmUoc2VjdGlvbik7XG4gICAgICAgIHNlY3Rpb24ucXVlcnlTZWxlY3RvckFsbChcIi5qdW5pZS1qb3VybmV5X19zdGVwXCIpLmZvckVhY2goKHN0ZXApID0+IG9ic2VydmVyLm9ic2VydmUoc3RlcCkpO1xuICAgICAgICByZXR1cm4gKCkgPT4gb2JzZXJ2ZXIuZGlzY29ubmVjdCgpO1xuICAgIH0sIFtdKTtcblxuICAgIHJldHVybiAoXG4gICAgICAgIDxzZWN0aW9uIHJlZj17cmVmfSBjbGFzc05hbWU9XCJqdW5pZS1qb3VybmV5XCIgYXJpYS1sYWJlbGxlZGJ5PVwianVuaWUtam91cm5leS10aXRsZVwiPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJqdW5pZS1qb3VybmV5X19pbm5lclwiPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwianVuaWUtam91cm5leV9fZGl2aWRlclwiIGFyaWEtaGlkZGVuPVwidHJ1ZVwiIC8+XG4gICAgICAgICAgICAgICAgPFNlY3Rpb25MYWJlbCBsYWJlbD1cIkp1bmllIOKAlCBIw6BuaCB0csOsbmggxJHhurd0IGzhu4tjaFwiIC8+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJqdW5pZS1qb3VybmV5X19oZWFkZXJcIj5cbiAgICAgICAgICAgICAgICAgICAgPGgyIGlkPVwianVuaWUtam91cm5leS10aXRsZVwiIGNsYXNzTmFtZT1cImp1bmllLWpvdXJuZXlfX3RpdGxlXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj5N4buZdCBjdeG7mWMgaOG6uW4sPC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGto4bufaSDEkeG6p3UgY2hvIDxlbT524bq7IMSR4bq5cCByacOqbmcuPC9lbT5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgIDwvaDI+XG4gICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cImp1bmllLWpvdXJuZXlfX2Rlc2NyaXB0aW9uXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICBDaOG7iSB24bubaSBiYSBixrDhu5tjIMSRxqFuIGdp4bqjbiwgYuG6oW4gxJHDoyBjw7MgdGjhu4MgYuG6r3QgxJHhuqd1IGjDoG5oIHRyw6xuaCBjaMSDbSBzw7NjIHPhuq9jIMSR4bq5cFxuICAgICAgICAgICAgICAgICAgICAgICAgY8O5bmcgSnVuaWUuXG4gICAgICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImp1bmllLWpvdXJuZXlfX3RpbWVsaW5lXCIgZGF0YS1hY3RpdmU9e2FjdGl2ZSA/PyBcIlwifT5cbiAgICAgICAgICAgICAgICAgICAgPHN2Z1xuICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwianVuaWUtam91cm5leV9fcGF0aFwiXG4gICAgICAgICAgICAgICAgICAgICAgICB2aWV3Qm94PVwiMCAwIDEyMDAgMTUwXCJcbiAgICAgICAgICAgICAgICAgICAgICAgIHByZXNlcnZlQXNwZWN0UmF0aW89XCJub25lXCJcbiAgICAgICAgICAgICAgICAgICAgICAgIGFyaWEtaGlkZGVuPVwidHJ1ZVwiXG4gICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxwYXRoXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwianVuaWUtam91cm5leV9fcGF0aC1iYXNlXCJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXRoTGVuZ3RoPXsxfVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIGQ9XCJNMzUgNTIgQzIxMCA0IDI2NSAxMTYgNDM1IDEwMCBTNjYwIDUyIDgzNSA2NiBTMTAxMCAxMDQgMTE2MCAzOFwiXG4gICAgICAgICAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICAgICAgICAgICAgPHBhdGhcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJqdW5pZS1qb3VybmV5X19oaWdobGlnaHQganVuaWUtam91cm5leV9faGlnaGxpZ2h0LS1maXJzdFwiXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgZD1cIk0zNSA1MiBDMjEwIDQgMjY1IDExNiA0MzUgMTAwIFM2NjAgNTIgODM1IDY2XCJcbiAgICAgICAgICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICA8cGF0aFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImp1bmllLWpvdXJuZXlfX2hpZ2hsaWdodCBqdW5pZS1qb3VybmV5X19oaWdobGlnaHQtLWxhc3RcIlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIGQ9XCJNNDM1IDEwMCBDNTgwIDg2IDY2MCA1MiA4MzUgNjYgUzEwMTAgMTA0IDExNjAgMzhcIlxuICAgICAgICAgICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICAgICAgPC9zdmc+XG4gICAgICAgICAgICAgICAgICAgIDxvbCBjbGFzc05hbWU9XCJqdW5pZS1qb3VybmV5X19zdGVwc1wiPlxuICAgICAgICAgICAgICAgICAgICAgICAge3N0ZXBzLm1hcCgoeyBudW1iZXIsIHRpdGxlLCBkZXNjcmlwdGlvbiwgSWNvbiB9LCBpKSA9PiAoXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPGxpXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGtleT17bnVtYmVyfVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJqdW5pZS1qb3VybmV5X19zdGVwXCJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgb25Nb3VzZUVudGVyPXsoKSA9PiBzZXRBY3RpdmUoaSl9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9uTW91c2VMZWF2ZT17KCkgPT4gc2V0QWN0aXZlKG51bGwpfVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJqdW5pZS1qb3VybmV5X19zdGVwLXRvcFwiPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwianVuaWUtam91cm5leV9fbnVtYmVyXCIgYXJpYS1oaWRkZW49XCJ0cnVlXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge251bWJlcn1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxJY29uXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwianVuaWUtam91cm5leV9faWNvblwiXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZT17MjZ9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgc3Ryb2tlV2lkdGg9ezEuMX1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBhcmlhLWhpZGRlbj1cInRydWVcIlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxoMz57dGl0bGV9PC9oMz5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPHA+e2Rlc2NyaXB0aW9ufTwvcD5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L2xpPlxuICAgICAgICAgICAgICAgICAgICAgICAgKSl9XG4gICAgICAgICAgICAgICAgICAgIDwvb2w+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJqdW5pZS1qb3VybmV5X19mb290ZXJcIj5cbiAgICAgICAgICAgICAgICAgICAgPEx1eEJ1dHRvbiBocmVmPVwiL2Jvb2tpbmdcIiBjbGFzc05hbWU9XCJqdW5pZS1qb3VybmV5X19jdGFcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIELhuq5UIMSQ4bqmVSDEkOG6tlQgTOG7ikNIXG4gICAgICAgICAgICAgICAgICAgIDwvTHV4QnV0dG9uPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvc2VjdGlvbj5cbiAgICApO1xufVxuIl0sImZpbGUiOiJEOi9UVEZJUy9Eb2N0b3ItcmVmYWN0b3ItYWRtaW4tdWkvZnJvbnRlbmQvc3JjL2NvbXBvbmVudHMvbGFuZGluZy9Cb29raW5nSm91cm5leS50c3gifQ==

@@ -1,0 +1,201 @@
+/* Section 04 — Experience: keep the sticky story within the viewport,
+   leaving room for its heading and the fixed navigation. */
+.junie-experience {
+    --junie-exp-sticky-top: 80px;
+    --junie-exp-heading-height: 156px;
+}
+.junie-experience .junie-exp__heading {
+    position: relative;
+    z-index: 20;
+    padding-bottom: 28px;
+    background: var(--ivory);
+}
+@media (max-width: 767px) {
+    #khong-gian.junie-experience {
+        padding: 44px 24px 28px;
+        scroll-margin-top: 80px;
+    }
+    .junie-experience .junie-exp__title {
+        font-size: 40px;
+        line-height: 1.08;
+        margin-top: 24px;
+        letter-spacing: 0;
+    }
+    .junie-experience .junie-exp__grid {
+        display: block;
+        position: relative;
+        margin-top: 0;
+        height: calc(510px + 42svh + var(--junie-exp-heading-height));
+    }
+    .junie-experience .junie-exp__sticky {
+        display: block;
+        top: var(--junie-exp-sticky-top);
+        height: auto;
+        padding-bottom: 16px;
+        background: var(--ivory);
+    }
+    .junie-experience .junie-exp__picture {
+        height: clamp(190px, 36svh, 310px);
+        width: min(100%, 330px);
+        margin-inline: auto;
+    }
+    .junie-experience .junie-exp__caption {
+        display: none;
+    }
+    .junie-exp__steps {
+        display: none;
+    }
+    .junie-exp__mobile-copy {
+        position: relative;
+        height: 196px;
+        margin-top: 18px;
+    }
+    .junie-exp__progress {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .junie-exp__progress span {
+        height: 1px;
+        background: var(--border);
+        transition: background 600ms;
+    }
+    .junie-exp__progress span[data-current="true"] {
+        background: var(--mocha);
+    }
+    .junie-exp__mobile-panel {
+        position: absolute;
+        top: 18px;
+        inset-inline: 0;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition:
+            opacity 650ms var(--ease-lux),
+            transform 650ms var(--ease-lux),
+            visibility 650ms;
+    }
+    .junie-exp__mobile-panel[data-current="true"] {
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+    }
+    .junie-exp__mobile-panel h3 {
+        margin-top: 10px;
+        font-size: 38px;
+        line-height: 1.1;
+        letter-spacing: 0;
+    }
+    .junie-exp__mobile-panel p {
+        margin-top: 12px;
+        max-width: 380px;
+        font-size: 14px;
+        line-height: 1.75;
+        color: var(--muted-foreground);
+    }
+}
+@media (max-width: 767px) and (max-height: 600px) {
+    .junie-experience .junie-exp__picture {
+        height: 150px;
+        width: 210px;
+    }
+    .junie-exp__mobile-copy {
+        height: 200px;
+        margin-top: 14px;
+    }
+    .junie-exp__mobile-panel h3 {
+        font-size: 36px;
+    }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+    .junie-experience .junie-exp__grid {
+        height: auto;
+    }
+    .junie-experience .junie-exp__sticky {
+        position: static;
+    }
+    .junie-exp__mobile-copy {
+        display: none;
+    }
+    .junie-exp__steps {
+        display: block;
+    }
+    .junie-experience .junie-exp__step {
+        min-height: 0;
+        padding-block: 24px;
+    }
+    .junie-exp__step > img {
+        display: none;
+    }
+    .junie-experience .junie-exp__step-title {
+        font-size: 36px;
+    }
+}
+@media (min-width: 768px) {
+    .junie-experience {
+        --junie-exp-sticky-top: 112px;
+        --junie-exp-heading-height: 104px;
+        --junie-exp-stage-height: clamp(280px, calc(100svh - 280px), 540px);
+    }
+    .junie-experience .junie-exp__heading {
+        padding-bottom: 24px;
+    }
+    #khong-gian.junie-experience {
+        padding: 32px;
+        scroll-margin-top: 112px;
+    }
+    .junie-experience > div {
+        max-width: 1120px;
+    }
+    .junie-experience .junie-exp__title {
+        margin-top: 16px;
+        font-size: clamp(32px, 3vw, 44px);
+        line-height: 1.05;
+    }
+    .junie-experience .junie-exp__grid {
+        margin-top: 0;
+        gap: clamp(32px, 4vw, 48px);
+    }
+    .junie-experience .junie-exp__sticky {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-row: 1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: inherit;
+        align-self: start;
+        top: var(--junie-exp-sticky-top);
+        z-index: 10;
+        height: auto;
+        pointer-events: none;
+    }
+    .junie-experience .junie-exp__heading {
+        grid-column: 1 / -1;
+        pointer-events: auto;
+    }
+    .junie-experience .junie-exp__picture {
+        grid-column: 1;
+        height: var(--junie-exp-stage-height);
+        width: min(100%, calc(var(--junie-exp-stage-height) * 0.8));
+        margin-inline: auto;
+        pointer-events: auto;
+    }
+    .junie-experience .junie-exp__steps {
+        grid-column: 2;
+        grid-row: 1;
+        padding-block: var(--junie-exp-heading-height);
+    }
+    .junie-experience .junie-exp__step {
+        min-height: var(--junie-exp-stage-height);
+        padding: 24px 0;
+    }
+    .junie-experience .junie-exp__step-title {
+        margin-top: 12px;
+        font-size: clamp(36px, 3.6vw, 56px);
+        line-height: 1.05;
+    }
+}
+@media (min-width: 1024px) {
+    #khong-gian.junie-experience {
+        padding-inline: 40px;
+    }
+}

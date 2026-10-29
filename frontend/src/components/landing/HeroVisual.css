@@ -1,0 +1,156 @@
+.junie-hero .junie-hero-visual {
+    --pointer-x: 0px;
+    --pointer-y: 0px;
+    position: relative;
+    z-index: 1;
+    width: min(100%, 600px, calc((100svh - 176px) * 0.8));
+    aspect-ratio: 4 / 5;
+    margin: 0;
+    justify-self: end;
+    isolation: isolate;
+    animation: junie-hero-enter 900ms var(--ease-lux) 150ms both;
+}
+.junie-hero-visual__main-layer {
+    position: absolute;
+    inset: 1.5% 8% 10% 0;
+    transform: translate(var(--pointer-x), var(--pointer-y));
+    transition: transform 1.3s var(--ease-lux);
+}
+.junie-hero-visual__main {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border: clamp(6px, 0.7vw, 12px) solid var(--ivory);
+    background: var(--cream);
+}
+.junie-hero-visual__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1.8s ease-in-out;
+}
+.junie-hero-visual__slide[data-active="true"] {
+    opacity: 1;
+}
+.junie-hero-visual__main img,
+.junie-hero-visual__detail img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.junie-hero-visual__main img {
+    object-position: 50% 45%;
+    animation: junie-hero-cinema 20s ease-in-out infinite alternate;
+}
+.junie-hero-visual__slide:nth-child(2) img {
+    animation-direction: alternate-reverse;
+}
+.junie-hero-visual__edge {
+    position: absolute;
+    inset: -2% 3% 3% -2%;
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    pointer-events: none;
+}
+.junie-hero-visual__secondary-layer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 39%;
+    transform: translate(calc(var(--pointer-x) * -0.7), calc(var(--pointer-y) * -0.7));
+    transition: transform 1.5s var(--ease-lux);
+}
+.junie-hero-visual__secondary {
+    margin: 0;
+    animation: junie-hero-float 8s ease-in-out infinite;
+}
+.junie-hero-visual__detail {
+    aspect-ratio: 4 / 5;
+    border: clamp(3px, 0.3vw, 5px) solid var(--ivory);
+    overflow: hidden;
+    background: var(--cream);
+}
+.junie-hero-visual__detail img {
+    transition: transform 1.2s var(--ease-lux);
+}
+.junie-hero-visual__secondary figcaption {
+    margin-top: 0.55rem;
+    font:
+        italic clamp(0.85rem, 1.2vw, 1.2rem) / 1.15 "Cormorant Garamond",
+        "Times New Roman",
+        serif;
+    color: var(--mocha);
+    text-align: center;
+    text-wrap: balance;
+}
+.junie-hero-visual__motif {
+    position: absolute;
+    z-index: -1;
+    top: -2%;
+    right: -1%;
+    width: 26%;
+    color: var(--champagne);
+    stroke: currentColor;
+    stroke-width: 0.65;
+    pointer-events: none;
+    animation: junie-hero-line 32s linear infinite;
+}
+@keyframes junie-hero-cinema {
+    from {
+        transform: scale(1.035) translate(-0.5%, 0.3%);
+    }
+    to {
+        transform: scale(1.085) translate(0.5%, -0.6%);
+    }
+}
+@keyframes junie-hero-float {
+    0%,
+    100% {
+        transform: translateY(0) rotate(2deg);
+    }
+    50% {
+        transform: translateY(-9px) rotate(1deg);
+    }
+}
+@keyframes junie-hero-line {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@media (hover: hover) and (pointer: fine) {
+    .junie-hero-visual__secondary:hover img {
+        transform: scale(1.035);
+    }
+}
+.junie-hero-visual[data-paused="true"] img,
+.junie-hero-visual[data-paused="true"] figure,
+.junie-hero-visual[data-paused="true"] svg {
+    animation-play-state: paused;
+}
+@media (min-width: 768px) and (max-width: 1279px) {
+    .junie-hero .junie-hero-visual {
+        width: min(100%, 470px, calc((100svh - 176px) * 0.8));
+    }
+}
+@media (max-width: 767px) {
+    .junie-hero .junie-hero-visual {
+        width: min(94%, 360px);
+        margin: 0 auto;
+        justify-self: center;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .junie-hero-visual *,
+    .junie-hero-visual *::before {
+        animation: none !important;
+        transition: none !important;
+    }
+    .junie-hero-visual__main-layer,
+    .junie-hero-visual__secondary-layer {
+        transform: none;
+    }
+    .junie-hero .junie-hero-visual {
+        animation: none;
+    }
+}

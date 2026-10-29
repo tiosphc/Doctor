@@ -1,0 +1,269 @@
+.junie-nav {
+    padding-block: 18px;
+    transition:
+        transform 480ms var(--ease-lux),
+        background-color 600ms var(--ease-lux),
+        border-color 600ms var(--ease-lux),
+        padding 600ms var(--ease-lux);
+    will-change: transform;
+}
+.junie-nav--hidden {
+    transform: translateY(-100%);
+}
+@media (prefers-reduced-motion: reduce) {
+    .junie-nav {
+        transition: none;
+    }
+}
+.junie-nav__inner {
+    gap: 16px;
+}
+.junie-nav__actions {
+    gap: 16px;
+}
+.junie-nav__login {
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--espresso);
+    background: transparent;
+    font-size: 12px;
+}
+.junie-nav__login:hover {
+    background: var(--cream);
+}
+.junie-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    height: 100dvh;
+    background: var(--ivory);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 24px max(24px, env(safe-area-inset-bottom));
+    animation: junie-menu-enter 450ms var(--ease-lux);
+}
+.junie-menu__top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+}
+.junie-menu__close {
+    height: 44px;
+    width: 44px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.junie-menu__top {
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+.junie-menu__body {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 36px 0 0;
+    margin-block: auto;
+}
+.junie-menu__title {
+    color: var(--mocha);
+    font-size: 11px;
+    margin-bottom: 22px;
+}
+.junie-menu__link {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+    padding: 19px 0;
+    color: var(--espresso);
+    transition:
+        color 350ms,
+        padding 350ms var(--ease-lux);
+}
+.junie-menu__link span:nth-child(2) {
+    font: 300 38px / 1.2 var(--font-serif);
+    letter-spacing: 0;
+}
+.junie-menu__number {
+    font-size: 10px;
+    color: var(--champagne);
+    font-variant-numeric: tabular-nums;
+}
+.junie-menu__link svg {
+    color: var(--mocha);
+    width: 16px;
+    opacity: 0.65;
+    transition: transform 350ms var(--ease-lux);
+}
+.junie-menu__link:hover,
+.junie-menu__link:focus-visible {
+    color: var(--mocha);
+    padding-left: 5px;
+}
+.junie-menu__link:hover svg {
+    transform: translate(2px, -2px);
+}
+.junie-menu__link:focus-visible {
+    outline: 1px solid var(--champagne);
+    outline-offset: 4px;
+}
+.junie-menu__footer {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    gap: 12px;
+    padding-top: 36px;
+    padding-bottom: 12px;
+}
+.junie-menu__booking {
+    min-height: 52px;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 400;
+    box-shadow: none;
+    padding-inline: 12px;
+}
+.junie-menu__login {
+    min-height: 52px;
+    border-radius: 2px;
+    color: var(--mocha);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 400;
+    padding-inline: 12px;
+}
+.junie-login-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: color-mix(in oklab, var(--espresso) 35%, transparent);
+    backdrop-filter: blur(4px);
+}
+.junie-login {
+    position: fixed;
+    z-index: 71;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(420px, calc(100% - 40px));
+    padding: 40px 28px;
+    background: var(--ivory);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+.junie-login__title {
+    margin-top: 24px;
+    font: 400 40px / 1.15 var(--font-serif);
+}
+.junie-login__description {
+    margin-top: 16px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--muted-foreground);
+}
+.junie-login__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+@keyframes junie-menu-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@media (max-width: 767px) {
+    .junie-nav {
+        padding-block: 12px;
+    }
+    .junie-nav__inner {
+        padding-inline: 20px;
+        gap: 8px;
+    }
+    .junie-nav__brand {
+        font-size: 19px;
+    }
+    .junie-nav__actions {
+        gap: 8px;
+    }
+    .junie-nav__login {
+        padding-inline: 10px;
+        height: 38px;
+        font-size: 11px;
+        gap: 6px;
+    }
+    .junie-nav__login svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+@media (min-width: 1024px) and (max-width: 1199px) {
+    .junie-nav__links {
+        gap: 20px;
+    }
+    .junie-nav__actions {
+        gap: 12px;
+    }
+}
+@media (max-width: 359px) {
+    .junie-menu {
+        padding-inline: 20px;
+    }
+    .junie-menu__link span:nth-child(2) {
+        font-size: 34px;
+    }
+    .junie-menu__footer {
+        gap: 8px;
+    }
+    .junie-menu__booking,
+    .junie-menu__login {
+        font-size: 11px;
+        gap: 6px;
+        padding-inline: 8px;
+    }
+}
+@media (max-height: 700px) {
+    .junie-menu__top {
+        padding-bottom: 12px;
+    }
+    .junie-menu__body {
+        padding-top: 22px;
+    }
+    .junie-menu__title {
+        margin-bottom: 12px;
+    }
+    .junie-menu__link {
+        padding-block: 14px;
+    }
+    .junie-menu__link span:nth-child(2) {
+        font-size: 32px;
+    }
+    .junie-menu__footer {
+        padding-top: 24px;
+    }
+}
+@media (max-height: 500px) {
+    .junie-menu__body {
+        margin-block: 0;
+        flex: 1;
+    }
+    .junie-menu__link {
+        padding-block: 10px;
+    }
+    .junie-menu__link span:nth-child(2) {
+        font-size: 28px;
+    }
+    .junie-menu__footer {
+        padding-top: 16px;
+        padding-bottom: 0;
+    }
+}

@@ -1,0 +1,78 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - navigation [ref=e4]:
+        - link "DrJunie — Trang chủ" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e6]: DRJUNIE
+        - generic [ref=e7]:
+          - link "Dịch vụ" [ref=e8] [cursor=pointer]:
+            - /url: /services
+          - link "Đặt lịch" [ref=e9] [cursor=pointer]:
+            - /url: /booking
+          - link "Tài khoản" [ref=e10] [cursor=pointer]:
+            - /url: /login
+    - main [ref=e11]:
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - paragraph [ref=e18]: ĐẶT LỊCH TRỰC TUYẾN
+          - heading "Hoàn tất lịch hẹn của bạn" [level=1] [ref=e83]
+          - paragraph [ref=e20]: Vui lòng cung cấp thông tin để DrJunie có thể liên hệ và xác nhận lịch hẹn.
+        - list "Tiến trình đặt lịch" [ref=e21]:
+          - listitem [ref=e22]:
+            - img "Đã hoàn thành" [ref=e84]
+            - generic [ref=e24]: Chọn dịch vụ & lịch hẹn
+          - listitem [ref=e25]:
+            - generic [ref=e26]: "2"
+            - generic [ref=e27]: Thông tin & xác nhận
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - heading "Thông tin khách hàng" [level=2] [ref=e88]
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - generic [ref=e91]: Họ và tên *
+                - textbox "Họ và tên *" [invalid] [ref=e92]
+                - alert [ref=e159]: Vui lòng nhập họ và tên.
+              - generic [ref=e93]:
+                - generic [ref=e94]: Số điện thoại *
+                - textbox "Số điện thoại *" [invalid] [ref=e95]
+                - alert [ref=e160]: Vui lòng nhập số điện thoại Việt Nam hợp lệ.
+              - generic [ref=e96]:
+                - generic [ref=e97]: Email xác minh OTP *
+                - textbox "Email xác minh OTP *" [invalid] [ref=e98]
+                - alert [ref=e161]: Email cần thiết để nhận mã xác minh OTP.
+              - paragraph [ref=e99]: Chúng tôi sẽ gửi mã OTP đến email của bạn để xác minh lịch hẹn.
+            - generic [ref=e101]:
+              - generic [ref=e102]: Ghi chú cho bác sĩ
+              - textbox "Ghi chú cho bác sĩ" [ref=e103]
+          - complementary [ref=e104]:
+            - heading "Thông tin lịch hẹn" [level=2] [ref=e105]
+            - generic [ref=e106]:
+              - generic [ref=e112]:
+                - term [ref=e113]: Dịch vụ
+                - definition [ref=e114]: Demo Skin Consultation 1
+              - generic [ref=e119]:
+                - term [ref=e120]: Thời lượng dự kiến
+                - definition [ref=e121]: 30 phút
+              - generic [ref=e125]:
+                - term [ref=e126]: Ngày hẹn
+                - definition [ref=e127]: Thứ Bảy, 31/10/2026
+              - generic [ref=e132]:
+                - term [ref=e133]: Giờ bắt đầu
+                - definition [ref=e134]: 08:00
+              - generic [ref=e139]:
+                - term [ref=e140]: Bác sĩ phụ trách
+                - definition [ref=e141]: Doctor Demo 1
+              - generic [ref=e146]:
+                - term [ref=e147]: Giá dịch vụ tham khảo
+                - definition [ref=e148]: 350.000 ₫
+            - generic [ref=e149]:
+              - generic [ref=e150]: Tổng giá tham khảo
+              - strong [ref=e151]: 350.000 ₫
+            - button "Thay đổi lịch hẹn" [ref=e152]
+            - paragraph [ref=e153]: DrJunie sẽ liên hệ xác nhận lịch hẹn. Thời gian có thể được điều chỉnh khi cần thiết.
+          - generic [ref=e154]:
+            - button "Quay lại" [ref=e155]
+            - button "Xác nhận đặt lịch" [active] [ref=e158]
+    - contentinfo [ref=e15]: © 2026 DrJunie
+  - region "Notifications alt+T"

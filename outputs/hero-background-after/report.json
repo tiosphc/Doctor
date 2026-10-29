@@ -1,0 +1,287 @@
+[
+  {
+    "viewport": [
+      1920,
+      1080
+    ],
+    "hero": {
+      "x": 0,
+      "y": 0,
+      "width": 1905,
+      "height": 1080,
+      "right": 1905,
+      "bottom": 1080
+    },
+    "copy": {
+      "x": 288.5,
+      "y": 274.953125,
+      "width": 672,
+      "height": 594.078125,
+      "right": 960.5,
+      "bottom": 869.03125
+    },
+    "visual": {
+      "x": 1072.5,
+      "y": 197,
+      "width": 600,
+      "height": 750,
+      "right": 1672.5,
+      "bottom": 947
+    },
+    "images": [
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/portrait.jpg",
+        "loaded": true
+      },
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/service-skincare.jpg",
+        "loaded": true
+      }
+    ],
+    "links": [
+      "/booking",
+      "#dich-vu"
+    ],
+    "font": "\"Cormorant Garamond\", \"Times New Roman\", serif",
+    "fontLoaded": true,
+    "errors": []
+  },
+  {
+    "viewport": [
+      1440,
+      900
+    ],
+    "hero": {
+      "x": 0,
+      "y": 0,
+      "width": 1425,
+      "height": 900,
+      "right": 1425,
+      "bottom": 900
+    },
+    "copy": {
+      "x": 99.1875,
+      "y": 234.1875,
+      "width": 625.203125,
+      "height": 495.625,
+      "right": 724.390625,
+      "bottom": 729.8125
+    },
+    "visual": {
+      "x": 810.78125,
+      "y": 133.109375,
+      "width": 558.21875,
+      "height": 697.765625,
+      "right": 1369,
+      "bottom": 830.875
+    },
+    "images": [
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/portrait.jpg",
+        "loaded": true
+      },
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/service-skincare.jpg",
+        "loaded": true
+      }
+    ],
+    "links": [
+      "/booking",
+      "#dich-vu"
+    ],
+    "font": "\"Cormorant Garamond\", \"Times New Roman\", serif",
+    "fontLoaded": true,
+    "errors": []
+  },
+  {
+    "viewport": [
+      1366,
+      768
+    ],
+    "hero": {
+      "x": 0,
+      "y": 0,
+      "width": 1351,
+      "height": 768,
+      "right": 1351,
+      "bottom": 768
+    },
+    "copy": {
+      "x": 96.96875,
+      "y": 176.796875,
+      "width": 589.625,
+      "height": 478.40625,
+      "right": 686.59375,
+      "bottom": 655.203125
+    },
+    "visual": {
+      "x": 821.40625,
+      "y": 120,
+      "width": 473.59375,
+      "height": 591.984375,
+      "right": 1295,
+      "bottom": 711.984375
+    },
+    "images": [
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/portrait.jpg",
+        "loaded": true
+      },
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/service-skincare.jpg",
+        "loaded": true
+      }
+    ],
+    "links": [
+      "/booking",
+      "#dich-vu"
+    ],
+    "font": "\"Cormorant Garamond\", \"Times New Roman\", serif",
+    "fontLoaded": true,
+    "errors": []
+  },
+  {
+    "viewport": [
+      768,
+      1024
+    ],
+    "hero": {
+      "x": 0,
+      "y": 0,
+      "width": 753,
+      "height": 720,
+      "right": 753,
+      "bottom": 720
+    },
+    "copy": {
+      "x": 40,
+      "y": 216.421875,
+      "width": 338.640625,
+      "height": 351.140625,
+      "right": 378.640625,
+      "bottom": 567.5625
+    },
+    "visual": {
+      "x": 410.640625,
+      "y": 203.03125,
+      "width": 302.359375,
+      "height": 377.9375,
+      "right": 713,
+      "bottom": 580.96875
+    },
+    "images": [
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/portrait.jpg",
+        "loaded": true
+      },
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/service-skincare.jpg",
+        "loaded": true
+      }
+    ],
+    "links": [
+      "/booking",
+      "#dich-vu"
+    ],
+    "font": "\"Cormorant Garamond\", \"Times New Roman\", serif",
+    "fontLoaded": true,
+    "errors": []
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "hero": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 902.296875,
+      "right": 375,
+      "bottom": 902.296875
+    },
+    "copy": {
+      "x": 24,
+      "y": 108,
+      "width": 327,
+      "height": 346.078125,
+      "right": 351,
+      "bottom": 454.078125
+    },
+    "visual": {
+      "x": 33.8125,
+      "y": 486.078125,
+      "width": 307.375,
+      "height": 384.21875,
+      "right": 341.1875,
+      "bottom": 870.296875
+    },
+    "images": [
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/portrait.jpg",
+        "loaded": true
+      },
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/service-skincare.jpg",
+        "loaded": true
+      }
+    ],
+    "links": [
+      "/booking",
+      "#dich-vu"
+    ],
+    "font": "\"Cormorant Garamond\", \"Times New Roman\", serif",
+    "fontLoaded": true,
+    "errors": []
+  },
+  {
+    "viewport": [
+      375,
+      812
+    ],
+    "hero": {
+      "x": 0,
+      "y": 0,
+      "width": 360,
+      "height": 877.90625,
+      "right": 360,
+      "bottom": 877.90625
+    },
+    "copy": {
+      "x": 24,
+      "y": 108,
+      "width": 312,
+      "height": 339.328125,
+      "right": 336,
+      "bottom": 447.328125
+    },
+    "visual": {
+      "x": 33.359375,
+      "y": 479.328125,
+      "width": 293.265625,
+      "height": 366.578125,
+      "right": 326.625,
+      "bottom": 845.90625
+    },
+    "images": [
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/portrait.jpg",
+        "loaded": true
+      },
+      {
+        "src": "http://127.0.0.1:8080/src/assets/lovable/service-skincare.jpg",
+        "loaded": true
+      }
+    ],
+    "links": [
+      "/booking",
+      "#dich-vu"
+    ],
+    "font": "\"Cormorant Garamond\", \"Times New Roman\", serif",
+    "fontLoaded": true,
+    "errors": []
+  },
+  {
+    "reducedMotion": true
+  }
+]

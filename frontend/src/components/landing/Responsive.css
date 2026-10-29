@@ -1,0 +1,62 @@
+/* Shared responsive polish, scoped to the existing homepage. */
+@media (max-width: 767px) {
+    #lien-he {
+        padding: 56px 24px;
+        scroll-margin-top: 80px;
+    }
+    #lien-he > div {
+        gap: 44px;
+    }
+    #lien-he h2 {
+        font-size: 44px;
+        line-height: 1.08;
+        letter-spacing: 0;
+        margin-top: 24px;
+    }
+    #lien-he .reveal-arch {
+        width: min(100%, 320px);
+        margin-inline: auto;
+        aspect-ratio: 1;
+    }
+    #lien-he > div > div:last-child {
+        width: min(100%, 320px);
+        margin-inline: auto;
+    }
+    #lien-he .eyebrow {
+        letter-spacing: 0;
+    }
+    .lovable-home footer {
+        padding-top: 48px;
+    }
+    .lovable-home footer > div > div:first-child {
+        gap: 32px;
+        padding-bottom: 40px;
+    }
+    .lovable-home footer > div > div:nth-child(2) {
+        font-size: 64px;
+        padding-block: 32px;
+    }
+    .lovable-home footer > div > div:nth-child(2) > span {
+        letter-spacing: 0;
+    }
+    .lovable-home footer .eyebrow {
+        letter-spacing: 0;
+    }
+    .junie-journey {
+        padding-block: 40px;
+    }
+    .junie-journey__divider {
+        margin-bottom: 28px;
+    }
+    .junie-journey__steps {
+        gap: 22px;
+    }
+}
+@media (max-width: 359px) {
+    #lien-he h2 {
+        font-size: 38px;
+    }
+    .lovable-home footer > div > div:nth-child(2) {
+        font-size: 56px;
+    }
+}

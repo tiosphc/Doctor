@@ -1,0 +1,177 @@
+- generic [active] [ref=f8e1]:
+  - generic [ref=f8e2]:
+    - banner [ref=f8e3]:
+      - navigation [ref=f8e4]:
+        - link "Junie — Trang chủ" [ref=f8e5] [cursor=pointer]:
+          - /url: /
+          - img "Junie Beauty Clinic" [ref=f8e7]
+        - list [ref=f8e8]:
+          - listitem [ref=f8e9]:
+            - link "Trang chủ" [ref=f8e10] [cursor=pointer]:
+              - /url: /#trang-chu
+          - listitem [ref=f8e11]:
+            - link "Về Junie" [ref=f8e12] [cursor=pointer]:
+              - /url: /#ve-junie
+          - listitem [ref=f8e13]:
+            - link "Dịch vụ" [ref=f8e14] [cursor=pointer]:
+              - /url: /#dich-vu
+          - listitem [ref=f8e15]:
+            - link "Không gian" [ref=f8e16] [cursor=pointer]:
+              - /url: /#khong-gian
+          - listitem [ref=f8e17]:
+            - link "Liên hệ" [ref=f8e18] [cursor=pointer]:
+              - /url: /#lien-he
+        - generic [ref=f8e19]:
+          - link "Đặt lịch" [ref=f8e20] [cursor=pointer]:
+            - /url: /booking
+          - link "Đăng nhập" [ref=f8e21] [cursor=pointer]:
+            - /url: /login
+    - main [ref=f8e22]:
+      - generic [ref=f8e23]:
+        - generic [ref=f8e24]:
+          - img "Khoảnh khắc chăm sóc da nhẹ nhàng trong ánh sáng tự nhiên" [ref=f8e28]
+          - figure "sự tinh tế trong từng chi tiết" [ref=f8e32]:
+            - img "Tinh chất và kem dưỡng trong ánh sáng dịu nhẹ" [ref=f8e34]
+        - generic [ref=f8e37]:
+          - paragraph [ref=f8e38]: Junie · Aesthetic & Wellness
+          - heading "Vẻ đẹp riêng. Một cách nâng niu." [level=1] [ref=f8e40]:
+            - generic [ref=f8e41]: Vẻ đẹp riêng.
+            - generic [ref=f8e44]:
+              - text: Một cách
+              - emphasis [ref=f8e45]: nâng niu.
+          - paragraph [ref=f8e46]: Vẻ đẹp tự nhiên được trân trọng bằng sự tinh tế, chuyên môn và những trải nghiệm chăm sóc dành riêng cho bạn.
+          - generic [ref=f8e47]:
+            - link "Đặt lịch tư vấn" [ref=f8e48] [cursor=pointer]:
+              - /url: /booking
+            - link "Khám phá dịch vụ" [ref=f8e57] [cursor=pointer]:
+              - /url: "#dich-vu"
+        - generic:
+          - generic: Cuộn xuống
+          - paragraph: 01 / 05
+      - region [ref=f8e66]:
+        - generic [ref=f8e67]:
+          - generic [ref=f8e68]:
+            - generic [ref=f8e69]: Đội ngũ chuyên môn
+            - heading [level=2] [ref=f8e72]:
+              - text: Vẻ đẹp được chăm sóc bằng
+              - emphasis [ref=f8e73]: sự thấu hiểu
+              - text: và chuyên môn.
+            - paragraph [ref=f8e74]: Tại Junie, mỗi hành trình chăm sóc sắc đẹp bắt đầu bằng sự lắng nghe, đánh giá chuyên môn và xây dựng giải pháp phù hợp với từng khách hàng.
+          - figure "Đang tải hồ sơ bác sĩ..." [ref=f8e75]:
+            - generic [ref=f8e76]: Ảnh chân dung bác sĩ sẽ được cập nhật
+          - generic [ref=f8e86]:
+            - link "Xem hồ sơ bác sĩ" [ref=f8e87] [cursor=pointer]:
+              - /url: /doi-ngu-bac-si
+            - link "Đặt lịch tư vấn" [ref=f8e96] [cursor=pointer]:
+              - /url: /booking
+      - generic [ref=f8e106]:
+        - generic [ref=f8e107]:
+          - generic [ref=f8e108]:
+            - generic [ref=f8e109]: Liệu trình đặc trưng
+            - heading "Chăm sóc theo cách riêng của bạn." [level=2] [ref=f8e113]: Chăm sóc theocách riêng của bạn.
+          - paragraph [ref=f8e114]: Mỗi liệu trình là một lời mời chậm lại, được cân nhắc kỹ lưỡng cho riêng làn da và nhịp sống của bạn.
+        - status [ref=f8e115]: Đang tải dịch vụ...
+      - generic [ref=f8e118]:
+        - generic [ref=f8e119]: Trải nghiệm Junie
+        - heading "Mỗi trải nghiệm, một sự tinh tế." [level=2] [ref=f8e123]
+        - generic [ref=f8e124]:
+          - generic [ref=f8e126]:
+            - img "Lắng nghe" [ref=f8e127]
+            - generic [ref=f8e131]: 01 — Lắng nghe
+          - generic [ref=f8e133]:
+            - generic [ref=f8e134]:
+              - generic [ref=f8e135]: "01"
+              - heading "Lắng nghe" [level=3] [ref=f8e136]
+              - paragraph [ref=f8e137]: Một cuộc trò chuyện chậm rãi để hiểu làn da, thói quen và những điều bạn mong muốn.
+            - generic [ref=f8e138]:
+              - generic [ref=f8e139]: "02"
+              - heading "Thấu hiểu" [level=3] [ref=f8e140]
+              - paragraph [ref=f8e141]: Phân tích kỹ lưỡng và cùng bạn xây dựng một hướng chăm sóc dành riêng.
+            - generic [ref=f8e142]:
+              - generic [ref=f8e143]: "03"
+              - heading "Chăm sóc" [level=3] [ref=f8e144]
+              - paragraph [ref=f8e145]: Từng liệu trình được thực hiện tỉ mỉ trong không gian tĩnh lặng, ấm áp.
+            - generic [ref=f8e146]:
+              - generic [ref=f8e147]: "04"
+              - heading "Đồng hành" [level=3] [ref=f8e148]
+              - paragraph [ref=f8e149]: Theo dõi và điều chỉnh cùng bạn, để vẻ đẹp được nuôi dưỡng bền vững theo thời gian.
+      - region [ref=f8e150]:
+        - generic [ref=f8e151]:
+          - generic [ref=f8e153]: Junie — Hành trình đặt lịch
+          - generic [ref=f8e156]:
+            - heading "Một cuộc hẹn, khởi đầu cho vẻ đẹp riêng." [level=2] [ref=f8e157]:
+              - generic [ref=f8e158]: Một cuộc hẹn,
+              - generic [ref=f8e161]:
+                - text: khởi đầu cho
+                - emphasis [ref=f8e162]: vẻ đẹp riêng.
+            - paragraph [ref=f8e163]: Chỉ với ba bước đơn giản, bạn đã có thể bắt đầu hành trình chăm sóc sắc đẹp cùng Junie.
+          - list [ref=f8e165]:
+            - listitem [ref=f8e166]:
+              - generic [aria-hidden] [ref=f8e168]: "01"
+              - heading "Khám phá vẻ đẹp của bạn" [level=3] [ref=f8e172]
+              - paragraph [ref=f8e173]: Lựa chọn dịch vụ phù hợp với nhu cầu và mong muốn của bạn.
+            - listitem [ref=f8e174]:
+              - generic [aria-hidden] [ref=f8e176]: "02"
+              - heading "Chọn khoảnh khắc dành riêng" [level=3] [ref=f8e179]
+              - paragraph [ref=f8e180]: Chọn ngày giờ thuận tiện và để lại thông tin liên hệ của bạn.
+            - listitem [ref=f8e181]:
+              - generic [aria-hidden] [ref=f8e183]: "03"
+              - heading "Hoàn tất cuộc hẹn" [level=3] [ref=f8e187]
+              - paragraph [ref=f8e188]: Kiểm tra lại thông tin và xác nhận yêu cầu đặt lịch của bạn.
+          - link "BẮT ĐẦU ĐẶT LỊCH" [ref=f8e190] [cursor=pointer]:
+            - /url: /booking
+      - generic [ref=f8e200]:
+        - generic [ref=f8e201]:
+          - generic [ref=f8e202]: Lời mời
+          - heading "Dành một khoảnh khắc cho chính mình." [level=2] [ref=f8e206]: Dành một khoảnh khắccho chính mình.
+          - paragraph [ref=f8e207]: Khởi đầu hành trình chăm sóc vẻ đẹp của bạn cùng Junie.
+          - generic [ref=f8e208]:
+            - link "Đặt lịch tư vấn" [ref=f8e209] [cursor=pointer]:
+              - /url: /booking
+            - link "Khám phá dịch vụ" [ref=f8e218] [cursor=pointer]:
+              - /url: /services
+        - generic [ref=f8e219]:
+          - img "Không gian Junie trong ánh chiều ấm" [ref=f8e223]
+          - paragraph [ref=f8e224]: không gian tĩnh lặng, dành riêng cho bạn
+    - contentinfo [ref=f8e225]:
+      - generic [ref=f8e226]:
+        - generic [ref=f8e227]:
+          - paragraph [ref=f8e228]: “Sang trọng không nằm ở sự phô trương, mà ở vẻ đẹp của từng chi tiết được nâng niu.”
+          - generic [ref=f8e229]:
+            - paragraph [ref=f8e230]: Khám phá
+            - list [ref=f8e231]:
+              - listitem [ref=f8e232]:
+                - link "Về Junie" [ref=f8e233] [cursor=pointer]:
+                  - /url: /#ve-junie
+              - listitem [ref=f8e234]:
+                - link "Dịch vụ" [ref=f8e235] [cursor=pointer]:
+                  - /url: /#dich-vu
+              - listitem [ref=f8e236]:
+                - link "Không gian" [ref=f8e237] [cursor=pointer]:
+                  - /url: /#khong-gian
+              - listitem [ref=f8e238]:
+                - link "Liên hệ" [ref=f8e239] [cursor=pointer]:
+                  - /url: /#lien-he
+          - generic [ref=f8e240]:
+            - paragraph [ref=f8e241]: Liên hệ
+            - list [ref=f8e242]:
+              - listitem [ref=f8e243]: "Địa chỉ: đang cập nhật"
+              - listitem [ref=f8e244]: "Điện thoại: đang cập nhật"
+              - listitem [ref=f8e245]: "Email: đang cập nhật"
+          - generic [ref=f8e246]:
+            - paragraph [ref=f8e247]: Theo dõi
+            - list [ref=f8e248]:
+              - listitem [ref=f8e249]:
+                - link "Instagram" [ref=f8e250] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f8e251]:
+                - link "Facebook" [ref=f8e252] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f8e253]:
+                - link "TikTok" [ref=f8e254] [cursor=pointer]:
+                  - /url: "#"
+        - img "Junie Beauty Clinic" [ref=f8e257]
+        - generic [ref=f8e258]:
+          - generic [ref=f8e259]: © 2026 Junie. Bảo lưu mọi quyền.
+          - generic [ref=f8e260]: Beauty in Stillness
+  - region "Notifications alt+T"

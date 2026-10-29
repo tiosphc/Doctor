@@ -1,0 +1,161 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - banner [ref=f5e3]:
+      - navigation [ref=f5e4]:
+        - link "DrJunie — Trang chủ" [ref=f5e5] [cursor=pointer]:
+          - /url: "#trang-chu"
+          - generic [ref=f5e6]: DRJUNIE
+        - generic [ref=f5e7]:
+          - link "Đăng nhập" [ref=f5e8] [cursor=pointer]:
+            - /url: /login
+          - button "Mở menu" [ref=f5e9] [cursor=pointer]
+    - main [ref=f5e12]:
+      - generic [ref=f5e13]:
+        - generic [ref=f5e14]:
+          - img "Khoảnh khắc chăm sóc da nhẹ nhàng trong ánh sáng tự nhiên" [ref=f5e18]
+          - figure "sự tinh tế trong từng chi tiết" [ref=f5e22]:
+            - img "Tinh chất và kem dưỡng trong ánh sáng dịu nhẹ" [ref=f5e24]
+        - generic [ref=f5e27]:
+          - paragraph [ref=f5e28]: DrJunie · Aesthetic & Wellness
+          - heading "Vẻ đẹp riêng. Một cách nâng niu." [level=1] [ref=f5e30]:
+            - generic [ref=f5e31]: Vẻ đẹp riêng.
+            - generic [ref=f5e34]:
+              - text: Một cách
+              - emphasis [ref=f5e35]: nâng niu.
+          - paragraph [ref=f5e36]: Vẻ đẹp tự nhiên được trân trọng bằng sự tinh tế, chuyên môn và những trải nghiệm chăm sóc dành riêng cho bạn.
+          - generic [ref=f5e37]:
+            - link "Đặt lịch tư vấn" [ref=f5e38] [cursor=pointer]:
+              - /url: /booking
+            - link "Khám phá dịch vụ" [ref=f5e47] [cursor=pointer]:
+              - /url: "#dich-vu"
+      - region [ref=f5e56]:
+        - generic [ref=f5e57]:
+          - generic [ref=f5e58]:
+            - generic [ref=f5e59]: Về DrJunie
+            - heading "Vẻ đẹp bắt đầu từ sự thấu hiểu." [level=2] [ref=f5e62]:
+              - generic [ref=f5e63]: Vẻ đẹp bắt đầu
+              - generic [ref=f5e66]:
+                - text: từ
+                - emphasis [ref=f5e67]: sự thấu hiểu.
+          - generic [ref=f5e68]:
+            - figure "vẻ đẹp mang dấu ấn riêng" [ref=f5e69]:
+              - img "Vẻ đẹp tự nhiên của làn da dưới ánh nắng dịu" [ref=f5e71]
+            - generic [ref=f5e73]:
+              - paragraph [ref=f5e74]: Mỗi hành trình tại DrJunie bắt đầu bằng sự lắng nghe và chăm sóc phù hợp với vẻ đẹp riêng của bạn.
+              - list [ref=f5e75]:
+                - listitem [ref=f5e76]:
+                  - button "Cá nhân hóa từng liệu trình" [ref=f5e77] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f5e78]: "01"
+                  - region "Cá nhân hóa từng liệu trình":
+                    - paragraph [ref=f5e81]: Mỗi khách hàng đều có những nhu cầu riêng. DrJunie chú trọng lắng nghe, tìm hiểu và tư vấn hướng chăm sóc phù hợp với từng cá nhân.
+                - listitem [ref=f5e82]:
+                  - button "Tôn vinh vẻ đẹp tự nhiên" [ref=f5e83] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f5e84]: "02"
+                  - region "Tôn vinh vẻ đẹp tự nhiên":
+                    - paragraph [ref=f5e87]: Chúng tôi trân trọng những nét đẹp riêng, hướng đến sự hài hòa và giúp bạn tự tin với vẻ đẹp của chính mình.
+                - listitem [ref=f5e88]:
+                  - button "Chăm sóc tận tâm, chuyên môn" [ref=f5e89] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f5e90]: "03"
+                  - region "Chăm sóc tận tâm, chuyên môn":
+                    - paragraph [ref=f5e93]: DrJunie đề cao sự cẩn trọng, tư vấn rõ ràng và trải nghiệm chăm sóc tận tâm trong từng bước.
+                - listitem [ref=f5e94]:
+                  - button "Không gian tĩnh lặng, thư thái" [ref=f5e95] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f5e96]: "04"
+                  - region "Không gian tĩnh lặng, thư thái":
+                    - paragraph [ref=f5e99]: Một không gian nhẹ nhàng, riêng tư và thoải mái, nơi bạn có thể dành thời gian chăm sóc bản thân.
+              - link "Khám phá Dr Junie" [ref=f5e101] [cursor=pointer]:
+                - /url: "#khong-gian"
+      - generic [ref=f5e111]:
+        - generic [ref=f5e112]:
+          - generic [ref=f5e113]:
+            - generic [ref=f5e114]: Liệu trình đặc trưng
+            - heading "Chăm sóc theo cách riêng của bạn." [level=2] [ref=f5e118]: Chăm sóc theocách riêng của bạn.
+          - paragraph [ref=f5e119]: Mỗi liệu trình là một lời mời chậm lại, được cân nhắc kỹ lưỡng cho riêng làn da và nhịp sống của bạn.
+        - status [ref=f5e120]: Đang tải dịch vụ...
+        - link "Khám phá tất cả dịch vụ" [ref=f5e121] [cursor=pointer]:
+          - /url: /services
+      - generic [ref=f5e126]:
+        - generic [ref=f5e127]: Trải nghiệm DrJunie
+        - heading "Mỗi trải nghiệm, một sự tinh tế." [level=2] [ref=f5e131]
+        - generic [ref=f5e133]:
+          - img "Lắng nghe" [ref=f5e135]
+          - generic [ref=f5e145]:
+            - generic [ref=f5e146]: 01 / 04
+            - heading "Lắng nghe" [level=3] [ref=f5e147]
+            - paragraph [ref=f5e148]: Một cuộc trò chuyện chậm rãi để hiểu làn da, thói quen và những điều bạn mong muốn.
+      - region [ref=f5e149]:
+        - generic [ref=f5e150]:
+          - generic [ref=f5e152]: Dr Junie — Hành trình đặt lịch
+          - generic [ref=f5e155]:
+            - heading "Một cuộc hẹn, khởi đầu cho vẻ đẹp riêng." [level=2] [ref=f5e156]:
+              - generic [ref=f5e157]: Một cuộc hẹn,
+              - generic [ref=f5e160]:
+                - text: khởi đầu cho
+                - emphasis [ref=f5e161]: vẻ đẹp riêng.
+            - paragraph [ref=f5e162]: Chỉ với ba bước đơn giản, bạn đã có thể bắt đầu hành trình chăm sóc sắc đẹp cùng Dr Junie.
+          - list [ref=f5e164]:
+            - listitem [ref=f5e165]:
+              - generic [aria-hidden] [ref=f5e167]: "01"
+              - heading "Khám phá vẻ đẹp của bạn" [level=3] [ref=f5e171]
+              - paragraph [ref=f5e172]: Lựa chọn dịch vụ phù hợp với nhu cầu và mong muốn của bạn.
+            - listitem [ref=f5e173]:
+              - generic [aria-hidden] [ref=f5e175]: "02"
+              - heading "Chọn khoảnh khắc dành riêng" [level=3] [ref=f5e178]
+              - paragraph [ref=f5e179]: Chọn ngày giờ thuận tiện và để lại thông tin liên hệ của bạn.
+            - listitem [ref=f5e180]:
+              - generic [aria-hidden] [ref=f5e182]: "03"
+              - heading "Hoàn tất cuộc hẹn" [level=3] [ref=f5e186]
+              - paragraph [ref=f5e187]: Kiểm tra lại thông tin và xác nhận yêu cầu đặt lịch của bạn.
+          - link "BẮT ĐẦU ĐẶT LỊCH" [ref=f5e189] [cursor=pointer]:
+            - /url: /booking
+      - generic [ref=f5e200]:
+        - generic [ref=f5e201]: Lời mời
+        - heading "Dành một khoảnh khắc cho chính mình." [level=2] [ref=f5e205]: Dành một khoảnh khắccho chính mình.
+        - paragraph [ref=f5e206]: Khởi đầu hành trình chăm sóc vẻ đẹp của bạn cùng DrJunie.
+        - generic [ref=f5e207]:
+          - link "Đặt lịch tư vấn" [ref=f5e208] [cursor=pointer]:
+            - /url: /booking
+          - link "Khám phá dịch vụ" [ref=f5e217] [cursor=pointer]:
+            - /url: /services
+    - contentinfo [ref=f5e218]:
+      - generic [ref=f5e219]:
+        - generic [ref=f5e220]:
+          - paragraph [ref=f5e221]: “Sang trọng không nằm ở sự phô trương, mà ở vẻ đẹp của từng chi tiết được nâng niu.”
+          - generic [ref=f5e222]:
+            - paragraph [ref=f5e223]: Khám phá
+            - list [ref=f5e224]:
+              - listitem [ref=f5e225]:
+                - link "Về DrJunie" [ref=f5e226] [cursor=pointer]:
+                  - /url: "#ve-drjunie"
+              - listitem [ref=f5e227]:
+                - link "Dịch vụ" [ref=f5e228] [cursor=pointer]:
+                  - /url: "#dich-vu"
+              - listitem [ref=f5e229]:
+                - link "Không gian" [ref=f5e230] [cursor=pointer]:
+                  - /url: "#khong-gian"
+              - listitem [ref=f5e231]:
+                - link "Liên hệ" [ref=f5e232] [cursor=pointer]:
+                  - /url: "#lien-he"
+          - generic [ref=f5e233]:
+            - paragraph [ref=f5e234]: Liên hệ
+            - list [ref=f5e235]:
+              - listitem [ref=f5e236]: "Địa chỉ: đang cập nhật"
+              - listitem [ref=f5e237]: "Điện thoại: đang cập nhật"
+              - listitem [ref=f5e238]: "Email: đang cập nhật"
+          - generic [ref=f5e239]:
+            - paragraph [ref=f5e240]: Theo dõi
+            - list [ref=f5e241]:
+              - listitem [ref=f5e242]:
+                - link "Instagram" [ref=f5e243] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f5e244]:
+                - link "Facebook" [ref=f5e245] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f5e246]:
+                - link "TikTok" [ref=f5e247] [cursor=pointer]:
+                  - /url: "#"
+        - generic [ref=f5e248]: DRJUNIE
+        - generic [ref=f5e250]:
+          - generic [ref=f5e251]: © 2026 DrJunie. Bảo lưu mọi quyền.
+          - generic [ref=f5e252]: Beauty in Stillness
+  - region "Notifications alt+T"

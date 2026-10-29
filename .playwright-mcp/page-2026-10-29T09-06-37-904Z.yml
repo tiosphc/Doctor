@@ -1,0 +1,71 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - navigation [ref=e4]:
+        - link "DrJunie — Trang chủ" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e6]: DRJUNIE
+        - generic [ref=e7]:
+          - link "Dịch vụ" [ref=e8] [cursor=pointer]:
+            - /url: /services
+          - link "Đặt lịch" [ref=e9] [cursor=pointer]:
+            - /url: /booking
+          - link "Tài khoản" [ref=e10] [cursor=pointer]:
+            - /url: /login
+    - main [ref=e11]:
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - paragraph [ref=e18]: ĐẶT LỊCH TRỰC TUYẾN
+          - heading "Chọn dịch vụ và lịch hẹn" [level=1] [ref=e19]
+          - paragraph [ref=e20]: Chọn dịch vụ và thời gian phù hợp với bạn.
+        - list "Tiến trình đặt lịch" [ref=e21]:
+          - listitem [ref=e22]:
+            - generic [ref=e23]: "1"
+            - generic [ref=e24]: Chọn dịch vụ & lịch hẹn
+          - listitem [ref=e25]:
+            - generic [ref=e26]: "2"
+            - generic [ref=e27]: Thông tin & xác nhận
+        - generic [ref=e28]:
+          - region [ref=e29]:
+            - heading "01 · Chọn dịch vụ" [level=2] [ref=e30]
+            - generic [ref=e31]:
+              - button "Demo Skin Consultation 1 30 phút · 350.000 ₫" [active] [pressed] [ref=e32]:
+                - generic [ref=e33]: Demo Skin Consultation 1
+                - generic [ref=e34]: 30 phút · 350.000 ₫
+              - button "Demo Skin Consultation 2 30 phút · 450.000 ₫" [ref=e35]:
+                - generic [ref=e36]: Demo Skin Consultation 2
+                - generic [ref=e37]: 30 phút · 450.000 ₫
+              - button "Demo Skin Consultation 3 30 phút · 550.000 ₫" [ref=e38]:
+                - generic [ref=e39]: Demo Skin Consultation 3
+                - generic [ref=e40]: 30 phút · 550.000 ₫
+              - button "QA Readiness Service 1793182397454 30 phút · 100.000 ₫" [ref=e41]:
+                - generic [ref=e42]: QA Readiness Service 1793182397454
+                - generic [ref=e43]: 30 phút · 100.000 ₫
+              - button "QA Readiness Service 1793182446702 30 phút · 100.000 ₫" [ref=e44]:
+                - generic [ref=e45]: QA Readiness Service 1793182446702
+                - generic [ref=e46]: 30 phút · 100.000 ₫
+              - button "QA Readiness Service 1793182561498 30 phút · 100.000 ₫" [ref=e47]:
+                - generic [ref=e48]: QA Readiness Service 1793182561498
+                - generic [ref=e49]: 30 phút · 100.000 ₫
+              - button "QA Readiness Service 1793182774772 30 phút · 100.000 ₫" [ref=e50]:
+                - generic [ref=e51]: QA Readiness Service 1793182774772
+                - generic [ref=e52]: 30 phút · 100.000 ₫
+              - button "QA Readiness Service 1793183144723 30 phút · 100.000 ₫" [ref=e53]:
+                - generic [ref=e54]: QA Readiness Service 1793183144723
+                - generic [ref=e55]: 30 phút · 100.000 ₫
+          - region [ref=e64]:
+            - heading "Bác sĩ trực tiếp thăm khám" [level=2] [ref=e65]
+            - generic [ref=e66]:
+              - img "Chưa có ảnh đại diện của Doctor Demo 1" [ref=e67]
+              - generic [ref=e71]:
+                - paragraph [ref=e72]: Bác sĩ phụ trách
+                - paragraph [ref=e73]: Doctor Demo 1
+                - paragraph [ref=e74]: Skin care
+                - paragraph [ref=e75]: Bác sĩ phụ trách các lịch hẹn tại DrJunie
+          - region [ref=e56]:
+            - heading "02 · Chọn ngày và giờ" [level=2] [ref=e57]
+            - generic [ref=e58]: Ngày hẹn
+            - textbox "Ngày hẹn" [ref=e59]
+          - button "Tiếp tục" [ref=e61]
+    - contentinfo [ref=e15]: © 2026 DrJunie
+  - region "Notifications alt+T"
