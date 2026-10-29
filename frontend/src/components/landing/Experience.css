@@ -1,6 +1,15 @@
-/* Section 04 — Experience: scoped sizing (same pattern as Services.css).
-   Layout stays untouched; only paddings/type/heights are clamped so the
-   composition fits desktop viewports including the fixed navigation. */
+/* Section 04 — Experience: keep the sticky story within the viewport,
+   leaving room for its heading and the fixed navigation. */
+.junie-experience {
+    --junie-exp-sticky-top: 80px;
+    --junie-exp-heading-height: 156px;
+}
+.junie-experience .junie-exp__heading {
+    position: relative;
+    z-index: 20;
+    padding-bottom: 28px;
+    background: var(--ivory);
+}
 @media (max-width: 767px) {
     #khong-gian.junie-experience {
         padding: 44px 24px 28px;
@@ -15,12 +24,12 @@
     .junie-experience .junie-exp__grid {
         display: block;
         position: relative;
-        margin-top: 28px;
-        height: calc(510px + 42svh);
+        margin-top: 0;
+        height: calc(510px + 42svh + var(--junie-exp-heading-height));
     }
     .junie-experience .junie-exp__sticky {
         display: block;
-        top: 80px;
+        top: var(--junie-exp-sticky-top);
         height: auto;
         padding-bottom: 16px;
         background: var(--ivory);
@@ -123,53 +132,70 @@
     }
 }
 @media (min-width: 768px) {
+    .junie-experience {
+        --junie-exp-sticky-top: 112px;
+        --junie-exp-heading-height: 104px;
+        --junie-exp-stage-height: clamp(280px, calc(100svh - 280px), 540px);
+    }
+    .junie-experience .junie-exp__heading {
+        padding-bottom: 24px;
+    }
     #khong-gian.junie-experience {
-        padding: 40px 32px;
-        scroll-margin-top: 96px;
+        padding: 32px;
+        scroll-margin-top: 112px;
+    }
+    .junie-experience > div {
+        max-width: 1120px;
     }
     .junie-experience .junie-exp__title {
-        margin-top: 20px;
-        font-size: 44px;
+        margin-top: 16px;
+        font-size: clamp(32px, 3vw, 44px);
         line-height: 1.05;
     }
     .junie-experience .junie-exp__grid {
-        margin-top: 24px;
-        gap: 40px;
+        margin-top: 0;
+        gap: clamp(32px, 4vw, 48px);
     }
     .junie-experience .junie-exp__sticky {
-        top: 88px;
-        height: calc(100svh - 104px);
+        display: grid;
+        grid-column: 1 / -1;
+        grid-row: 1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: inherit;
+        align-self: start;
+        top: var(--junie-exp-sticky-top);
+        z-index: 10;
+        height: auto;
+        pointer-events: none;
+    }
+    .junie-experience .junie-exp__heading {
+        grid-column: 1 / -1;
+        pointer-events: auto;
+    }
+    .junie-experience .junie-exp__picture {
+        grid-column: 1;
+        height: var(--junie-exp-stage-height);
+        width: min(100%, calc(var(--junie-exp-stage-height) * 0.8));
+        margin-inline: auto;
+        pointer-events: auto;
+    }
+    .junie-experience .junie-exp__steps {
+        grid-column: 2;
+        grid-row: 1;
+        padding-block: var(--junie-exp-heading-height);
     }
     .junie-experience .junie-exp__step {
-        min-height: calc(100svh - 300px);
-        padding: 32px 0;
+        min-height: var(--junie-exp-stage-height);
+        padding: 24px 0;
     }
     .junie-experience .junie-exp__step-title {
         margin-top: 12px;
-        font-size: 48px;
+        font-size: clamp(36px, 3.6vw, 56px);
+        line-height: 1.05;
     }
 }
 @media (min-width: 1024px) {
     #khong-gian.junie-experience {
-        padding: 24px 40px 32px;
-    }
-    .junie-experience .junie-exp__title {
-        margin-top: 16px;
-        font-size: 52px;
-    }
-    .junie-experience .junie-exp__grid {
-        margin-top: 24px;
-        gap: 56px;
-    }
-    .junie-experience .junie-exp__sticky {
-        top: 88px;
-        height: calc(100svh - 104px);
-    }
-    .junie-experience .junie-exp__step {
-        min-height: calc(100svh - 240px);
-        padding: 40px 0;
-    }
-    .junie-experience .junie-exp__step-title {
-        font-size: 72px;
+        padding-inline: 40px;
     }
 }

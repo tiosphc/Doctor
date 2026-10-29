@@ -26,6 +26,11 @@ export function HeroVisual() {
         let visible = true;
         let timer: ReturnType<typeof setInterval> | undefined;
         let raf = 0;
+        const reset = () => {
+            cancelAnimationFrame(raf);
+            el.style.setProperty("--pointer-x", "0px");
+            el.style.setProperty("--pointer-y", "0px");
+        };
         const sync = () => {
             if (timer) clearInterval(timer);
             timer = undefined;
@@ -37,10 +42,7 @@ export function HeroVisual() {
                     HERO_IMAGE_INTERVAL,
                 );
             }
-            if (motion.matches) {
-                el.style.setProperty("--pointer-x", "0px");
-                el.style.setProperty("--pointer-y", "0px");
-            }
+            if (stop) reset();
         };
         void Promise.all(
             images.map(
@@ -78,8 +80,7 @@ export function HeroVisual() {
                     event.clientY < rect.top ||
                     event.clientY > rect.bottom
                 ) {
-                    el.style.setProperty("--pointer-x", "0px");
-                    el.style.setProperty("--pointer-y", "0px");
+                    reset();
                     return;
                 }
                 el.style.setProperty(
@@ -92,12 +93,7 @@ export function HeroVisual() {
                 );
             });
         };
-        const reset = () => {
-            cancelAnimationFrame(raf);
-            el.style.setProperty("--pointer-x", "0px");
-            el.style.setProperty("--pointer-y", "0px");
-        };
-        pointerArea.addEventListener("pointermove", move as EventListener);
+        pointerArea.addEventListener("pointermove", move);
         pointerArea.addEventListener("pointerleave", reset);
         motion.addEventListener("change", sync);
         document.addEventListener("visibilitychange", sync);
@@ -107,7 +103,7 @@ export function HeroVisual() {
             if (timer) clearInterval(timer);
             cancelAnimationFrame(raf);
             observer.disconnect();
-            pointerArea.removeEventListener("pointermove", move as EventListener);
+            pointerArea.removeEventListener("pointermove", move);
             pointerArea.removeEventListener("pointerleave", reset);
             motion.removeEventListener("change", sync);
             document.removeEventListener("visibilitychange", sync);
@@ -132,6 +128,7 @@ export function HeroVisual() {
                                 width={1024}
                                 height={1280}
                                 fetchPriority={index === 0 ? "high" : "low"}
+                                loading="eager"
                                 decoding="async"
                             />
                         </div>
@@ -140,30 +137,18 @@ export function HeroVisual() {
             </div>
             <svg
                 className="junie-hero-visual__motif"
-                viewBox="0 0 120 120"
+                viewBox="0 0 140 140"
                 fill="none"
                 aria-hidden="true"
             >
-                <circle
-                    cx="60"
-                    cy="60"
-                    r="51"
-                    stroke="currentColor"
-                    strokeWidth="0.6"
-                    strokeDasharray="180 141"
-                />
-                <path
-                    d="M60 2v18M60 100v18M2 60h18M100 60h18"
-                    stroke="currentColor"
-                    strokeWidth="0.6"
-                />
+                <path d="M30 8C63-8 18 66 58 104C97 141 156 85 112 35M105 41l14-10M31 7l8 15" />
             </svg>
             <div className="junie-hero-visual__secondary-layer">
                 <figure className="junie-hero-visual__secondary">
                     <div className="junie-hero-visual__detail">
                         <img
                             src={skincareImg}
-                            alt="Tinh chất và kem dưỡng trong ánh sáng dịu nhẹ"
+                            alt="Chai serum và hũ kem dưỡng trong ánh sáng tự nhiên"
                             width={1024}
                             height={1280}
                             loading="lazy"

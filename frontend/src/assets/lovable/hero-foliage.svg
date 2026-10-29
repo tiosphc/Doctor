@@ -1,0 +1,27 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1800"
+    height="1000"
+    viewBox="0 0 1800 1000"
+    fill="none"
+>
+    <defs>
+        <filter id="soft"><feGaussianBlur stdDeviation="11" /></filter>
+        <path id="leaf" d="M0 0C-65-15-95-65-80-106C-34-91 1-49 0 0Z" />
+        <g id="branch" fill="#77634b" stroke="#77634b" stroke-width="3">
+            <path d="M0 380Q35 100 0-120" fill="none" />
+            <use href="#leaf" transform="translate(15 285) rotate(-28) scale(1.1)" />
+            <use href="#leaf" transform="translate(19 230) rotate(95) scale(1.2)" />
+            <use href="#leaf" transform="translate(19 160) rotate(-18)" />
+            <use href="#leaf" transform="translate(15 100) rotate(100)" />
+            <use href="#leaf" transform="translate(10 30) rotate(-12) scale(.9)" />
+            <use href="#leaf" transform="translate(2 -30) rotate(105) scale(.8)" />
+            <use href="#leaf" transform="translate(-1 -78) rotate(15) scale(.7)" />
+        </g>
+    </defs>
+    <g filter="url(#soft)" opacity=".12">
+        <use href="#branch" transform="translate(160 350) rotate(-40) scale(1.8)" />
+        <use href="#branch" transform="translate(1500 800) rotate(42) scale(2.1)" />
+        <use href="#branch" transform="translate(1760 510) rotate(-24) scale(1.6)" />
+    </g>
+</svg>

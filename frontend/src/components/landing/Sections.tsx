@@ -272,27 +272,45 @@ const steps = [
 export function Experience() {
     const [active, setActive] = useState(0);
     const refs = useRef<(HTMLDivElement | null)[]>([]);
+    const headingRef = useRef<HTMLDivElement>(null);
     const trackRef = useRef<HTMLDivElement>(null);
     const stageRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const mobile = window.matchMedia("(max-width: 767px)");
+        const heading = headingRef.current;
+        const section = heading?.closest("section");
         let frame = 0;
+        const measureHeading = () => {
+            if (!heading || !section) return;
+            section.style.setProperty(
+                "--junie-exp-heading-height",
+                `${heading.getBoundingClientRect().height}px`,
+            );
+        };
         const update = () => {
             frame = 0;
             const track = trackRef.current;
             const stage = stageRef.current;
             if (!mobile.matches || !track || !stage) return;
             const travel = Math.max(1, track.offsetHeight - stage.offsetHeight);
+            const stickyTop = Number.parseFloat(window.getComputedStyle(stage).top);
+            if (!Number.isFinite(stickyTop)) return;
             const progress = Math.max(
                 0,
-                Math.min(1, (80 - track.getBoundingClientRect().top) / travel),
+                Math.min(1, (stickyTop - track.getBoundingClientRect().top) / travel),
             );
             setActive(Math.min(steps.length - 1, Math.floor(progress * steps.length)));
         };
         const onScroll = () => {
             if (!frame) frame = requestAnimationFrame(update);
         };
+        const headingObserver = new ResizeObserver(() => {
+            measureHeading();
+            onScroll();
+        });
+        if (heading) headingObserver.observe(heading);
+        measureHeading();
         const io = new IntersectionObserver(
             (es) =>
                 es.forEach(
@@ -309,6 +327,8 @@ export function Experience() {
         update();
         return () => {
             io.disconnect();
+            headingObserver.disconnect();
+            section?.style.removeProperty("--junie-exp-heading-height");
             window.removeEventListener("scroll", onScroll);
             window.removeEventListener("resize", onScroll);
             cancelAnimationFrame(frame);
@@ -318,13 +338,6 @@ export function Experience() {
     return (
         <section id="khong-gian" className="junie-experience relative px-6 py-28 md:px-10 md:py-40">
             <div className="mx-auto max-w-[1400px]">
-                <div className="reveal">
-                    <SectionLabel label="Trải nghiệm Junie" />
-                </div>
-                <h2 className="junie-exp__title font-display reveal mt-10 max-w-4xl text-[clamp(2.6rem,5.5vw,5.5rem)]">
-                    Mỗi trải nghiệm, <span className="italic text-mocha">một sự tinh tế.</span>
-                </h2>
-
                 <div
                     ref={trackRef}
                     className="junie-exp__grid mt-20 grid gap-12 md:grid-cols-2 md:gap-20"
@@ -334,6 +347,15 @@ export function Experience() {
                         ref={stageRef}
                         className="junie-exp__sticky sticky top-24 h-[calc(100svh-8rem)]"
                     >
+                        <div ref={headingRef} className="junie-exp__heading">
+                            <div className="reveal">
+                                <SectionLabel label="Trải nghiệm Junie" />
+                            </div>
+                            <h2 className="junie-exp__title font-display reveal mt-10 max-w-4xl text-[clamp(2.6rem,5.5vw,5.5rem)]">
+                                Mỗi trải nghiệm,{" "}
+                                <span className="italic text-mocha">một sự tinh tế.</span>
+                            </h2>
+                        </div>
                         <div className="junie-exp__picture arch relative h-full overflow-hidden">
                             {steps.map((s, i) => (
                                 <img
@@ -419,24 +441,29 @@ export function Invitation() {
     return (
         <section
             id="lien-he"
-            className="grain relative overflow-hidden bg-cream px-6 py-28 text-espresso md:px-10 md:py-40"
+            className="grain relative overflow-hidden bg-mocha px-6 py-28 text-ivory md:px-10 md:py-40"
         >
             <div className="mx-auto grid max-w-[1400px] items-center gap-16 md:grid-cols-12">
                 <div className="md:col-span-7">
                     <div className="reveal">
-                        <SectionLabel label="Lời mời" />
+                        <SectionLabel label="Lời mời" light />
                     </div>
                     <h2 className="font-display reveal mt-10 text-[clamp(2.8rem,6.5vw,6.75rem)]">
                         Dành một khoảnh khắc
                         <br />
-                        <span className="italic text-mocha">cho chính mình.</span>
+                        <span className="italic text-sand">cho chính mình.</span>
                     </h2>
-                    <p className="reveal mt-8 max-w-md text-[0.95rem] leading-relaxed text-muted-foreground">
+                    <p className="reveal mt-8 max-w-md text-[0.95rem] leading-relaxed text-ivory/80">
                         Khởi đầu hành trình chăm sóc vẻ đẹp của bạn cùng Junie.
                     </p>
                     <div className="reveal mt-12 flex flex-wrap items-center gap-8">
-                        <LuxButton href="/booking">Đặt lịch tư vấn</LuxButton>
-                        <a href="/services" className="eyebrow link-lux text-mocha">
+                        <LuxButton href="/booking" variant="ivory">
+                            Đặt lịch tư vấn
+                        </LuxButton>
+                        <a
+                            href="/services"
+                            className="eyebrow link-lux text-ivory/85 hover:text-ivory"
+                        >
                             Khám phá dịch vụ
                         </a>
                     </div>
@@ -458,7 +485,7 @@ export function Invitation() {
                             />
                         </div>
                     </div>
-                    <p className="junie-invitation__caption reveal mt-5 text-center font-serif italic text-sm text-muted-foreground">
+                    <p className="junie-invitation__caption reveal mt-5 text-center font-serif italic text-sm text-ivory/80">
                         không gian tĩnh lặng, dành riêng cho bạn
                     </p>
                 </div>

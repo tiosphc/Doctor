@@ -1,0 +1,424 @@
+{
+    "message": "SQLSTATE[HY000] [1049] Unknown database 'aesthetic_clinic' (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: aesthetic_clinic, SQL: select * from `sessions` where `id` = 5QvOy3EFra8jlp3DmIQoUzOmUlsuUPBTXClWR0c5 limit 1)",
+    "exception": "Illuminate\\Database\\QueryException",
+    "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Connection.php",
+    "line": 857,
+    "trace": [
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Connection.php",
+            "line": 813,
+            "function": "runQueryCallback",
+            "class": "Illuminate\\Database\\Connection",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Connection.php",
+            "line": 426,
+            "function": "run",
+            "class": "Illuminate\\Database\\Connection",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Query\\Builder.php",
+            "line": 3629,
+            "function": "select",
+            "class": "Illuminate\\Database\\Connection",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Query\\Builder.php",
+            "line": 3613,
+            "function": "runSelect",
+            "class": "Illuminate\\Database\\Query\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Concerns\\BuildsQueries.php",
+            "line": 408,
+            "function": "get",
+            "class": "Illuminate\\Database\\Query\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Query\\Builder.php",
+            "line": 3531,
+            "function": "first",
+            "class": "Illuminate\\Database\\Query\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\DatabaseSessionHandler.php",
+            "line": 96,
+            "function": "find",
+            "class": "Illuminate\\Database\\Query\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Store.php",
+            "line": 128,
+            "function": "read",
+            "class": "Illuminate\\Session\\DatabaseSessionHandler",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Store.php",
+            "line": 116,
+            "function": "readFromHandler",
+            "class": "Illuminate\\Session\\Store",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Store.php",
+            "line": 100,
+            "function": "loadSession",
+            "class": "Illuminate\\Session\\Store",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Middleware\\StartSession.php",
+            "line": 146,
+            "function": "start",
+            "class": "Illuminate\\Session\\Store",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Support\\helpers.php",
+            "line": 393,
+            "function": "{closure:Illuminate\\Session\\Middleware\\StartSession::startSession():143}",
+            "class": "Illuminate\\Session\\Middleware\\StartSession",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Middleware\\StartSession.php",
+            "line": 143,
+            "function": "tap"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Middleware\\StartSession.php",
+            "line": 115,
+            "function": "startSession",
+            "class": "Illuminate\\Session\\Middleware\\StartSession",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Middleware\\StartSession.php",
+            "line": 63,
+            "function": "handleStatefulRequest",
+            "class": "Illuminate\\Session\\Middleware\\StartSession",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Session\\Middleware\\StartSession",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse.php",
+            "line": 36,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Cookie\\Middleware\\EncryptCookies.php",
+            "line": 74,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Cookie\\Middleware\\EncryptCookies",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\sanctum\\src\\Http\\Middleware\\EnsureFrontendRequestsAreStateful.php",
+            "line": 61,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 201,
+            "function": "{closure:Laravel\\Sanctum\\Http\\Middleware\\EnsureFrontendRequestsAreStateful::frontendMiddleware():58}",
+            "class": "Laravel\\Sanctum\\Http\\Middleware\\EnsureFrontendRequestsAreStateful",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 137,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\sanctum\\src\\Http\\Middleware\\EnsureFrontendRequestsAreStateful.php",
+            "line": 25,
+            "function": "then",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Laravel\\Sanctum\\Http\\Middleware\\EnsureFrontendRequestsAreStateful",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 137,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php",
+            "line": 821,
+            "function": "then",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php",
+            "line": 800,
+            "function": "runRouteWithinStack",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php",
+            "line": 764,
+            "function": "runRoute",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php",
+            "line": 753,
+            "function": "dispatchToRoute",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php",
+            "line": 200,
+            "function": "dispatch",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 180,
+            "function": "{closure:Illuminate\\Foundation\\Http\\Kernel::dispatchToRouter():197}",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\mcp\\src\\Server\\Middleware\\AddWwwAuthenticateHeader.php",
+            "line": 21,
+            "function": "{closure:Illuminate\\Pipeline\\Pipeline::prepareDestination():178}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Laravel\\Mcp\\Server\\Middleware\\AddWwwAuthenticateHeader",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\app\\Http\\Middleware\\LocalizeCommerceErrors.php",
+            "line": 17,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "App\\Http\\Middleware\\LocalizeCommerceErrors",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php",
+            "line": 21,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull.php",
+            "line": 31,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php",
+            "line": 21,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TrimStrings.php",
+            "line": 51,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\TrimStrings",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\ValidatePostSize.php",
+            "line": 27,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\ValidatePostSize",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance.php",
+            "line": 110,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\HandleCors.php",
+            "line": 74,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\HandleCors",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\TrustProxies.php",
+            "line": 58,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\TrustProxies",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\InvokeDeferredCallbacks.php",
+            "line": 22,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\InvokeDeferredCallbacks",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\ValidatePathEncoding.php",
+            "line": 28,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\ValidatePathEncoding",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 137,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php",
+            "line": 175,
+            "function": "then",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php",
+            "line": 144,
+            "function": "sendRequestThroughRouter",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php",
+            "line": 1227,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\public\\index.php",
+            "line": 20,
+            "function": "handleRequest",
+            "class": "Illuminate\\Foundation\\Application",
+            "type": "->"
+        },
+        {
+            "file": "D:\\TTFIS\\Doctor-refactor-admin-ui\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php",
+            "line": 23,
+            "function": "require_once"
+        }
+    ]
+}

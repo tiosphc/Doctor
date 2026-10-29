@@ -1,0 +1,17 @@
+{
+  "changed": [
+    "frontend/src/components/landing/Hero.css"
+  ],
+  "added": [
+    "frontend/src/assets/lovable/hero-background.jpg"
+  ],
+  "layoutUnchangedAt": [
+    "1920x1080",
+    "1440x900",
+    "1366x768",
+    "768x1024",
+    "390x844",
+    "375x812"
+  ],
+  "reducedMotion": true
+}

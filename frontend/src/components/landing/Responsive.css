@@ -1,15 +1,5 @@
 /* Shared responsive polish, scoped to the existing homepage. */
 @media (max-width: 767px) {
-    #trang-chu > div.order-1 {
-        padding-top: 100px;
-    }
-    #trang-chu .junie-hero-visual {
-        width: min(86%, 360px);
-        margin-block: 32px 36px;
-    }
-    #trang-chu .eyebrow {
-        letter-spacing: 0;
-    }
     #lien-he {
         padding: 56px 24px;
         scroll-margin-top: 80px;
@@ -68,14 +58,5 @@
     }
     .lovable-home footer > div > div:nth-child(2) {
         font-size: 56px;
-    }
-}
-@media (max-height: 600px) and (min-width: 600px) and (max-width: 1023px) {
-    #trang-chu > div.order-1 {
-        min-height: 680px;
-    }
-    #trang-chu .junie-hero-visual {
-        top: 130px;
-        height: 470px;
     }
 }
