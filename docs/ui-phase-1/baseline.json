@@ -1,0 +1,100 @@
+[
+    {
+        "landing": {
+            "viewport": [1440, 900],
+            "overflow": false,
+            "headingFont": "\"Cormorant Garamond\", \"Times New Roman\", serif",
+            "bodyFont": "Manrope, system-ui, sans-serif",
+            "headingFontLoaded": true,
+            "bodyFontLoaded": true,
+            "background": "oklch(0.984 0.006 75)",
+            "primary": "oklch(47% .039 58)",
+            "cta": ["/booking", "#dich-vu"]
+        }
+    },
+    {
+        "landing": {
+            "viewport": [390, 844],
+            "overflow": false,
+            "headingFont": "\"Cormorant Garamond\", \"Times New Roman\", serif",
+            "bodyFont": "Manrope, system-ui, sans-serif",
+            "headingFontLoaded": true,
+            "bodyFontLoaded": true,
+            "background": "oklch(0.984 0.006 75)",
+            "primary": "oklch(47% .039 58)",
+            "cta": ["/booking", "#dich-vu"]
+        }
+    },
+    {
+        "tokenChecks": {
+            "landingUnaffected": true,
+            "cssRules": 1,
+            "aliasesResolved": true,
+            "contrast": [
+                {
+                    "fg": "--foreground",
+                    "bg": "--background",
+                    "ratio": 10.44,
+                    "minimum": 4.5,
+                    "pass": true
+                },
+                {
+                    "fg": "--muted-foreground",
+                    "bg": "--background",
+                    "ratio": 6.02,
+                    "minimum": 4.5,
+                    "pass": true
+                },
+                {
+                    "fg": "--primary-foreground",
+                    "bg": "--primary",
+                    "ratio": 6.55,
+                    "minimum": 4.5,
+                    "pass": true
+                },
+                {
+                    "fg": "--input",
+                    "bg": "--background",
+                    "ratio": 3.37,
+                    "minimum": 3,
+                    "pass": true
+                },
+                {
+                    "fg": "--ring",
+                    "bg": "--background",
+                    "ratio": 6.55,
+                    "minimum": 3,
+                    "pass": true
+                },
+                {
+                    "fg": "--success",
+                    "bg": "--junie-success-surface",
+                    "ratio": 8.17,
+                    "minimum": 4.5,
+                    "pass": true
+                },
+                {
+                    "fg": "--warning",
+                    "bg": "--junie-warning-surface",
+                    "ratio": 7.59,
+                    "minimum": 4.5,
+                    "pass": true
+                },
+                {
+                    "fg": "--destructive",
+                    "bg": "--junie-danger-surface",
+                    "ratio": 7.09,
+                    "minimum": 4.5,
+                    "pass": true
+                },
+                {
+                    "fg": "--junie-info",
+                    "bg": "--junie-info-surface",
+                    "ratio": 7.46,
+                    "minimum": 4.5,
+                    "pass": true
+                }
+            ]
+        }
+    }
+]

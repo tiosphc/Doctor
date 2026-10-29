@@ -21,7 +21,17 @@ export function Nav() {
     const { user } = useAuth();
     const [hidden, setHidden] = useState(false);
     const lastY = useRef(0);
+    const menuTriggerRef = useRef<HTMLButtonElement>(null);
     const solid = y > 40;
+
+    useEffect(() => {
+        const desktop = window.matchMedia("(min-width: 1024px)");
+        const closeOnDesktop = () => {
+            if (desktop.matches) setOpen(false);
+        };
+        desktop.addEventListener("change", closeOnDesktop);
+        return () => desktop.removeEventListener("change", closeOnDesktop);
+    }, []);
 
     useEffect(() => {
         const delta = y - lastY.current;
@@ -67,10 +77,12 @@ export function Nav() {
                         </a>
                     </Button>
                     <Button
+                        ref={menuTriggerRef}
                         variant="ghost"
                         type="button"
                         onClick={() => setOpen((o) => !o)}
                         aria-expanded={open}
+                        aria-controls="junie-mobile-menu"
                         aria-label="Mở menu"
                         className="flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-[6px] lg:hidden"
                     >
@@ -86,9 +98,23 @@ export function Nav() {
 
             <Dialog.Root open={open} onOpenChange={setOpen}>
                 <Dialog.Portal>
-                    <Dialog.Content className="junie-menu grain" aria-describedby={undefined}>
+                    <Dialog.Overlay className="junie-menu__overlay" />
+                    <Dialog.Content
+                        id="junie-mobile-menu"
+                        className="lovable-home junie-menu"
+                        aria-describedby={undefined}
+                        onCloseAutoFocus={(event) => {
+                            event.preventDefault();
+                            menuTriggerRef.current?.focus({ preventScroll: true });
+                        }}
+                    >
                         <div className="junie-menu__top">
-                            <a href="/" onClick={() => setOpen(false)} className="text-xl">
+                            <a
+                                href="/"
+                                onClick={() => setOpen(false)}
+                                className="junie-menu__brand"
+                                aria-label="Junie — Trang chủ"
+                            >
                                 <BrandLogo />
                             </a>
                             <Dialog.Close asChild>
@@ -103,8 +129,8 @@ export function Nav() {
                             </Dialog.Close>
                         </div>
                         <div className="junie-menu__body">
-                            <Dialog.Title className="junie-menu__title">
-                                Khám phá Junie
+                            <Dialog.Title asChild>
+                                <p className="junie-menu__title">Khám phá Junie</p>
                             </Dialog.Title>
                             <nav aria-label="Điều hướng mobile">
                                 <ul>
